@@ -6,27 +6,26 @@ interface ExaggerationSliderProps {
 }
 
 export default function ExaggerationSlider({ value, onChange }: ExaggerationSliderProps) {
-  const isTrueScale = value === MIN_EXAGGERATION;
-
   return (
     <div className="exaggeration">
       <label htmlFor="exaggeration-input">
-        Vertical exaggeration: <strong>{value.toFixed(1)}×</strong>
-        {isTrueScale && <span className="exaggeration__true"> (true scale)</span>}
+        Relief fine-tune: <strong>{value.toFixed(2)}×</strong>
+        {value === 1 && <span className="exaggeration__true"> (default)</span>}
       </label>
       <input
         id="exaggeration-input"
         type="range"
         min={MIN_EXAGGERATION}
         max={MAX_EXAGGERATION}
-        step={0.1}
+        step={0.05}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <p className="exaggeration__hint">
-        Sri Lanka's peaks top out at 2,524 m across a wide island — at true scale (1.0×) the
-        terrain reads almost flat. Exaggeration stretches height for legibility only; it doesn't
-        change the underlying elevation data.
+        Height is already exaggerated automatically — more when viewing the whole
+        island, less when zoomed in — because at true scale a 2,524 m island
+        400 km across looks flat. This only nudges that; it never changes the
+        elevation data.
       </p>
     </div>
   );

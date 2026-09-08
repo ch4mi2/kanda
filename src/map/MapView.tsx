@@ -26,6 +26,7 @@ import {
   PITCH_MAX,
   PITCH_MIN,
   TERRAIN,
+  exaggerationForZoom,
 } from '../config/tiles';
 import { attachOrbitDrag } from './orbitDrag';
 import type { SelectedPeak } from '../types';
@@ -94,9 +95,24 @@ function peakFromFeature(
 export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  // Latest slider multiplier, read by the map's own `zoom` handler (which
+  // outlives any single render) without re-subscribing.
+  const multiplierRef = useRef(exaggeration);
+  multiplierRef.current = exaggeration;
 
   useEffect(() => {
     if (!containerRef.current) return;
+
+    // Adaptive vertical exaggeration: MapLibre 6 only takes a plain number,
+    // so recompute it from the live zoom whenever the zoom changes.
+    const applyAdaptiveTerrain = () => {
+      const map = mapRef.current;
+      if (!map || !map.getSource('terrain-dem')) return;
+      map.setTerrain({
+        source: 'terrain-dem',
+        exaggeration: exaggerationForZoom(map.getZoom(), multiplierRef.current),
+      });
+    };
 
     const map = new MapLibreMap({
       container: containerRef.current,
@@ -151,7 +167,8 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
       // otherwise sticks at MapLibre's 400x300 fallback and the map looks
       // blank). Cheap and idempotent when the size was already correct.
       map.resize();
-      map.setTerrain({ source: 'terrain-dem', exaggeration });
+      applyAdaptiveTerrain();
+      map.on('zoom', applyAdaptiveTerrain);
       addPeaksLayer(map);
       onMapReady?.(map);
 
@@ -187,9 +204,11 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    if (!map.isStyleLoaded()) return;
-    map.setTerrain({ source: 'terrain-dem', exaggeration });
+    if (!map || !map.isStyleLoaded() || !map.getSource('terrain-dem')) return;
+    map.setTerrain({
+      source: 'terrain-dem',
+      exaggeration: exaggerationForZoom(map.getZoom(), exaggeration),
+    });
   }, [exaggeration]);
 
   return <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />;

@@ -1,29 +1,48 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import { MAX_ELEVATION_M, terrainSourceSpec } from '../config/tiles';
 
-// Hypsometric tint ramp tuned to Sri Lanka's actual elevation range
-// (sea level to 2,524 m at Pidurutalagala). A generic world ramp (built for
-// 0-8000m+) would put the whole island in the bottom two color stops and
-// read as flat and muddy, so the stops below are hand-placed against
-// MAX_ELEVATION_M instead.
-const ELEVATION_COLOR_STOPS: Array<[number, string]> = [
-  [-10, 'rgb(9, 55, 84)'], // below sea level / sea floor
-  [0, 'rgb(24, 98, 112)'], // coastline
-  [15, 'rgb(64, 130, 90)'], // coastal lowlands
-  [150, 'rgb(96, 148, 68)'], // plains, green
-  [450, 'rgb(140, 163, 70)'], // low hills
-  [800, 'rgb(181, 168, 88)'], // mid hills, drier
-  [1200, 'rgb(163, 128, 78)'], // highlands, ochre
-  [1650, 'rgb(140, 100, 76)'], // upper highlands, brown
-  [2050, 'rgb(148, 128, 116)'], // near-summit, cooler grey-brown
-  [MAX_ELEVATION_M, 'rgb(214, 206, 196)'], // summit, pale
+// Hypsometric tint ramp in real metres (MapLibre's ['elevation'] is metres
+// directly — no normalise, no gamma; see the "why the mockups all look green"
+// note in CLAUDE.md). Two deliberate choices:
+//
+//  1. Resolution is concentrated where Sri Lanka's land actually is — eight of
+//     the twelve bands sit at or below 1,350 m. A linear stretch to 2,524 m
+//     would collapse the lowlands (most of the island) into one or two greens.
+//  2. Genuinely different hues per band: green -> chartreuse -> olive -> tan ->
+//     ochre -> russet -> brown -> grey -> pale. Not nine near-identical greens.
+//
+// ELEVATION_BANDS is [floor metres, colour]. The ramp is rendered as hard
+// steps (see steppedColorRamp) so each tier has a crisp, readable edge rather
+// than a smeared gradient the eye can't lock onto.
+export const ELEVATION_BANDS: Array<[number, string]> = [
+  [-500, '#15455a'], // sea floor / below sea level
+  [0, '#3d7d6a'], // shoreline
+  [60, '#4f9e5b'], // coastal lowland, green
+  [180, '#6fb257'], // plains
+  [350, '#93c159'], // rising ground, yellow-green
+  [550, '#bcc563'], // low hills, chartreuse
+  [800, '#cdae64'], // mid hills, tan
+  [1050, '#c59256'], // highlands, ochre
+  [1350, '#b0774f'], // upper highlands, russet
+  [1700, '#95674f'], // ridges, brown
+  [2050, '#8a7c73'], // near-summit, grey-brown
+  [2350, '#c9bfb4'], // summit shoulders, pale
+  [MAX_ELEVATION_M, '#e6ded2'], // the very tops
 ];
 
-function colorReliefExpression() {
+// color-relief-color is a color-ramp (interpolated) property, so `step` isn't
+// reliably valid. Epsilon-paired stops give the same hard edges: hold the
+// previous colour to within 0.1 m of the boundary, then jump.
+const STEP_EPSILON = 0.1;
+
+function steppedColorRamp(): unknown[] {
   const expr: unknown[] = ['interpolate', ['linear'], ['elevation']];
-  for (const [stop, color] of ELEVATION_COLOR_STOPS) {
-    expr.push(stop, color);
-  }
+  ELEVATION_BANDS.forEach(([ele, color], i) => {
+    if (i > 0) {
+      expr.push(ele - STEP_EPSILON, ELEVATION_BANDS[i - 1][1]);
+    }
+    expr.push(ele, color);
+  });
   return expr;
 }
 
@@ -52,7 +71,7 @@ export function buildStyle(): StyleSpecification {
           // Cast needed: colorReliefExpression() builds a generic
           // expression array, but the style types want the narrower
           // ColorRampProperty shape.
-          'color-relief-color': colorReliefExpression() as never,
+          'color-relief-color': steppedColorRamp() as never,
           // Sample the DEM texel-for-texel instead of bilinear-blending
           // between texels. The DEM is already at its native resolution
           // (z12 ~= 38 m/px); 'linear' just smears that into mush when the

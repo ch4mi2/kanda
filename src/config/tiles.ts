@@ -89,9 +89,42 @@ export const PITCH_MAX = 72;
 export const ORBIT_YAW_SENSITIVITY = 0.35; // deg of bearing per px dragged
 export const ORBIT_PITCH_SENSITIVITY = 0.25; // deg of pitch per px dragged
 
-export const DEFAULT_EXAGGERATION = 1.8;
-export const MIN_EXAGGERATION = 1.0;
-export const MAX_EXAGGERATION = 3.0;
+// Vertical exaggeration is adaptive, driven by zoom (design handoff: ~4x at
+// island view easing to ~2x zoomed in). At true 1x a 2,524 m island 400 km
+// across reads as flat and the app looks broken. MapLibre 6's setTerrain only
+// takes a plain number for exaggeration (no zoom expression), so MapView
+// recomputes it on the `zoom` event via this curve. The manual slider is a
+// multiplier on top — demoted to a fine-tune, not the primary control.
+const EXAGGERATION_STOPS: Array<[number, number]> = [
+  [6.5, 4.0], // whole-island view
+  [9, 2.8], // regional
+  [12, 2.0], // zoomed to a massif
+];
+
+/** Adaptive terrain exaggeration for a given zoom, scaled by the user's
+ *  fine-tune multiplier (1.0 = leave the curve alone). Linear between stops,
+ *  clamped outside them. */
+export function exaggerationForZoom(zoom: number, multiplier: number): number {
+  const stops = EXAGGERATION_STOPS;
+  let base = stops[0][1];
+  if (zoom <= stops[0][0]) base = stops[0][1];
+  else if (zoom >= stops[stops.length - 1][0]) base = stops[stops.length - 1][1];
+  else {
+    for (let i = 1; i < stops.length; i++) {
+      const [z0, e0] = stops[i - 1];
+      const [z1, e1] = stops[i];
+      if (zoom <= z1) {
+        base = e0 + ((e1 - e0) * (zoom - z0)) / (z1 - z0);
+        break;
+      }
+    }
+  }
+  return base * multiplier;
+}
+
+export const DEFAULT_EXAGGERATION = 1.0; // multiplier — see exaggerationForZoom
+export const MIN_EXAGGERATION = 0.5;
+export const MAX_EXAGGERATION = 1.8;
 
 export const PEAKS_ATTRIBUTION =
   'Peaks: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)';
