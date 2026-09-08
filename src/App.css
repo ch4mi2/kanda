@@ -1,7 +1,15 @@
+/* Mobile-first: the base rules below target a phone in portrait — most of
+   Kanda's users are on one, on a summit. Desktop refinements live in the
+   `min-width: 641px` block at the bottom. */
+
 .app {
   position: relative;
-  width: 100vw;
-  height: 100dvh;
+  width: 100%;
+  /* 100% (not 100dvh): dvh can resolve to 0 before the visual viewport is
+     established in some embedded/preview contexts, which leaves the map
+     container zero-height and the canvas stuck at its 400x300 fallback.
+     html/body/#root are already height:100% in index.css. */
+  height: 100%;
   overflow: hidden;
 }
 
@@ -19,10 +27,10 @@
 
 .app__header {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  max-width: min(340px, calc(100vw - 32px));
-  padding: 14px 18px;
+  top: 12px;
+  left: 12px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 14px;
   pointer-events: none;
 }
 
@@ -34,6 +42,8 @@
 }
 
 .app__header p {
+  /* Hidden on phones — the map is the point, not the blurb. */
+  display: none;
   margin: 0;
   font-size: 0.82rem;
   opacity: 0.85;
@@ -45,25 +55,44 @@
   padding: 12px 16px;
 }
 
+/* Exaggeration slider: full-width dock along the bottom on mobile. */
 .app__panel--exaggeration {
-  bottom: 16px;
-  left: 16px;
-  width: min(320px, calc(100vw - 32px));
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: auto;
 }
 
+/* Elevation legend is hidden on phones — not enough room, and the ramp
+   reads well enough directly off the terrain. */
 .app__panel--legend {
-  top: 16px;
-  right: 16px;
+  display: none;
+  top: 12px;
+  right: 12px;
 }
 
+/* Peak card: bottom sheet on mobile, clear of the exaggeration dock. */
 .app__panel--peak {
-  top: 16px;
-  right: 16px;
+  left: 12px;
+  right: 12px;
+  bottom: 96px;
   padding: 0;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
-  width: min(300px, calc(100vw - 32px));
+  width: auto;
+}
+
+/* Attribution tucks under the header on the left; the bottom row and the
+   top-right (MapLibre's NavigationControl) are both spoken for on mobile. */
+.attribution {
+  position: absolute;
+  top: 92px;
+  left: 12px;
+  right: auto;
+  bottom: auto;
+  max-width: min(200px, calc(100vw - 24px));
+  font-size: 0.72rem;
 }
 
 /* --- Exaggeration slider --- */
@@ -201,14 +230,6 @@
 }
 
 /* --- Attribution --- */
-.attribution {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  max-width: min(320px, calc(100vw - 32px));
-  font-size: 0.72rem;
-}
-
 .attribution__toggle {
   display: block;
   width: 100%;
@@ -235,45 +256,45 @@
   color: #b8d6e8;
 }
 
-/* --- Small screens --- */
-@media (max-width: 640px) {
+/* --- Desktop / large tablet: more screen, so spread out --- */
+@media (min-width: 641px) {
   .app__header {
-    max-width: calc(100vw - 24px);
-    padding: 10px 14px;
+    top: 16px;
+    left: 16px;
+    max-width: min(340px, calc(100vw - 32px));
+    padding: 14px 18px;
   }
 
   .app__header p {
-    display: none;
-  }
-
-  .app__panel--legend {
-    display: none;
+    display: block;
   }
 
   .app__panel--exaggeration {
-    left: 12px;
-    right: 12px;
-    width: auto;
-    bottom: 12px;
+    left: 16px;
+    right: auto;
+    bottom: 16px;
+    width: min(320px, calc(100vw - 32px));
+  }
+
+  .app__panel--legend {
+    display: block;
+    top: 16px;
+    right: 16px;
   }
 
   .app__panel--peak {
-    top: auto;
-    bottom: 90px;
-    left: 12px;
-    right: 12px;
-    width: auto;
+    top: 16px;
+    right: 16px;
+    left: auto;
+    bottom: auto;
+    width: min(300px, calc(100vw - 32px));
   }
 
-  /* Legend is hidden on mobile, but top-right is still MapLibre's own
-     NavigationControl (zoom/compass buttons), and the bottom row is already
-     full-width for the exaggeration slider — so attribution tucks in just
-     under the header on the left instead of fighting either for space. */
   .attribution {
-    top: 96px;
-    bottom: auto;
-    right: auto;
-    left: 12px;
-    max-width: min(200px, calc(100vw - 24px));
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+    left: auto;
+    max-width: min(320px, calc(100vw - 32px));
   }
 }

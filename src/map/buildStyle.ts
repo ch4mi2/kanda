@@ -1,5 +1,5 @@
 import type { StyleSpecification } from 'maplibre-gl';
-import { MAX_ELEVATION_M, TERRAIN, terrainTileUrl } from '../config/tiles';
+import { MAX_ELEVATION_M, terrainSourceSpec } from '../config/tiles';
 
 // Hypsometric tint ramp tuned to Sri Lanka's actual elevation range
 // (sea level to 2,524 m at Pidurutalagala). A generic world ramp (built for
@@ -36,14 +36,7 @@ export function buildStyle(): StyleSpecification {
     // demo glyph host is free, keyless, and actually serves the font data.
     glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
-      'terrain-dem': {
-        type: 'raster-dem',
-        tiles: [terrainTileUrl()],
-        tileSize: TERRAIN.tileSize,
-        maxzoom: TERRAIN.maxzoom,
-        encoding: TERRAIN.encoding,
-        attribution: TERRAIN.attribution,
-      },
+      'terrain-dem': terrainSourceSpec(),
     },
     layers: [
       {
@@ -60,6 +53,11 @@ export function buildStyle(): StyleSpecification {
           // expression array, but the style types want the narrower
           // ColorRampProperty shape.
           'color-relief-color': colorReliefExpression() as never,
+          // Sample the DEM texel-for-texel instead of bilinear-blending
+          // between texels. The DEM is already at its native resolution
+          // (z12 ~= 38 m/px); 'linear' just smears that into mush when the
+          // camera overzooms. 'nearest' keeps the elevation bands crisp.
+          resampling: 'nearest',
         },
       },
       {

@@ -28,6 +28,7 @@ src/
   map/
     buildStyle.ts     MapLibre style: color-relief ramp, hillshade, sky, glyphs.
     MapView.tsx       Imperative MapLibre lifecycle in a thin React wrapper.
+    orbitDrag.ts      Left-drag / one-finger-drag → orbit the camera.
     peaksLayer.ts     Peak symbols, 3 zoom tiers, canvas-generated triangle icon.
   components/         PeakCard, ExaggerationSlider, Legend, Attribution.
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
@@ -35,7 +36,7 @@ src/
 scripts/
   fetch-peaks.mjs         Overpass → src/data/peaks.geojson
   fetch-terrain.mjs       AWS → public/tiles/terrain/ (~2,024 tiles, 54 MB)
-  copy-maplibre-worker.mjs  Build-time worker copy (see gotchas)
+  pack-pmtiles.mjs        public/tiles/terrain/ → public/tiles/terrain.pmtiles
 design/               Exported Claude Design source. Tokens live in the
                       "1D Handoff sheet" section of Kanda Trails UI.dc.html.
 ```
@@ -62,26 +63,48 @@ Attribution is required and is not optional — see `components/Attribution.tsx`
 
 `TERRAIN.mode` in `config/tiles.ts` reads `VITE_TILE_MODE`:
 - `remote` (default) — AWS S3. **Slow: re-downloads ~2,024 tiles per session.**
-- `local` — `public/tiles/`, populated by `npm run fetch:terrain`.
+- `local` — loose PNG pyramid in `public/tiles/terrain/`, `npm run fetch:terrain`.
+- `pmtiles` — single `public/tiles/terrain.pmtiles` archive, `npm run pack:pmtiles`.
+  Served via HTTP range requests through the `pmtiles://` protocol registered
+  in `MapView.tsx`. This is the deployment artifact — one file, not 2,024.
 
-**`.env.local` with `VITE_TILE_MODE=local` should always exist in development.**
-Without it the app silently runs in remote mode and feels broken-slow. This was
-a real bug, not a hypothetical.
+`config/tiles.ts` exposes `terrainSourceSpec()` so `buildStyle.ts` never branches
+on the mode: PMTiles gets a `url`, loose tiles get a `tiles` template. It also
+sets the source `bounds` to `SRI_LANKA_BBOX` — without that MapLibre requests a
+margin of tiles beyond the data and the dev/preview server answers those with
+its SPA `index.html` fallback, which MapLibre logs as "source image could not be
+decoded" (harmless once bounds is set; a real static host would 404 cleanly).
+The low-zoom pyramid on disk is sparse, so a few of those logs still appear.
+
+**`.env.local` with `VITE_TILE_MODE=local` (or `pmtiles`) should always exist in
+development.** Without it the app silently runs in remote mode and feels
+broken-slow. This was a real bug, not a hypothetical.
 
 ## Gotchas that have already cost time
 
-1. **`maxBounds` breaks rotation.** Tight `MAP_BOUNDS` + high pitch means the
-   frustum spills past the bounds and MapLibre's `_constrain()` fights every
-   bearing change. Keep bounds generous.
+1. **`maxBounds` vs rotation.** Tight `MAP_BOUNDS` + high pitch means the
+   frustum spills past the bounds and MapLibre's `_constrain()` can fight
+   bearing changes. `MAP_BOUNDS` is now deliberately generous
+   (`[[73,1],[89,15]]`). Rotation itself is driven by `map/orbitDrag.ts` —
+   left-drag / one-finger-drag orbits (yaw free, pitch clamped 12°–72° via
+   `minPitch`/`maxPitch`); `dragPan` is disabled; right-drag still rotates via
+   MapLibre's own handler. Camera zoom is capped at `MAX_ZOOM` (13) so it can't
+   push past the z12 DEM.
 2. **`style.load`, not `load`.** The `load` event can hang indefinitely waiting
    on every visible tile across a wide oblique view. Do setup on `style.load`.
 3. **`demotiles.maplibre.org` glyphs must go.** Currently referenced in
    `buildStyle.ts` — it's MapLibre's *demo* server and a hard network dependency
    that breaks offline. Self-host glyph PBFs (needs Sinhala + Tamil too).
-4. **Vite + maplibre worker.** `optimizeDeps.exclude: ['maplibre-gl']` is
-   required for dev, and `scripts/copy-maplibre-worker.mjs` runs on pre-dev and
-   pre-build for production. **The production build worker still 404s
-   (`/assets/maplibre-gl-worker.mjs`, MIME error) — this is an open bug.**
+4. **Vite + maplibre worker.** `optimizeDeps.exclude: ['maplibre-gl']` plus
+   `worker: { format: 'es' }` in `vite.config.ts`, and `MapView.tsx` imports the
+   worker as `maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url` and feeds it to
+   `setWorkerUrl()`. MapLibre's default (`new URL('./maplibre-gl-worker.mjs',
+   import.meta.url)`) otherwise gets the HMR client injected in dev (style never
+   loads, map blank) and 404s in the build (the old MIME bug). This fixed the
+   production 404. **Dev caveat:** the map reliably loads on the *first* page
+   load after `npm run dev`, but can go blank after a hot reload / subsequent
+   navigation — a full `npm run dev` restart clears it. The production build
+   (`npm run build && npm run preview`) is unaffected and is the check of record.
 5. **No sprite sheet exists.** Icon names like `triangle-15` silently fail.
    `peaksLayer.ts` generates its triangle on a canvas and registers it as an SDF
    image instead.

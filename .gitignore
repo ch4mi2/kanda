@@ -15,8 +15,6 @@ dist-ssr
 # Downloaded terrain tiles (regenerate with scripts/fetch-terrain.mjs)
 public/tiles/
 
-# Copied at build/dev time by scripts/copy-maplibre-worker.mjs
-public/assets/maplibre-gl-worker.mjs
 
 # Local env overrides (e.g. VITE_TILE_MODE=local)
 .env.local

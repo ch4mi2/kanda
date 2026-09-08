@@ -22,7 +22,7 @@ export default function PeakCard({ peak, map, onClose }: PeakCardProps) {
     if (!map) return;
     map.flyTo({
       center: [peak.lng, peak.lat],
-      zoom: 13.5,
+      zoom: 13,
       pitch: 72,
       bearing: map.getBearing(),
       duration: 1800,
