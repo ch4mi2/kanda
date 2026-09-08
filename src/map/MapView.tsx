@@ -29,7 +29,7 @@ import {
   TERRAIN,
   exaggerationForZoom,
 } from '../config/tiles';
-import { attachOrbitDrag } from './orbitDrag';
+import { attachMiddleDragRotate } from './middleDragRotate';
 import type { SelectedPeak } from '../types';
 
 // Point MapLibre at the Vite-produced worker URL. MapLibre's default —
@@ -127,9 +127,13 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
       maxBounds: MAP_BOUNDS,
       minPitch: PITCH_MIN,
       maxPitch: PITCH_MAX,
-      // Defaults, stated explicitly: pinch-zoom, two-finger rotate and
-      // two-finger pitch all need to work on touch for this to be usable
-      // for a hiker checking terrain on their phone.
+      // Google Earth control scheme, all stock MapLibre handlers:
+      //   left-drag / one-finger-drag  -> pan            (dragPan, default on)
+      //   right-drag                   -> rotate + tilt   (dragRotate)
+      //   wheel / pinch                -> zoom
+      //   two-finger drag              -> rotate + tilt   (touchZoomRotate + touchPitch)
+      // Middle-drag also rotates + tilts — the one gap MapLibre has no
+      // handler for — via map/middleDragRotate.ts, attached below.
       touchZoomRotate: true,
       touchPitch: true,
       dragRotate: true,
@@ -140,12 +144,11 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
     });
     mapRef.current = map;
 
-    // Left-drag orbits the camera instead of panning — rotation is the
-    // primary gesture for a look-around app (see orbitDrag.ts). With
-    // dragPan off, navigation is tap-to-fly and the peak list; right-drag
-    // still rotates via MapLibre's own dragRotate as a familiar fallback.
-    map.dragPan.disable();
-    const detachOrbit = attachOrbitDrag(map);
+    // dragPan stays enabled (left-drag / one-finger pans). Rotation is still
+    // central to a look-around app, but it lives on right-drag, middle-drag,
+    // two-finger drag and the on-screen compass — not by stealing left-drag,
+    // which left users unable to pan at all.
+    const detachRotate = attachMiddleDragRotate(map);
 
     // Dev-only escape hatch for verifying camera state from the console —
     // `__map.getBearing()` should change AND hold during a drag.
@@ -193,7 +196,7 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
     });
 
     return () => {
-      detachOrbit();
+      detachRotate();
       map.remove();
       mapRef.current = null;
     };

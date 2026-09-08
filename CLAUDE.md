@@ -28,7 +28,8 @@ src/
   map/
     buildStyle.ts     MapLibre style: color-relief ramp, hillshade, sky, glyphs.
     MapView.tsx       Imperative MapLibre lifecycle in a thin React wrapper.
-    orbitDrag.ts      Left-drag / one-finger-drag → orbit the camera.
+    middleDragRotate.ts  Middle-button drag → rotate + tilt (the one gesture
+                      MapLibre has no built-in handler for).
     peaksLayer.ts     Peak symbols, 3 zoom tiers, canvas-generated triangle icon.
     nearbyPeaks.ts    Haversine + initial-bearing maths for the nearby list.
   components/         PeakCard, NearbyPeaks, ExaggerationSlider, Legend, Attribution.
@@ -87,11 +88,13 @@ broken-slow. This was a real bug, not a hypothetical.
 1. **`maxBounds` vs rotation.** Tight `MAP_BOUNDS` + high pitch means the
    frustum spills past the bounds and MapLibre's `_constrain()` can fight
    bearing changes. `MAP_BOUNDS` is now deliberately generous
-   (`[[73,1],[89,15]]`). Rotation itself is driven by `map/orbitDrag.ts` —
-   left-drag / one-finger-drag orbits (yaw free, pitch clamped 12°–72° via
-   `minPitch`/`maxPitch`); `dragPan` is disabled; right-drag still rotates via
-   MapLibre's own handler. Camera zoom is capped at `MAX_ZOOM` (13) so it can't
-   push past the z12 DEM.
+   (`[[73,1],[89,15]]`). Controls are the Google Earth scheme, all stock
+   MapLibre handlers (Phase 4C): left-drag / one-finger-drag pans, right-drag
+   and two-finger drag rotate + tilt, wheel/pinch zooms. `map/middleDragRotate.ts`
+   adds middle-button rotate/tilt — the only gesture MapLibre has no handler
+   for — with the sign matched to MapLibre's own `MouseRotateHandler`. Pitch is
+   clamped 12°–72° via `minPitch`/`maxPitch`. Camera zoom is capped at
+   `MAX_ZOOM` (13) so it can't push past the z12 DEM.
 2. **`style.load`, not `load`.** The `load` event can hang indefinitely waiting
    on every visible tile across a wide oblique view. Do setup on `style.load`.
 3. **`demotiles.maplibre.org` glyphs must go.** Currently referenced in

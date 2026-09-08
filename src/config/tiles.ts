@@ -82,10 +82,12 @@ export const DEFAULT_BEARING = -20;
 export const MIN_ZOOM = 6.5;
 export const MAX_ZOOM = 13;
 
-// Drag-to-orbit gesture (the primary interaction — see CLAUDE.md).
-// Design handoff sheet: yaw is free (±180°), pitch clamps 12°-72°.
+// Camera rotate/tilt limits. Design handoff sheet: yaw is free (±180°),
+// pitch clamps 12°-72°. Applied as the map's minPitch/maxPitch (so MapLibre's
+// own dragRotate respects them) and re-clamped by the middle-drag handler.
 export const PITCH_MIN = 12;
 export const PITCH_MAX = 72;
+// Sensitivity of the middle-button rotate/tilt drag (map/middleDragRotate.ts).
 export const ORBIT_YAW_SENSITIVITY = 0.35; // deg of bearing per px dragged
 export const ORBIT_PITCH_SENSITIVITY = 0.25; // deg of pitch per px dragged
 
