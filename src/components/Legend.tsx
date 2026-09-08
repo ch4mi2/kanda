@@ -1,8 +1,8 @@
-import { ELEVATION_BANDS } from '../map/buildStyle';
+import { DEFAULT_SKIN } from '../skins';
 
-// Show a readable subset of the terrain ramp (buildStyle.ts) — every other
+// Show a readable subset of the active skin's terrain ramp — every other
 // band, skipping the below-sea-level floor, so the swatches stay legible.
-const LEGEND_STOPS = ELEVATION_BANDS.filter(
+const LEGEND_STOPS = DEFAULT_SKIN.elevationBands.filter(
   ([ele], i) => ele >= 0 && (i % 2 === 1 || ele === 0),
 );
 

@@ -14,6 +14,7 @@ import { Protocol as PMTilesProtocol } from 'pmtiles';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildStyle } from './buildStyle';
+import { DEFAULT_SKIN } from '../skins';
 import { addPeaksLayer, PEAK_LAYER_IDS, topPeakFeature } from './peaksLayer';
 import {
   DEFAULT_BEARING,
@@ -116,7 +117,7 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
 
     const map = new MapLibreMap({
       container: containerRef.current,
-      style: buildStyle(),
+      style: buildStyle(DEFAULT_SKIN),
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
       minZoom: MIN_ZOOM,
