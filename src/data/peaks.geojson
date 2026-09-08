@@ -1,0 +1,3773 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "source": "OpenStreetMap via Overpass API",
+    "license": "ODbL",
+    "fetched": "2026-09-08T12:35:12.109Z",
+    "count": 198
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7736523,
+          7.0009508
+        ]
+      },
+      "properties": {
+        "id": 2035834190,
+        "name": "Pidurutalagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2524,
+        "wikipedia": "en:Pidurutalagala",
+        "wikidata": "Q1146327"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7664235,
+          6.7989937
+        ]
+      },
+      "properties": {
+        "id": 6269087854,
+        "name": "Kirigalpotta",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2388,
+        "wikipedia": "en:Kirigalpotta",
+        "wikidata": "Q375975"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8197979,
+          6.8331199
+        ]
+      },
+      "properties": {
+        "id": 4825524195,
+        "name": "Thotupola Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2359,
+        "wikipedia": "en:Totapolakanda",
+        "wikidata": "Q7796948"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7828425,
+          6.812823
+        ]
+      },
+      "properties": {
+        "id": 5050152975,
+        "name": "Agrabopath",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2320,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4993876,
+          6.8094211
+        ]
+      },
+      "properties": {
+        "id": 254036900,
+        "name": "Sri Paadaya Peak",
+        "name_si": "ශ්‍රි පාදය",
+        "name_ta": "சிவனொளிபாத மலை",
+        "ele": 2243,
+        "wikipedia": "en:Sri Pada Foot Print",
+        "wikidata": "Q60789"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7462138,
+          6.9844681
+        ]
+      },
+      "properties": {
+        "id": 4883891580,
+        "name": "Kikiliyamana",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2240,
+        "wikipedia": "en:Kikilimana",
+        "wikidata": "Q27447565"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.693872,
+          6.9668163
+        ]
+      },
+      "properties": {
+        "id": 4852088777,
+        "name": "Great Western Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2216,
+        "wikipedia": "en:Great Western Mountain",
+        "wikidata": "Q20987409"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.812374,
+          6.9170615
+        ]
+      },
+      "properties": {
+        "id": 4825491386,
+        "name": "Hakgala Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2172,
+        "wikipedia": "en:Hakgala",
+        "wikidata": "Q5640438"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7756516,
+          6.9120779
+        ]
+      },
+      "properties": {
+        "id": 4825491385,
+        "name": "Conical Hill",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2158,
+        "wikipedia": "en:Conical Hill (Sri Lanka)",
+        "wikidata": "Q23584970"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7754026,
+          6.7574897
+        ]
+      },
+      "properties": {
+        "id": 9409737878,
+        "name": "Nagrak Mountain",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2130,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7535302,
+          6.9672984
+        ]
+      },
+      "properties": {
+        "id": 4883891582,
+        "name": "Haddon Hill",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2115,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.762138,
+          6.9569212
+        ]
+      },
+      "properties": {
+        "id": 4883891581,
+        "name": "Single Tree",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2100,
+        "wikipedia": "en:One Tree Hill (Sri Lanka)",
+        "wikidata": "Q23585049"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8442927,
+          7.0430787
+        ]
+      },
+      "properties": {
+        "id": 5050131721,
+        "name": "Mahakudugala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2069,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8656034,
+          6.7946732
+        ]
+      },
+      "properties": {
+        "id": 6720621709,
+        "name": "Udaweriya",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2060,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.854547,
+          6.9789311
+        ]
+      },
+      "properties": {
+        "id": 4886158583,
+        "name": "Kuraththa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2039,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.1139,
+          6.9322823
+        ]
+      },
+      "properties": {
+        "id": 5050166272,
+        "name": "Namunukula",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2036,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8090256,
+          6.7666928
+        ]
+      },
+      "properties": {
+        "id": 5050155936,
+        "name": "Gommolli Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2034,
+        "wikipedia": "en:Gonmollikanda",
+        "wikidata": "Q5581213"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8634335,
+          6.7885955
+        ]
+      },
+      "properties": {
+        "id": 4825681038,
+        "name": "Meeriyathenna",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2032,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.665183,
+          6.847159
+        ]
+      },
+      "properties": {
+        "id": 6575361301,
+        "name": "Elbedda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 2015,
+        "wikipedia": null,
+        "wikidata": "Q27447587"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.0167724,
+          6.8044998
+        ]
+      },
+      "properties": {
+        "id": 6199000354,
+        "name": "Nayabedde Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1942,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6912329,
+          6.8200659
+        ]
+      },
+      "properties": {
+        "id": 7820842220,
+        "name": "Green Mount",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1940,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7482898,
+          7.4551115
+        ]
+      },
+      "properties": {
+        "id": 7090910868,
+        "name": "Gombaniya",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1903,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8107259,
+          7.4002482
+        ]
+      },
+      "properties": {
+        "id": 1290267083,
+        "name": "Knuckles",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1863,
+        "wikipedia": null,
+        "wikidata": "Q27441937"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8376384,
+          6.9576958
+        ]
+      },
+      "properties": {
+        "id": 4887500214,
+        "name": "Kotakithula Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1842,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8365697,
+          7.0554141
+        ]
+      },
+      "properties": {
+        "id": 4823495252,
+        "name": "Highforest",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1815,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6188154,
+          6.8945165
+        ]
+      },
+      "properties": {
+        "id": 5050189234,
+        "name": "Kotagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1753,
+        "wikipedia": null,
+        "wikidata": "Q27457475"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8368852,
+          6.7836838
+        ]
+      },
+      "properties": {
+        "id": 4825524196,
+        "name": "Dikthalawa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1735,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.9720267,
+          6.7813136
+        ]
+      },
+      "properties": {
+        "id": 5088481577,
+        "name": "Roehampton",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1732,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8624863,
+          6.9777383
+        ]
+      },
+      "properties": {
+        "id": 4886158584,
+        "name": "Kadawaththa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1693,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.822736,
+          7.371277
+        ]
+      },
+      "properties": {
+        "id": 7090910865,
+        "name": "Aliyawetunaela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1682,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8816051,
+          6.974863
+        ]
+      },
+      "properties": {
+        "id": 4887501805,
+        "name": "Buwalpola Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1681,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8592462,
+          6.9718173
+        ]
+      },
+      "properties": {
+        "id": 4886158585,
+        "name": "Dathaniyagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1659,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.729996,
+          7.4766978
+        ]
+      },
+      "properties": {
+        "id": 7090910867,
+        "name": "Knuckles-Kirigalpotta",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1648,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8557379,
+          7.3831672
+        ]
+      },
+      "properties": {
+        "id": 7090910864,
+        "name": "Dumbaanagala",
+        "name_si": "දුම්බානාගල",
+        "name_ta": null,
+        "ele": 1644,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.1285682,
+          6.920946
+        ]
+      },
+      "properties": {
+        "id": 7699947498,
+        "name": "Kabaragala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1630,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.848163,
+          7.3334344
+        ]
+      },
+      "properties": {
+        "id": 7090910862,
+        "name": "Dothalugala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1575,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7212443,
+          6.9115324
+        ]
+      },
+      "properties": {
+        "id": 4852030234,
+        "name": "Dambagasthalawa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1564,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8357233,
+          7.353465
+        ]
+      },
+      "properties": {
+        "id": 7090910863,
+        "name": "Koboneelagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1555,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.498693,
+          6.8838548
+        ]
+      },
+      "properties": {
+        "id": 6592862733,
+        "name": "Saptha Kanya 7",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1553,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.0103941,
+          7.0355129
+        ]
+      },
+      "properties": {
+        "id": 6320347476,
+        "name": "Narangala",
+        "name_si": "නවරංගල",
+        "name_ta": null,
+        "ele": 1527,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6327218,
+          7.0852774
+        ]
+      },
+      "properties": {
+        "id": 7328966427,
+        "name": "Peacock Hill",
+        "name_si": "මොණර කන්ද",
+        "name_ta": null,
+        "ele": 1520,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7298554,
+          7.5496196
+        ]
+      },
+      "properties": {
+        "id": 8155531730,
+        "name": "Patanagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1515,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5031508,
+          7.0706661
+        ]
+      },
+      "properties": {
+        "id": 7653421688,
+        "name": "Kabaragala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1507,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6992552,
+          7.1467025
+        ]
+      },
+      "properties": {
+        "id": 8506615200,
+        "name": "Kondagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1492,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6469688,
+          6.9684244
+        ]
+      },
+      "properties": {
+        "id": 4852088781,
+        "name": "Hunuketiyagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1464,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.118666,
+          7.1524131
+        ]
+      },
+      "properties": {
+        "id": 7308575085,
+        "name": "Kalugala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1463,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4956782,
+          6.8885094
+        ]
+      },
+      "properties": {
+        "id": 6592862734,
+        "name": "Saptha Kanya 5",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1442,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6992441,
+          7.388718
+        ]
+      },
+      "properties": {
+        "id": 3856445310,
+        "name": "Hunnasgiriya",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1440,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4894501,
+          7.0732641
+        ]
+      },
+      "properties": {
+        "id": 7653421686,
+        "name": "Stentry Box",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1440,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.743798,
+          6.7220774
+        ]
+      },
+      "properties": {
+        "id": 5050221730,
+        "name": "Hagala",
+        "name_si": "හාගල",
+        "name_ta": null,
+        "ele": 1400,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4896378,
+          6.8936647
+        ]
+      },
+      "properties": {
+        "id": 6592862737,
+        "name": "Saptha Kanya 2",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1390,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.649706,
+          6.3852835
+        ]
+      },
+      "properties": {
+        "id": 5050233144,
+        "name": "Gongala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1358,
+        "wikipedia": "en:Gongala",
+        "wikidata": "Q27457450"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.0523841,
+          6.8550355
+        ]
+      },
+      "properties": {
+        "id": 4683720698,
+        "name": "Ella Rock",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1350,
+        "wikipedia": null,
+        "wikidata": "Q87194670"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7053919,
+          7.5897916
+        ]
+      },
+      "properties": {
+        "id": 8144003524,
+        "name": "Opalgala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1343,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7136586,
+          7.5894418
+        ]
+      },
+      "properties": {
+        "id": 8145531204,
+        "name": "Karagahatenna",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1280,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6380399,
+          7.2280536
+        ]
+      },
+      "properties": {
+        "id": 5108420874,
+        "name": "Hantana 1",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1270,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6199476,
+          6.4397479
+        ]
+      },
+      "properties": {
+        "id": 5022014696,
+        "name": "Sooriya Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1255,
+        "wikipedia": null,
+        "wikidata": "Q27457454"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8393578,
+          7.4660876
+        ]
+      },
+      "properties": {
+        "id": 5747559422,
+        "name": "Lakegala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1252,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.9054768,
+          7.4079947
+        ]
+      },
+      "properties": {
+        "id": 8506615206,
+        "name": "Yahangala",
+        "name_si": "යහන්ගල",
+        "name_ta": null,
+        "ele": 1252,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7240307,
+          6.7336664
+        ]
+      },
+      "properties": {
+        "id": 5094521900,
+        "name": "Pethiyagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1245,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6642552,
+          7.222967
+        ]
+      },
+      "properties": {
+        "id": 9277976167,
+        "name": "Ambalammana Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1160,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.0630167,
+          6.86505
+        ]
+      },
+      "properties": {
+        "id": 1105822211,
+        "name": "Little Adam's Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1151,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8961588,
+          6.9290522
+        ]
+      },
+      "properties": {
+        "id": 4885968647,
+        "name": "Nikaratagoda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1146,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6279647,
+          7.2535386
+        ]
+      },
+      "properties": {
+        "id": 5108420875,
+        "name": "Hantana 2",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1140,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7747338,
+          7.5242407
+        ]
+      },
+      "properties": {
+        "id": 4840490592,
+        "name": "Maningala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1104,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.0538512,
+          6.9427645
+        ]
+      },
+      "properties": {
+        "id": 5547700551,
+        "name": "Tea Rosette",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1085,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4811049,
+          6.4923264
+        ]
+      },
+      "properties": {
+        "id": 9282370184,
+        "name": "Walankanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1041,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4876637,
+          6.8951985
+        ]
+      },
+      "properties": {
+        "id": 6592862732,
+        "name": "Saptha Kanya 1",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1040,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4715679,
+          7.2979754
+        ]
+      },
+      "properties": {
+        "id": 7637465388,
+        "name": "Alagalla",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1033,
+        "wikipedia": null,
+        "wikidata": "Q27442690"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.053009,
+          6.9735744
+        ]
+      },
+      "properties": {
+        "id": 7699947520,
+        "name": "Eladaluwa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 1010,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.515902,
+          6.6137636
+        ]
+      },
+      "properties": {
+        "id": 4893731244,
+        "name": "Kiribathgala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 948,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.473736,
+          6.6393499
+        ]
+      },
+      "properties": {
+        "id": 4893728790,
+        "name": "Singappulikanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 845,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.434277,
+          7.1895698
+        ]
+      },
+      "properties": {
+        "id": 2361172725,
+        "name": "Bible Rock",
+        "name_si": "බතලේගල",
+        "name_ta": null,
+        "ele": 798,
+        "wikipedia": "en:Bible Rock",
+        "wikidata": "Q4868555"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6235568,
+          6.2197856
+        ]
+      },
+      "properties": {
+        "id": 7603239868,
+        "name": "Rammale Mountain",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 772,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6568395,
+          8.1090191
+        ]
+      },
+      "properties": {
+        "id": 3723116036,
+        "name": "Ritigala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 766,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4945224,
+          6.5281673
+        ]
+      },
+      "properties": {
+        "id": 5097274483,
+        "name": "Iharakanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 752,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6385301,
+          7.698132
+        ]
+      },
+      "properties": {
+        "id": 10875211542,
+        "name": "Arangala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 739,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4271476,
+          6.4241104
+        ]
+      },
+      "properties": {
+        "id": 2711676241,
+        "name": "Mulawella",
+        "name_si": "මුලාවැල්ල",
+        "name_ta": null,
+        "ele": 735,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4089888,
+          6.330639
+        ]
+      },
+      "properties": {
+        "id": 3563707810,
+        "name": "Mountain Peak Kalubovitiyana",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 710,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.559935,
+          7.3027793
+        ]
+      },
+      "properties": {
+        "id": 9538621894,
+        "name": "Nelligala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 700,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.2621833,
+          6.6650654
+        ]
+      },
+      "properties": {
+        "id": 14144586892,
+        "name": "Kukulagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 650,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6444121,
+          7.2986617
+        ]
+      },
+      "properties": {
+        "id": 3416295417,
+        "name": "Kodimale Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 635,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.560158,
+          6.6943503
+        ]
+      },
+      "properties": {
+        "id": 6649375258,
+        "name": "Kondagala",
+        "name_si": "කොණ්ඩගල",
+        "name_ta": null,
+        "ele": 620,
+        "wikipedia": null,
+        "wikidata": "Q27447545"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6094199,
+          7.2775911
+        ]
+      },
+      "properties": {
+        "id": 5207901180,
+        "name": "Primrose Hill",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 615,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4096758,
+          7.611748
+        ]
+      },
+      "properties": {
+        "id": 8506615203,
+        "name": "Dolukanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 614,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6275001,
+          7.3005905
+        ]
+      },
+      "properties": {
+        "id": 5207901183,
+        "name": "Asgiriya",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 608,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7252304,
+          6.6426147
+        ]
+      },
+      "properties": {
+        "id": 4842093580,
+        "name": "Lankabarana Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 585,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.5463087,
+          7.0353252
+        ]
+      },
+      "properties": {
+        "id": 4069023256,
+        "name": "Govinda Hela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 558,
+        "wikipedia": null,
+        "wikidata": "Q27439002"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3703193,
+          7.1749998
+        ]
+      },
+      "properties": {
+        "id": 10291933258,
+        "name": "Nilgala Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 525,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4143685,
+          7.1718745
+        ]
+      },
+      "properties": {
+        "id": 12461575820,
+        "name": "Endagala Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 525,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3478376,
+          6.9021996
+        ]
+      },
+      "properties": {
+        "id": 7845821147,
+        "name": "Monaragala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 485,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4579961,
+          7.4819458
+        ]
+      },
+      "properties": {
+        "id": 11948798371,
+        "name": "Maha Seethala Wanniya",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 470,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4218574,
+          7.4112143
+        ]
+      },
+      "properties": {
+        "id": 11948784604,
+        "name": "Yaka Netu Hela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 460,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4424862,
+          7.4672253
+        ]
+      },
+      "properties": {
+        "id": 11948798372,
+        "name": "Kuda Seethala Wanniya",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 460,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.3219891,
+          7.5834598
+        ]
+      },
+      "properties": {
+        "id": 8506615204,
+        "name": "Yakdessagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 445,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4191601,
+          7.2619944
+        ]
+      },
+      "properties": {
+        "id": 5640135447,
+        "name": "Uthuwankanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 430,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.546565,
+          6.6660142
+        ]
+      },
+      "properties": {
+        "id": 4894242478,
+        "name": "Thoppikanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 413,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.2432033,
+          6.9534372
+        ]
+      },
+      "properties": {
+        "id": 3731288114,
+        "name": "Belum Gala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 400,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.3473243,
+          7.2789202
+        ]
+      },
+      "properties": {
+        "id": 6725522397,
+        "name": "Managala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 395,
+        "wikipedia": null,
+        "wikidata": "Q27442068"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.638915,
+          8.1654349
+        ]
+      },
+      "properties": {
+        "id": 8103531302,
+        "name": "Labunoruwa Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 390,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4065997,
+          7.4654996
+        ]
+      },
+      "properties": {
+        "id": 11948671320,
+        "name": "Gorikana Mountain",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 390,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7599301,
+          7.9566634
+        ]
+      },
+      "properties": {
+        "id": 4366143463,
+        "name": "Sigiriya",
+        "name_si": "සීගිරිය",
+        "name_ta": "சிகிரியா",
+        "ele": 363,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.1042285,
+          7.3937485
+        ]
+      },
+      "properties": {
+        "id": 6594880247,
+        "name": "Mawaralagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 363,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.491164,
+          7.0454634
+        ]
+      },
+      "properties": {
+        "id": 7833005447,
+        "name": "Buddama Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 352,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7616977,
+          7.9662102
+        ]
+      },
+      "properties": {
+        "id": 4366143462,
+        "name": "Pidurangala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 340,
+        "wikipedia": null,
+        "wikidata": "Q65949703"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5126963,
+          8.347538
+        ]
+      },
+      "properties": {
+        "id": 6953341663,
+        "name": "Eth Vehara",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 311,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.3334002,
+          7.2921762
+        ]
+      },
+      "properties": {
+        "id": 6725509450,
+        "name": "Narangala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 295,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.1962793,
+          6.6017738
+        ]
+      },
+      "properties": {
+        "id": 5222833082,
+        "name": "Thunkadulla",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 285,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4104483,
+          7.8102812
+        ]
+      },
+      "properties": {
+        "id": 5051770552,
+        "name": "Kalugala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 254,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7420526,
+          7.9433198
+        ]
+      },
+      "properties": {
+        "id": 5138765254,
+        "name": "Duwannagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 254,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5182896,
+          8.3510324
+        ]
+      },
+      "properties": {
+        "id": 1402637230,
+        "name": "Aradhana Gala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 250,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6495029,
+          8.0142419
+        ]
+      },
+      "properties": {
+        "id": 7309598495,
+        "name": "Rathmalkanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 250,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3637486,
+          7.1839792
+        ]
+      },
+      "properties": {
+        "id": 10291933259,
+        "name": "Bulupitihela Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 230,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.166048,
+          6.6910347
+        ]
+      },
+      "properties": {
+        "id": 4897351184,
+        "name": "Horakagoda Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 185,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.445833,
+          7.6419785
+        ]
+      },
+      "properties": {
+        "id": 11398900082,
+        "name": "Kiththul Malai Hill",
+        "name_si": null,
+        "name_ta": null,
+        "ele": 99,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.2568826,
+          7.5807185
+        ]
+      },
+      "properties": {
+        "id": 3082166507,
+        "name": "Thimmagama Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7059334,
+          6.0115949
+        ]
+      },
+      "properties": {
+        "id": 3960769281,
+        "name": "Wawulgala Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.388639,
+          6.8685474
+        ]
+      },
+      "properties": {
+        "id": 4071230266,
+        "name": "Maragala Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5884005,
+          7.4897604
+        ]
+      },
+      "properties": {
+        "id": 4484914414,
+        "name": "Brandigala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.7044592,
+          7.3314198
+        ]
+      },
+      "properties": {
+        "id": 4847095849,
+        "name": "Buddangala Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6879617,
+          6.8891307
+        ]
+      },
+      "properties": {
+        "id": 4855581087,
+        "name": "Agra Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8254933,
+          6.9390795
+        ]
+      },
+      "properties": {
+        "id": 4885454559,
+        "name": "Ahumulu Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7868481,
+          6.9481641
+        ]
+      },
+      "properties": {
+        "id": 4885454565,
+        "name": "Textile Hill",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8341944,
+          6.9488031
+        ]
+      },
+      "properties": {
+        "id": 4887500215,
+        "name": "Galaedanda Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8462214,
+          6.9536914
+        ]
+      },
+      "properties": {
+        "id": 4887500217,
+        "name": "Rahugala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8437753,
+          6.9752464
+        ]
+      },
+      "properties": {
+        "id": 4887500218,
+        "name": "Welibissa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.8978057,
+          6.9645329
+        ]
+      },
+      "properties": {
+        "id": 4887501802,
+        "name": "Dabaragala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.90729,
+          6.9657683
+        ]
+      },
+      "properties": {
+        "id": 4887501803,
+        "name": "Sthreepura",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5903815,
+          6.6661422
+        ]
+      },
+      "properties": {
+        "id": 4894241542,
+        "name": "Kuttapitiya Mountain",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.1591815,
+          6.7209551
+        ]
+      },
+      "properties": {
+        "id": 4897351185,
+        "name": "Thunkumahela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.0031307,
+          6.2472328
+        ]
+      },
+      "properties": {
+        "id": 4902498408,
+        "name": "Madunagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6299495,
+          8.0558728
+        ]
+      },
+      "properties": {
+        "id": 4904911266,
+        "name": "Kinihiri Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q27441922"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5787515,
+          8.5994376
+        ]
+      },
+      "properties": {
+        "id": 4910608815,
+        "name": "Wedda Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5905103,
+          8.6401285
+        ]
+      },
+      "properties": {
+        "id": 4910609507,
+        "name": "Etha Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5780327,
+          8.0898648
+        ]
+      },
+      "properties": {
+        "id": 4914548543,
+        "name": "Thoniyagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5351496,
+          8.0277741
+        ]
+      },
+      "properties": {
+        "id": 4914548549,
+        "name": "Dahaiya Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3193202,
+          6.7329099
+        ]
+      },
+      "properties": {
+        "id": 4920389454,
+        "name": "Ulgala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q27440893"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7114565,
+          6.4338975
+        ]
+      },
+      "properties": {
+        "id": 5022014677,
+        "name": "Wadakahadeniya",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.659368,
+          6.4547186
+        ]
+      },
+      "properties": {
+        "id": 5022990539,
+        "name": "Palamcotta Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q27457457"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6422877,
+          6.4611577
+        ]
+      },
+      "properties": {
+        "id": 5022990540,
+        "name": "Kurulugala Peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q27447422"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5503844,
+          6.4142485
+        ]
+      },
+      "properties": {
+        "id": 5023011413,
+        "name": "Kudagoda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5679797,
+          6.4140779
+        ]
+      },
+      "properties": {
+        "id": 5023011415,
+        "name": "Ilumbakanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6984853,
+          6.3806844
+        ]
+      },
+      "properties": {
+        "id": 5023915628,
+        "name": "Kella",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q27457451"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6735623,
+          6.3824117
+        ]
+      },
+      "properties": {
+        "id": 5023915642,
+        "name": "Naigala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q27447395"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.2607489,
+          6.13776
+        ]
+      },
+      "properties": {
+        "id": 5029001845,
+        "name": "Dolaaramba",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.2867985,
+          6.217311
+        ]
+      },
+      "properties": {
+        "id": 5030579588,
+        "name": "Ethumale",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.6212169,
+          7.4890231
+        ]
+      },
+      "properties": {
+        "id": 5050277582,
+        "name": "Rajagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6570774,
+          6.7271083
+        ]
+      },
+      "properties": {
+        "id": 5091549515,
+        "name": "Boltumbe",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6506696,
+          6.722167
+        ]
+      },
+      "properties": {
+        "id": 5091552749,
+        "name": "Walaboda Pathana",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6184697,
+          6.726794
+        ]
+      },
+      "properties": {
+        "id": 5091553269,
+        "name": "Punchuwaththa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7439194,
+          7.9286984
+        ]
+      },
+      "properties": {
+        "id": 5138765253,
+        "name": "Siyabalagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5531941,
+          7.4434059
+        ]
+      },
+      "properties": {
+        "id": 5160510740,
+        "name": "Kuda gala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.9312206,
+          6.9559599
+        ]
+      },
+      "properties": {
+        "id": 5216043955,
+        "name": "Manawela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5295062,
+          6.9122827
+        ]
+      },
+      "properties": {
+        "id": 5253572522,
+        "name": "Norton",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5225324,
+          6.9269807
+        ]
+      },
+      "properties": {
+        "id": 5253572525,
+        "name": "Benachie",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5213737,
+          6.9543304
+        ]
+      },
+      "properties": {
+        "id": 5253572534,
+        "name": "Trafalgar",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5473402,
+          7.1610736
+        ]
+      },
+      "properties": {
+        "id": 5299675266,
+        "name": "Ambuluwaawa",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q94690256"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.2098217,
+          7.679531
+        ]
+      },
+      "properties": {
+        "id": 5461290276,
+        "name": "Danigala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6447982,
+          6.8872739
+        ]
+      },
+      "properties": {
+        "id": 6575355281,
+        "name": "Dell Hill",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6526518,
+          6.8675257
+        ]
+      },
+      "properties": {
+        "id": 6575355282,
+        "name": "Preston Hill",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": "Q27447036"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4976201,
+          6.8866561
+        ]
+      },
+      "properties": {
+        "id": 6592862731,
+        "name": "Saptha Kanya 6",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4929691,
+          6.8913533
+        ]
+      },
+      "properties": {
+        "id": 6592862735,
+        "name": "Saptha Kanya 4",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4922074,
+          6.892051
+        ]
+      },
+      "properties": {
+        "id": 6592862736,
+        "name": "Saptha Kanya 3",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.4575694,
+          7.307591
+        ]
+      },
+      "properties": {
+        "id": 7637465387,
+        "name": "Ingurugala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.2190616,
+          6.4488078
+        ]
+      },
+      "properties": {
+        "id": 8857318341,
+        "name": "Amundara Udaha",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7598155,
+          7.286341
+        ]
+      },
+      "properties": {
+        "id": 9171155661,
+        "name": "Pettigala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.3845269,
+          7.9295561
+        ]
+      },
+      "properties": {
+        "id": 9424873197,
+        "name": "Galgiriya Mountain",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7376843,
+          6.1193885
+        ]
+      },
+      "properties": {
+        "id": 9691327800,
+        "name": "walakadahena peak",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.7907279,
+          6.7110142
+        ]
+      },
+      "properties": {
+        "id": 10688755176,
+        "name": "Balumgala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.8241626,
+          6.8098391
+        ]
+      },
+      "properties": {
+        "id": 10904565869,
+        "name": "Elephant Rock",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.536128,
+          7.2200248
+        ]
+      },
+      "properties": {
+        "id": 11143148230,
+        "name": "Inginiyagala Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.5342755,
+          7.2985214
+        ]
+      },
+      "properties": {
+        "id": 11948846570,
+        "name": "Moragala Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.5011417,
+          7.3186717
+        ]
+      },
+      "properties": {
+        "id": 11948846603,
+        "name": "Namal Oya Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3700573,
+          7.1985107
+        ]
+      },
+      "properties": {
+        "id": 12461575821,
+        "name": "Kahataththahela Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3313249,
+          7.2046031
+        ]
+      },
+      "properties": {
+        "id": 12461575822,
+        "name": "Yakunnehela Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.5390741,
+          7.1446253
+        ]
+      },
+      "properties": {
+        "id": 12466778081,
+        "name": "Walasgala Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.5618397,
+          7.1856401
+        ]
+      },
+      "properties": {
+        "id": 12466778082,
+        "name": "Pallanhela Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.5178793,
+          7.0999131
+        ]
+      },
+      "properties": {
+        "id": 12466878897,
+        "name": "Wadinagala Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3964992,
+          7.1168958
+        ]
+      },
+      "properties": {
+        "id": 12467454676,
+        "name": "Guruhela Summit",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3866045,
+          7.0964118
+        ]
+      },
+      "properties": {
+        "id": 12467454969,
+        "name": "Kadirampila",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3254149,
+          7.1452915
+        ]
+      },
+      "properties": {
+        "id": 12467455158,
+        "name": "Kirikekumangoda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.453179,
+          7.1865092
+        ]
+      },
+      "properties": {
+        "id": 12467463220,
+        "name": "Dorapuruwagoda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4292095,
+          7.1469148
+        ]
+      },
+      "properties": {
+        "id": 12467463223,
+        "name": "Medahelawala Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3795243,
+          7.2517975
+        ]
+      },
+      "properties": {
+        "id": 12467643193,
+        "name": "Danigala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4069767,
+          7.2641165
+        ]
+      },
+      "properties": {
+        "id": 12467643194,
+        "name": "Udaperuwahela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4334924,
+          7.2823174
+        ]
+      },
+      "properties": {
+        "id": 12467678588,
+        "name": "Ambaththehela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4205136,
+          7.3083985
+        ]
+      },
+      "properties": {
+        "id": 12467678591,
+        "name": "Kulaletagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4380364,
+          7.3370315
+        ]
+      },
+      "properties": {
+        "id": 12467678593,
+        "name": "Degalwalagoda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.479442,
+          7.3468839
+        ]
+      },
+      "properties": {
+        "id": 12467678596,
+        "name": "Mahabaliaula",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4758811,
+          7.3481053
+        ]
+      },
+      "properties": {
+        "id": 12467678597,
+        "name": "Weerawinnahela",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4822368,
+          7.3500762
+        ]
+      },
+      "properties": {
+        "id": 12467678598,
+        "name": "Ballawala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4736557,
+          7.3546479
+        ]
+      },
+      "properties": {
+        "id": 12467678599,
+        "name": "Wawinnegoda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.4917755,
+          7.3455601
+        ]
+      },
+      "properties": {
+        "id": 12467678600,
+        "name": "Ritagala",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3359285,
+          6.3868474
+        ]
+      },
+      "properties": {
+        "id": 13045397092,
+        "name": "Wedasitikanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3415647,
+          6.3879743
+        ]
+      },
+      "properties": {
+        "id": 13045397093,
+        "name": "Vallikanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5185503,
+          8.3284962
+        ]
+      },
+      "properties": {
+        "id": 13613017701,
+        "name": "Katupotha Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5168306,
+          8.2703415
+        ]
+      },
+      "properties": {
+        "id": 13613017801,
+        "name": "Gatalagama Kanda",
+        "name_si": null,
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.3691558,
+          7.644489
+        ]
+      },
+      "properties": {
+        "id": 13937613479,
+        "name": "Thuduvila",
+        "name_si": "තුදුවිල",
+        "name_ta": null,
+        "ele": null,
+        "wikipedia": null,
+        "wikidata": null
+      }
+    }
+  ]
+}

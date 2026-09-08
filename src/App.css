@@ -1,0 +1,279 @@
+.app {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Shared "floating glass card" look for every overlay panel */
+.app__header,
+.app__panel,
+.peak-card,
+.attribution {
+  background: rgba(22, 28, 24, 0.82);
+  backdrop-filter: blur(6px);
+  color: #f2efe9;
+  border-radius: 10px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.app__header {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  max-width: min(340px, calc(100vw - 32px));
+  padding: 14px 18px;
+  pointer-events: none;
+}
+
+.app__header h1 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.app__header p {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.85;
+  line-height: 1.35;
+}
+
+.app__panel {
+  position: absolute;
+  padding: 12px 16px;
+}
+
+.app__panel--exaggeration {
+  bottom: 16px;
+  left: 16px;
+  width: min(320px, calc(100vw - 32px));
+}
+
+.app__panel--legend {
+  top: 16px;
+  right: 16px;
+}
+
+.app__panel--peak {
+  top: 16px;
+  right: 16px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  width: min(300px, calc(100vw - 32px));
+}
+
+/* --- Exaggeration slider --- */
+.exaggeration label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.exaggeration__true {
+  color: #9fd6a0;
+}
+
+.exaggeration input[type='range'] {
+  width: 100%;
+  accent-color: #b8895a;
+}
+
+.exaggeration__hint {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  opacity: 0.75;
+}
+
+/* --- Legend --- */
+.legend__ramp {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.legend__stop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+}
+
+.legend__swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* --- Peak card --- */
+.peak-card {
+  position: relative;
+  padding: 16px 18px;
+}
+
+.peak-card__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #f2efe9;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.peak-card__close:hover {
+  opacity: 1;
+}
+
+.peak-card__name {
+  margin: 0 22px 2px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.peak-card__local-names {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.peak-card__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 4px;
+  margin: 0 0 14px;
+  font-size: 0.82rem;
+}
+
+.peak-card__facts dt {
+  opacity: 0.65;
+}
+
+.peak-card__facts dd {
+  margin: 0;
+}
+
+.peak-card__est {
+  opacity: 0.6;
+  font-size: 0.72rem;
+}
+
+.peak-card__actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.peak-card__fly {
+  background: #b8895a;
+  color: #1a1410;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.peak-card__fly:hover {
+  background: #c99a6c;
+}
+
+.peak-card__wiki {
+  color: #f2efe9;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  text-decoration: none;
+}
+
+.peak-card__wiki:hover {
+  text-decoration: underline;
+}
+
+/* --- Attribution --- */
+.attribution {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  max-width: min(320px, calc(100vw - 32px));
+  font-size: 0.72rem;
+}
+
+.attribution__toggle {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #f2efe9;
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.attribution__body {
+  padding: 0 12px 10px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.attribution__body p {
+  margin: 0 0 6px;
+}
+
+.attribution__body a {
+  color: #b8d6e8;
+}
+
+/* --- Small screens --- */
+@media (max-width: 640px) {
+  .app__header {
+    max-width: calc(100vw - 24px);
+    padding: 10px 14px;
+  }
+
+  .app__header p {
+    display: none;
+  }
+
+  .app__panel--legend {
+    display: none;
+  }
+
+  .app__panel--exaggeration {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: 12px;
+  }
+
+  .app__panel--peak {
+    top: auto;
+    bottom: 90px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+
+  /* Legend is hidden on mobile, but top-right is still MapLibre's own
+     NavigationControl (zoom/compass buttons), and the bottom row is already
+     full-width for the exaggeration slider — so attribution tucks in just
+     under the header on the left instead of fighting either for space. */
+  .attribution {
+    top: 96px;
+    bottom: auto;
+    right: auto;
+    left: 12px;
+    max-width: min(200px, calc(100vw - 24px));
+  }
+}

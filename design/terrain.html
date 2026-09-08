@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Sri Lanka relief render</title>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<style>
+  html,body{margin:0;background:#bfe2ea;overflow:hidden}
+  #c{position:fixed;inset:0}
+  canvas{display:block;width:100vw;height:100vh}
+</style>
+</head>
+<body>
+<div id="c"></div>
+<script type="module">
+import * as THREE from 'three';
+
+const Q = new URLSearchParams(location.search);
+const num = (k, d) => Q.has(k) ? parseFloat(Q.get(k)) : d;
+
+// view window in degrees (default: whole island)
+const VIEWWIN = {
+  island:    [79.45, 5.75, 82.10, 10.05],
+  highlands: [80.30, 6.55, 81.35, 7.65],
+  central:   [80.45, 6.65, 81.15, 7.35],
+  sripada:   [80.32, 6.66, 80.72, 7.02],
+  horton:    [80.66, 6.68, 80.98, 6.98],
+  knuckles:  [80.62, 7.28, 80.98, 7.66],
+  ella:      [80.90, 6.74, 81.22, 7.02]
+};
+const winName = Q.get('win') || 'island';
+let [lo0, la0, lo1, la1] = (Q.get('box') || '').split(',').length === 4
+  ? Q.get('box').split(',').map(Number) : VIEWWIN[winName];
+const spanLo = lo1 - lo0, spanLa = la1 - la0;
+const N = num('n', spanLo > 2 ? 900 : 700);
+
+// ---------- noise ----------
+function hash(x, y) { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123; return n - Math.floor(n); }
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+}
+function fbm(x, y, oct) { let s = 0, a = 0.5, f = 1; for (let i = 0; i < oct; i++) { s += a * vnoise(x * f, y * f); a *= 0.5; f *= 2.07; } return s; }
+function ridged(x, y, oct) {
+  let s = 0, a = 0.5, f = 1;
+  for (let i = 0; i < oct; i++) { const n = 1 - Math.abs(vnoise(x * f, y * f) * 2 - 1); s += a * n * n; a *= 0.5; f *= 2.11; }
+  return s;
+}
+
+// ---------- real peaks / massifs ----------
+const PEAKS = [
+  { n: 'Pidurutalagala', la: 7.0000, lo: 80.7667, h: 2524, r: 0.20 },
+  { n: 'Kirigalpotta',   la: 6.8017, lo: 80.7853, h: 2395, r: 0.13 },
+  { n: 'Totapola',       la: 6.8267, lo: 80.8067, h: 2357, r: 0.12 },
+  { n: 'Sri Pada',       la: 6.8096, lo: 80.4994, h: 2243, r: 0.11 },
+  { n: 'Great Western',  la: 6.9333, lo: 80.6333, h: 2214, r: 0.12 },
+  { n: 'Hakgala',        la: 6.9167, lo: 80.8167, h: 2160, r: 0.12 },
+  { n: 'Horton Plains',  la: 6.8100, lo: 80.8300, h: 2050, r: 0.20 },
+  { n: 'Namunukula',     la: 6.8667, lo: 81.1167, h: 2035, r: 0.13 },
+  { n: 'Gombaniya',      la: 7.4333, lo: 80.8000, h: 1906, r: 0.17 },
+  { n: 'Knuckles N',     la: 7.5200, lo: 80.7600, h: 1650, r: 0.13 },
+  { n: 'Lipton Seat',    la: 6.7500, lo: 80.9500, h: 1450, r: 0.12 },
+  { n: 'Gongala',        la: 6.4000, lo: 80.6300, h: 1358, r: 0.18 },
+  { n: 'Hanthana',       la: 7.2400, lo: 80.6200, h: 1200, r: 0.12 },
+  { n: 'Riverston',      la: 7.5500, lo: 80.7200, h: 1100, r: 0.12 },
+  { n: 'Ella Rock',      la: 6.8500, lo: 81.0400, h: 1250, r: 0.09 },
+  { n: 'Bible Rock',     la: 7.3000, lo: 80.5500, h: 900,  r: 0.07 },
+  { n: 'Dolosbage',      la: 7.0500, lo: 80.4500, h: 1300, r: 0.14 },
+  { n: 'Rakwana',        la: 6.5500, lo: 80.5500, h: 1150, r: 0.16 },
+  { n: 'Ritigala',       la: 8.1167, lo: 80.6500, h: 766,  r: 0.06 },
+  { n: 'Central mass',   la: 7.0500, lo: 80.7000, h: 1250, r: 0.55 },
+  { n: 'S foothills',    la: 6.6000, lo: 80.7500, h: 600,  r: 0.35 },
+  { n: 'E foothills',    la: 7.2000, lo: 81.0500, h: 450,  r: 0.35 },
+  { n: 'W foothills',    la: 7.1000, lo: 80.3500, h: 350,  r: 0.35 },
+  { n: 'N plain',        la: 8.4000, lo: 80.5000, h: 130,  r: 1.20 }
+];
+
+// ---------- coastline (real geometry) ----------
+const topo = await (await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json')).json();
+const feats = topojson.feature(topo, topo.objects.countries).features;
+const lk = feats.find(f => f.properties.name === 'Sri Lanka');
+const geo = lk.geometry;
+const rings = (geo.type === 'Polygon' ? [geo.coordinates] : geo.coordinates).map(p => p[0]);
+rings.sort((a, b) => b.length - a.length);
+const main = rings.slice(0, 3);
+function inRing(lo, la, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+const onLand = (lo, la) => main.some(r => inRing(lo, la, r));
+
+// ---------- height field ----------
+const S = N + 1;
+const mask = new Float32Array(S * S);
+for (let j = 0; j < S; j++) {
+  const la = la0 + (j / N) * spanLa;
+  for (let i = 0; i < S; i++) mask[j * S + i] = onLand(lo0 + (i / N) * spanLo, la) ? 1 : 0;
+}
+function blur(src, passes) {
+  let a = src, b = new Float32Array(a.length);
+  for (let p = 0; p < passes; p++) {
+    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+      let s = 0, c = 0;
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+        const jj = j + dj, ii = i + di;
+        if (jj < 0 || ii < 0 || jj >= S || ii >= S) continue;
+        s += a[jj * S + ii]; c++;
+      }
+      b[j * S + i] = s / c;
+    }
+    const t = a; a = b; b = t;
+  }
+  return a;
+}
+// coastal falloff width in degrees ~ constant, so scale passes with resolution
+const coastPasses = Math.max(4, Math.round(0.055 / (spanLo / N)));
+const soft = blur(mask.slice(), coastPasses);
+
+const MAXH = 2600;
+function elevAt(lo, la) {
+  let mx = 0, sum = 0;
+  for (const p of PEAKS) {
+    const dx = (lo - p.lo) * Math.cos(la * Math.PI / 180), dy = la - p.la;
+    const d = Math.sqrt(dx * dx + dy * dy) / p.r;
+    const g = p.h * Math.exp(-d * d);
+    if (g > mx) mx = g;
+    sum += g;
+  }
+  return Math.min(mx + Math.min(320, (sum - mx) * 0.10), MAXH);
+}
+
+const K = 17 / spanLo;                       // noise cycles scale with the window
+const raw = new Float32Array(S * S);
+for (let j = 0; j < S; j++) {
+  const la = la0 + (j / N) * spanLa;
+  for (let i = 0; i < S; i++) {
+    const lo = lo0 + (i / N) * spanLo;
+    const m = mask[j * S + i], sm = soft[j * S + i];
+    let e = elevAt(lo, la);
+    const nx = lo * K, ny = la * K;
+    const r1 = ridged(nx, ny, 4) * 2 - 0.7;
+    const r2 = fbm(nx * 3.0, ny * 3.0, 4) - 0.5;
+    const detail = Math.pow(Math.min(1, sm * 1.15), 2.2);
+    e = e * (1 + r1 * 0.17 * Math.min(1, e / 1900))
+        + (r2 * 65 * Math.min(1, e / 1000 + 0.45) + (ridged(nx * 2.0, ny * 2.0, 3) - 0.46) * 45) * detail;
+    e *= Math.pow(Math.min(1, sm * 1.25), 1.1);
+    if (m < 0.5 && sm < 0.30) e = -110;
+    raw[j * S + i] = Math.max(e, m > 0.5 ? 4 : -110);
+  }
+}
+const height = blur(raw, Math.max(1, Math.min(4, Math.round(N / 260))));
+
+// ---------- geometry ----------
+const UNIT = 3.0;
+const wX = spanLo * UNIT, wZ = spanLa * UNIT;
+const VS = Math.max(wX, wZ) * 0.0058 * num('vsx', 1); // 2600 m ~= 15% of window width
+const yOf = h => (h / 100) * VS;
+
+const geom = new THREE.PlaneGeometry(wX, wZ, N, N);
+geom.rotateX(-Math.PI / 2);
+const pos = geom.attributes.position;
+const colArr = new Float32Array(pos.count * 3);
+
+const ramp = [
+  [0.00, [0x5c, 0xb1, 0x7a]], [0.05, [0x67, 0xba, 0x78]], [0.14, [0x74, 0xc2, 0x76]],
+  [0.28, [0x83, 0xc9, 0x70]], [0.44, [0x9a, 0xd1, 0x70]], [0.62, [0xb6, 0xd9, 0x79]],
+  [0.80, [0xcd, 0xdd, 0x8c]], [0.92, [0xe8, 0xea, 0xc2]], [1.00, [0xf9, 0xf8, 0xef]]
+];
+function rampColor(t) {
+  for (let i = 1; i < ramp.length; i++) {
+    if (t <= ramp[i][0]) {
+      const [t0, c0] = ramp[i - 1], [t1, c1] = ramp[i], f = (t - t0) / (t1 - t0);
+      return [0, 1, 2].map(k => (c0[k] + (c1[k] - c0[k]) * f) / 255);
+    }
+  }
+  return ramp[ramp.length - 1][1].map(v => v / 255);
+}
+const tmpCol = new THREE.Color();
+const hAt = (i, j) => height[Math.min(S - 1, Math.max(0, j)) * S + Math.min(S - 1, Math.max(0, i))];
+for (let j = 0; j < S; j++) {
+  for (let i = 0; i < S; i++) {
+    const idx = j * S + i;
+    const h = hAt(i, N - j);                  // geometry row 0 is north
+    pos.setY(idx, yOf(h));
+    const hx = hAt(i + 1, N - j) - hAt(i - 1, N - j), hz = hAt(i, N - j + 1) - hAt(i, N - j - 1);
+    const slope = Math.min(1, Math.sqrt(hx * hx + hz * hz) / 260);
+    let c = rampColor(Math.pow(Math.max(0, h) / MAXH, num('ramp', 2.0)));
+    const jit = 0.95 + fbm(lo0 * 0 + (lo0 + i / N * spanLo) * 26, (la0 + j / N * spanLa) * 26, 2) * 0.17;
+    c = c.map((v, k) => v * jit * (1 - slope * (k === 1 ? 0.10 : 0.18)));
+    if (h < 2) c = [0.18, 0.40, 0.39];
+    tmpCol.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);   // vertex colours must be linear
+    colArr[idx * 3] = tmpCol.r; colArr[idx * 3 + 1] = tmpCol.g; colArr[idx * 3 + 2] = tmpCol.b;
+  }
+}
+geom.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
+geom.computeVertexNormals();
+
+const terrain = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 }));
+terrain.name = 'terrain';
+terrain.castShadow = terrain.receiveShadow = true;
+
+const sea = new THREE.Mesh(new THREE.PlaneGeometry(wX * 8, wZ * 8),
+  new THREE.MeshBasicMaterial({ color: 0x9fd8e8 }));
+sea.rotation.x = -Math.PI / 2; sea.position.y = 0.02;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xc6e5ec);
+if (spanLo < 2) scene.fog = new THREE.Fog(0xc6e5ec, Math.max(wX, wZ) * (spanLo > 2 ? 1.7 : 0.55), Math.max(wX, wZ) * (spanLo > 2 ? 4.5 : 1.7));
+scene.add(terrain, sea);
+
+scene.add(new THREE.HemisphereLight(0xe8f6ff, 0x2f5540, 0.6));
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.6);
+sun.position.set(-wX * 0.7, wX * 2.2, wZ * 0.75);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+const sr = Math.max(wX, wZ, yOf(2600) * 2.4) * 0.95;
+Object.assign(sun.shadow.camera, { left: -sr, right: sr, top: sr, bottom: -sr, near: 0.1, far: sr * 8 });
+sun.shadow.bias = -0.0006;
+const fill = new THREE.DirectionalLight(0xbfe0ff, 0.32);
+fill.position.set(wX, wX * 0.5, -wZ);
+scene.add(sun, fill);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMappingExposure = num('exp', 1.05);
+document.getElementById('c').appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(num('fov', 30), innerWidth / innerHeight, 0.05, 400);
+
+function toWorld(lo, la, lift = 0) {
+  const x = ((lo - lo0) / spanLo - 0.5) * wX;
+  const z = -((la - la0) / spanLa - 0.5) * wZ;
+  const gi = Math.round((lo - lo0) / spanLo * N), gj = Math.round((la - la0) / spanLa * N);
+  return new THREE.Vector3(x, Math.max(0.02, yOf(hAt(gi, gj))) + lift, z);
+}
+
+// ---------- rivers ----------
+const scaleRef = Math.max(wX, wZ, yOf(2600) * 2.4);
+const RIVERS = [
+  [[7.05,80.72],[7.25,80.75],[7.45,80.83],[7.70,81.00],[7.95,81.15],[8.15,81.30],[8.40,81.35],[8.46,81.24]],
+  [[6.95,80.55],[6.97,80.35],[6.94,80.15],[6.96,79.95],[6.98,79.87]],
+  [[6.55,80.80],[6.35,80.75],[6.20,80.70],[6.12,80.78],[6.10,80.85]],
+  [[7.60,80.60],[7.85,80.45],[8.05,80.35],[8.20,80.20]],
+  [[6.90,80.90],[6.98,81.05],[7.05,81.20],[7.10,81.40]]
+];
+const riverGroup = new THREE.Group();
+const riverMat = new THREE.MeshStandardMaterial({ color: 0x93cde0, roughness: 0.28, emissive: 0x0b2531 });
+RIVERS.forEach(r => {
+  const pts = r.map(([la, lo]) => toWorld(lo, la, scaleRef * 0.0016));
+  riverGroup.add(new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 300, scaleRef * 0.0022, 6, false), riverMat));
+});
+if (spanLo > 2 || Q.get('rivers') === '1') scene.add(riverGroup);
+
+// ---------- trails ----------
+const TRAILS = {
+  sripada:      [[6.8480,80.5170],[6.8400,80.5130],[6.8320,80.5080],[6.8230,80.5030],[6.8140,80.5005],[6.8096,80.4994]],
+  hortons:      [[6.8030,80.7930],[6.7930,80.8000],[6.7880,80.8140],[6.7960,80.8260],[6.8080,80.8300],[6.8130,80.8180],[6.8060,80.8060],[6.8030,80.7930]],
+  knuckles:     [[7.4700,80.7400],[7.4620,80.7560],[7.4520,80.7720],[7.4420,80.7880],[7.4333,80.8000]],
+  ella:         [[6.8730,81.0530],[6.8670,81.0490],[6.8600,81.0450],[6.8540,81.0420],[6.8500,81.0400]],
+  kirigalpotta: [[6.8080,80.8250],[6.8070,80.8140],[6.8040,80.8020],[6.8020,80.7930],[6.8017,80.7853]],
+  riverston:    [[7.5760,80.7020],[7.5690,80.7080],[7.5600,80.7150],[7.5550,80.7200]]
+};
+const trailGroup = new THREE.Group();
+const trailMat = new THREE.MeshStandardMaterial({ color: 0xff5c46, roughness: 0.45, emissive: 0x481008 });
+const dotMat = new THREE.MeshStandardMaterial({ color: 0xf9422a, roughness: 0.35, emissive: 0x5c1207 });
+const TS = num('ts', 1);
+const tubeR = scaleRef * 0.0055 * TS, dotR = scaleRef * 0.0055 * TS * 2.1;
+function surfacePath(ll, samples) {
+  const base = new THREE.CatmullRomCurve3(ll.map(([la, lo]) => new THREE.Vector3(lo, 0, la)));
+  const out = [];
+  for (let i = 0; i <= samples; i++) {
+    const p = base.getPoint(i / samples);
+    out.push(toWorld(p.x, p.z, tubeR * 1.1));
+  }
+  return out;
+}
+for (const k in TRAILS) {
+  const pts = surfacePath(TRAILS[k], 140);
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const t = new THREE.Mesh(new THREE.TubeGeometry(curve, 320, tubeR, 8, false), trailMat);
+  t.castShadow = true;
+  trailGroup.add(t);
+  [pts[0], pts[pts.length - 1]].forEach(p => {
+    const d = new THREE.Mesh(new THREE.SphereGeometry(dotR, 24, 18), dotMat);
+    d.position.copy(p); d.position.y += dotR * 0.5; d.castShadow = true;
+    trailGroup.add(d);
+  });
+}
+scene.add(trailGroup);
+
+// ---------- forest stipple (zoomed views only) ----------
+if (spanLo < 1.6) {
+  const count = 4200;
+  const cone = new THREE.ConeGeometry(scaleRef * 0.0020, scaleRef * 0.0062, 6);
+  const trees = new THREE.InstancedMesh(cone,
+    new THREE.MeshStandardMaterial({ color: 0x2a6b4c, roughness: 0.9 }), count);
+  const m = new THREE.Matrix4();
+  let placed = 0, guard = 0;
+  while (placed < count && guard++ < count * 40) {
+    const lo = lo0 + Math.random() * spanLo, la = la0 + Math.random() * spanLa;
+    const gi = Math.round((lo - lo0) / spanLo * N), gj = Math.round((la - la0) / spanLa * N);
+    const h = hAt(gi, gj);
+    if (h < 250 || h > 1700) continue;
+    if (Math.random() > fbm(lo * 9, la * 9, 3) * 1.4) continue;
+    const p = toWorld(lo, la, 0);
+    const s = 0.7 + Math.random() * 0.7;
+    m.makeScale(s, s, s); m.setPosition(p.x, p.y + scaleRef * 0.003 * s, p.z);
+    trees.setMatrixAt(placed++, m);
+  }
+  trees.count = placed;
+  trees.castShadow = true;
+  scene.add(trees);
+  window.trees = trees;
+}
+
+// ---------- camera ----------
+function frame() {
+  const pitch = num('pitch', spanLo > 2 ? 56 : 34) * Math.PI / 180;
+  const yaw = num('yaw', -12) * Math.PI / 180;
+  const dist = num('dist', spanLo > 2 ? 1.55 : 1.2) * scaleRef;
+  const tx = num('tx', 0), tz = num('tz', 0);
+  const t = new THREE.Vector3(tx * wX, num('ty', spanLo > 2 ? 0 : yOf(700)), tz * wZ);
+  camera.position.set(
+    t.x + dist * Math.cos(pitch) * Math.sin(yaw),
+    t.y + dist * Math.sin(pitch),
+    t.z + dist * Math.cos(pitch) * Math.cos(yaw)
+  );
+  camera.lookAt(t);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+  renderer.render(scene, camera);
+}
+addEventListener('resize', frame);
+window.orbit = (yawDeg, pitchDeg, distF) => {
+  Q.set('yaw', yawDeg); Q.set('pitch', pitchDeg); if (distF) Q.set('dist', distF); frame();
+};
+window.setBg = hex => { scene.background = new THREE.Color(hex); frame(); };
+window.showTrails = on => { trailGroup.visible = on; frame(); };
+window.showRivers = on => { riverGroup.visible = on; frame(); };
+frame();
+window.__ready = true;
+</script>
+</body>
+</html>

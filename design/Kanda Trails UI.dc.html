@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #e9ece3; font-family: 'Outfit', system-ui, sans-serif; }
+  a { color: #2f7d54; }
+  a:hover { color: #ff5c46; }
+</style>
+</helmet>
+
+<section style="display:flex;flex-direction:column;gap:56px;padding:56px;font-family:'Outfit',sans-serif">
+
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:34px;color:#0d251b;letter-spacing:-0.02em">KANDA — 3D trail map of Sri Lanka</div>
+    <div style="font-size:16px;color:#4a6a59">Screens 1a–1d · relief rendered from real coastline geometry and peak elevations · hand these to your build</div>
+  </div>
+
+  <!-- ============ 1a · DESKTOP EXPLORE ============ -->
+  <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.14em;color:#0d251b;background:#cfe3d3;border-radius:999px;padding:6px 14px">1A</div>
+      <div style="font-size:17px;font-weight:600;color:#0d251b">Explore — desktop 1440 × 900</div>
+    </div>
+
+    <div id="screen-1a" style="position:relative;width:1440px;height:900px;border-radius:26px;overflow:hidden;background:#a9dcea url('assets/map-region.png') center/cover no-repeat;box-shadow:0 30px 70px -30px rgba(13,37,27,0.45);font-family:'Outfit',sans-serif">
+
+      <!-- top bar -->
+      <div style="position:absolute;top:26px;left:26px;right:26px;display:flex;align-items:center;gap:16px">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.94);border-radius:18px;padding:12px 18px;box-shadow:0 12px 28px -14px rgba(13,37,27,0.5)">
+          <div style="width:34px;height:34px;border-radius:11px;background:#2f7d54;display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;color:#f7f5ec">K</div>
+          <div style="display:flex;flex-direction:column;line-height:1.05">
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;color:#0d251b;letter-spacing:-0.01em">KANDA</div>
+            <div style="font-size:11px;font-weight:500;color:#6b8779;letter-spacing:0.08em">HILL COUNTRY TRAILS</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.94);border-radius:16px;padding:12px 18px;min-width:320px;box-shadow:0 12px 28px -14px rgba(13,37,27,0.5)">
+          <div style="width:16px;height:16px;border-radius:50%;border:2.5px solid #6b8779"></div>
+          <div style="font-size:15px;color:#6b8779">Search peaks, trails, towns…</div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <div style="background:#0d251b;color:#f7f5ec;font-size:14px;font-weight:600;border-radius:999px;padding:11px 18px">All trails</div>
+          <div style="background:rgba(255,255,255,0.92);color:#0d251b;font-size:14px;font-weight:500;border-radius:999px;padding:11px 18px">Sunrise</div>
+          <div style="background:rgba(255,255,255,0.92);color:#0d251b;font-size:14px;font-weight:500;border-radius:999px;padding:11px 18px">Under 6 km</div>
+          <div style="background:rgba(255,255,255,0.92);color:#0d251b;font-size:14px;font-weight:500;border-radius:999px;padding:11px 18px">No permit</div>
+        </div>
+
+        <div style="margin-left:auto;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.94);border-radius:14px;padding:5px;box-shadow:0 12px 28px -14px rgba(13,37,27,0.5)">
+          <div style="background:#2f7d54;color:#f7f5ec;font-size:14px;font-weight:600;border-radius:10px;padding:9px 16px">3D relief</div>
+          <div style="color:#4a6a59;font-size:14px;font-weight:500;padding:9px 16px">Flat</div>
+        </div>
+      </div>
+
+      <!-- trail list -->
+      <div style="position:absolute;top:110px;left:26px;width:346px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 4px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:15px;color:#f7f5ec;text-shadow:0 2px 10px rgba(13,37,27,0.6);letter-spacing:0.04em">12 TRAILS IN VIEW</div>
+          <div style="font-size:13px;font-weight:600;color:#f7f5ec;text-shadow:0 2px 10px rgba(13,37,27,0.6)">Sort · Ascent</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.96);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 18px 40px -22px rgba(13,37,27,0.6);border:2px solid #ff5c46">
+          <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="width:64px;height:64px;border-radius:16px;flex:none;background:#e5f0e4 url('assets/map-trail.png') 40% 45%/240% no-repeat"></div>
+            <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;color:#0d251b;line-height:1.1">Sri Pada · Adam's Peak</div>
+              <div style="font-size:13px;color:#6b8779;font-weight:500">Nallathanniya trailhead · Ratnapura</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div style="background:#ffe7e2;color:#c1341f;font-size:12px;font-weight:700;border-radius:8px;padding:6px 10px;letter-spacing:0.04em">HARD</div>
+            <div style="background:#eef3ea;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px">5.5 km up</div>
+            <div style="background:#eef3ea;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px">+1,050 m</div>
+            <div style="background:#eef3ea;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px">3–4 h</div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:10px">
+            <svg viewBox="0 0 220 40" style="width:100%;height:40px" preserveAspectRatio="none"><polyline points="0,36 22,34 44,30 70,26 96,19 120,16 146,10 170,6 196,3 220,2" fill="none" stroke="#ff5c46" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline><polyline points="0,36 22,34 44,30 70,26 96,19 120,16 146,10 170,6 196,3 220,2 220,40 0,40" fill="rgba(255,92,70,0.13)" stroke="none"></polyline></svg>
+            <div style="font-size:12px;font-weight:700;color:#0d251b;flex:none">2,243 m</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.9);border-radius:20px;padding:14px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 14px 34px -22px rgba(13,37,27,0.55)">
+          <div style="width:52px;height:52px;border-radius:14px;flex:none;background:#e5f0e4 url('assets/map-region.png') 62% 40%/300% no-repeat"></div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">World's End Loop</div>
+            <div style="font-size:12.5px;color:#6b8779;font-weight:500">Horton Plains · 9.5 km loop · +200 m</div>
+          </div>
+          <div style="background:#e4f2e6;color:#22694a;font-size:12px;font-weight:700;border-radius:8px;padding:6px 10px;flex:none">EASY</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.9);border-radius:20px;padding:14px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 14px 34px -22px rgba(13,37,27,0.55)">
+          <div style="width:52px;height:52px;border-radius:14px;flex:none;background:#e5f0e4 url('assets/map-trail.png') 25% 30%/300% no-repeat"></div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Dothalugala Ridge</div>
+            <div style="font-size:12.5px;color:#6b8779;font-weight:500">Knuckles · 7 km return · +350 m</div>
+          </div>
+          <div style="background:#fdf0dc;color:#8a5a12;font-size:12px;font-weight:700;border-radius:8px;padding:6px 10px;flex:none">MODERATE</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.9);border-radius:20px;padding:14px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 14px 34px -22px rgba(13,37,27,0.55)">
+          <div style="width:52px;height:52px;border-radius:14px;flex:none;background:#e5f0e4 url('assets/map-region.png') 30% 60%/300% no-repeat"></div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Ella Rock</div>
+            <div style="font-size:12.5px;color:#6b8779;font-weight:500">Ella · 8 km return · +500 m</div>
+          </div>
+          <div style="background:#fdf0dc;color:#8a5a12;font-size:12px;font-weight:700;border-radius:8px;padding:6px 10px;flex:none">MODERATE</div>
+        </div>
+      </div>
+
+      <!-- map pins -->
+      <div style="position:absolute;top:206px;left:566px;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="background:#0d251b;color:#f7f5ec;border-radius:12px;padding:8px 13px;display:flex;flex-direction:column;line-height:1.15;box-shadow:0 10px 24px -12px rgba(13,37,27,0.8)">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:15px">Pidurutalagala</div>
+          <div style="font-size:12px;color:#9dc0ac;font-weight:600">2,524 m · highest point</div>
+        </div>
+        <div style="width:2px;height:26px;background:rgba(13,37,27,0.75)"></div>
+        <div style="width:14px;height:14px;border-radius:50%;background:#f7f5ec;border:4px solid #0d251b;margin-top:-6px"></div>
+      </div>
+
+      <div style="position:absolute;top:430px;left:872px;display:flex;align-items:center;gap:10px">
+        <div style="width:18px;height:18px;border-radius:50%;background:#ff5c46;border:4px solid #fff;box-shadow:0 6px 16px -4px rgba(13,37,27,0.7)"></div>
+        <div style="background:rgba(255,255,255,0.96);border-radius:12px;padding:9px 14px;display:flex;flex-direction:column;line-height:1.2;box-shadow:0 10px 24px -14px rgba(13,37,27,0.6)">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:15px;color:#0d251b">Kirigalpotta</div>
+          <div style="font-size:12px;color:#6b8779;font-weight:600">2,395 m · permit required</div>
+        </div>
+      </div>
+
+      <!-- selected route callout -->
+      <div style="position:absolute;top:592px;left:452px;width:302px;background:rgba(13,37,27,0.94);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 44px -20px rgba(13,37,27,0.9)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:10px;height:10px;border-radius:50%;background:#ff5c46"></div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;color:#f7f5ec">Route selected</div>
+          <div style="margin-left:auto;font-size:12px;font-weight:600;color:#9dc0ac">Sri Pada</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;background:rgba(247,245,236,0.1);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+            <div style="font-size:11px;color:#9dc0ac;font-weight:600;letter-spacing:0.06em">STEPS</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;color:#f7f5ec">5,200</div>
+          </div>
+          <div style="flex:1;background:rgba(247,245,236,0.1);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+            <div style="font-size:11px;color:#9dc0ac;font-weight:600;letter-spacing:0.06em">SUNRISE</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;color:#f7f5ec">06:12</div>
+          </div>
+          <div style="flex:1;background:rgba(247,245,236,0.1);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+            <div style="font-size:11px;color:#9dc0ac;font-weight:600;letter-spacing:0.06em">SEASON</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;color:#f7f5ec">Dec–May</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;background:#ff5c46;color:#fff;border-radius:12px;padding:12px;text-align:center;font-size:14px;font-weight:700">Open trail</div>
+          <div style="background:rgba(247,245,236,0.14);color:#f7f5ec;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:600">Fly through</div>
+        </div>
+      </div>
+
+      <!-- legend -->
+      <div style="position:absolute;bottom:26px;left:26px;background:rgba(255,255,255,0.94);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:0 14px 34px -20px rgba(13,37,27,0.6)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:#6b8779">ELEVATION</div>
+        <div style="width:250px;height:10px;border-radius:6px;background:linear-gradient(90deg,#5cb17a,#74c276,#9ad170,#cddd8c,#f2f0dc)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;color:#2c4a3b">
+          <div>0 m</div><div>800</div><div>1,600</div><div>2,524 m</div>
+        </div>
+      </div>
+
+      <!-- camera controls -->
+      <div style="position:absolute;bottom:26px;right:26px;display:flex;align-items:flex-end;gap:12px">
+        <div style="background:rgba(13,37,27,0.9);color:#f7f5ec;border-radius:14px;padding:11px 16px;font-size:13px;font-weight:600;display:flex;gap:16px">
+          <div>Drag · rotate</div>
+          <div style="color:#6b8779">|</div>
+          <div>Pinch · zoom</div>
+          <div style="color:#6b8779">|</div>
+          <div>Tap · trail</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.94);border-radius:16px;padding:10px;box-shadow:0 14px 34px -20px rgba(13,37,27,0.6)">
+          <div style="width:38px;height:38px;border-radius:11px;background:#eef3ea;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#0d251b">+</div>
+          <div style="width:38px;height:38px;border-radius:11px;background:#eef3ea;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#0d251b">–</div>
+          <div style="width:38px;height:38px;border-radius:11px;background:#0d251b;display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:#f7f5ec">N</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1b · TRAIL DETAIL ============ -->
+  <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.14em;color:#0d251b;background:#cfe3d3;border-radius:999px;padding:6px 14px">1B</div>
+      <div style="font-size:17px;font-weight:600;color:#0d251b">Trail detail — desktop 1440 × 900</div>
+    </div>
+
+    <div id="screen-1b" style="position:relative;width:1440px;height:900px;border-radius:26px;overflow:hidden;background:#a9dcea url('assets/map-trail.png') center/cover no-repeat;box-shadow:0 30px 70px -30px rgba(13,37,27,0.45);font-family:'Outfit',sans-serif">
+
+      <!-- detail sheet -->
+      <div style="position:absolute;top:0;left:0;width:544px;height:900px;background:#f7f5ec;padding:34px;display:flex;flex-direction:column;gap:22px;box-shadow:24px 0 60px -30px rgba(13,37,27,0.5)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:11px;background:#e5ece2;display:flex;align-items:center;justify-content:center;font-size:17px;color:#0d251b">←</div>
+          <div style="font-size:13px;font-weight:600;color:#6b8779;letter-spacing:0.04em">KNUCKLES CONSERVATION FOREST</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:44px;line-height:0.98;color:#0d251b;letter-spacing:-0.02em">Dothalugala<br>Ridge Trail</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="background:#fdf0dc;color:#8a5a12;font-size:12px;font-weight:700;border-radius:8px;padding:7px 11px">MODERATE</div>
+            <div style="background:#e8eee5;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:7px 11px">Cloud forest</div>
+            <div style="background:#e8eee5;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:7px 11px">Guide advised</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div style="background:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;color:#6b8779">DISTANCE</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;color:#0d251b">7.0<span style="font-size:13px;font-weight:600;color:#6b8779"> km</span></div>
+          </div>
+          <div style="background:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;color:#6b8779">ASCENT</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;color:#0d251b">350<span style="font-size:13px;font-weight:600;color:#6b8779"> m</span></div>
+          </div>
+          <div style="background:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;color:#6b8779">SUMMIT</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;color:#0d251b">1,600<span style="font-size:13px;font-weight:600;color:#6b8779"> m</span></div>
+          </div>
+          <div style="background:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;color:#6b8779">TIME</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;color:#0d251b">4<span style="font-size:13px;font-weight:600;color:#6b8779"> h</span></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between">
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;color:#0d251b">Elevation profile</div>
+            <div style="font-size:12px;font-weight:600;color:#6b8779">1,250 m → 1,600 m</div>
+          </div>
+          <svg viewBox="0 0 460 130" style="width:100%;height:130px">
+            <polyline points="0,104 40,98 80,88 120,92 160,74 200,66 240,50 280,40 320,26 360,20 400,34 460,44" fill="none" stroke="#ff5c46" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <polyline points="0,104 40,98 80,88 120,92 160,74 200,66 240,50 280,40 320,26 360,20 400,34 460,44 460,130 0,130" fill="rgba(255,92,70,0.12)" stroke="none"></polyline>
+            <line x1="0" y1="126" x2="460" y2="126" stroke="#dfe4d8" stroke-width="2"></line>
+            <circle cx="360" cy="20" r="6" fill="#ff5c46" stroke="#fff" stroke-width="3"></circle>
+          </svg>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;color:#6b8779">
+            <div>Trailhead</div><div>Mini World's End</div><div>Summit</div><div>Return</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16px;color:#0d251b">Waypoints</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px 14px">
+              <div style="width:26px;height:26px;border-radius:50%;background:#e4f2e6;color:#22694a;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">01</div>
+              <div style="font-size:14.5px;font-weight:600;color:#0d251b;flex:1">Corbet's Gap trailhead</div>
+              <div style="font-size:13px;font-weight:600;color:#6b8779">0.0 km</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px 14px">
+              <div style="width:26px;height:26px;border-radius:50%;background:#e4f2e6;color:#22694a;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">02</div>
+              <div style="font-size:14.5px;font-weight:600;color:#0d251b;flex:1">Cloud forest boundary</div>
+              <div style="font-size:13px;font-weight:600;color:#6b8779">2.4 km</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#0d251b;border-radius:14px;padding:12px 14px">
+              <div style="width:26px;height:26px;border-radius:50%;background:#ff5c46;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">03</div>
+              <div style="font-size:14.5px;font-weight:600;color:#f7f5ec;flex:1">Dothalugala viewpoint</div>
+              <div style="font-size:13px;font-weight:600;color:#9dc0ac">3.5 km</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:auto;display:flex;gap:12px">
+          <div style="flex:1;background:#ff5c46;color:#fff;border-radius:16px;padding:16px;text-align:center;font-size:15px;font-weight:700">Fly the route in 3D</div>
+          <div style="background:#e5ece2;color:#0d251b;border-radius:16px;padding:16px 20px;font-size:15px;font-weight:600">GPX</div>
+          <div style="background:#e5ece2;color:#0d251b;border-radius:16px;padding:16px 20px;font-size:15px;font-weight:600">Save</div>
+        </div>
+      </div>
+
+      <!-- overview minimap -->
+      <div style="position:absolute;top:26px;right:26px;width:212px;background:rgba(255,255,255,0.94);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 16px 36px -20px rgba(13,37,27,0.6)">
+        <div style="position:relative;height:196px;border-radius:12px;overflow:hidden;background:#a9dcea url('assets/map-island.png') center/cover no-repeat">
+          <div style="position:absolute;left:76px;top:78px;width:58px;height:40px;border:2.5px solid #ff5c46;border-radius:6px;background:rgba(255,92,70,0.16)"></div>
+        </div>
+        <div style="font-size:11.5px;font-weight:600;color:#6b8779;text-align:center">Knuckles · central highlands</div>
+      </div>
+
+      <!-- waypoint marker on map -->
+      <div style="position:absolute;top:322px;left:1010px;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="background:rgba(255,255,255,0.96);border-radius:12px;padding:9px 14px;display:flex;flex-direction:column;line-height:1.2;box-shadow:0 10px 24px -14px rgba(13,37,27,0.6)">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:15px;color:#0d251b">Dothalugala</div>
+          <div style="font-size:12px;color:#6b8779;font-weight:600">1,600 m · viewpoint</div>
+        </div>
+        <div style="width:2px;height:22px;background:#ff5c46"></div>
+        <div style="width:16px;height:16px;border-radius:50%;background:#ff5c46;border:4px solid #fff;margin-top:-4px;box-shadow:0 6px 14px -4px rgba(13,37,27,0.6)"></div>
+      </div>
+
+      <!-- weather strip -->
+      <div style="position:absolute;bottom:26px;right:26px;background:rgba(13,37,27,0.92);border-radius:18px;padding:16px 20px;display:flex;gap:26px;box-shadow:0 18px 40px -22px rgba(13,37,27,0.9)">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#9dc0ac">SUMMIT NOW</div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;color:#f7f5ec">14° · misty</div>
+        </div>
+        <div style="width:1px;background:rgba(157,192,172,0.35)"></div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#9dc0ac">BEST MONTHS</div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;color:#f7f5ec">Feb – Apr</div>
+        </div>
+        <div style="width:1px;background:rgba(157,192,172,0.35)"></div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#9dc0ac">LEECH RISK</div>
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;color:#f7f5ec">High</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1c · MOBILE ============ -->
+  <div id="1c" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.14em;color:#0d251b;background:#cfe3d3;border-radius:999px;padding:6px 14px">1C</div>
+      <div style="font-size:17px;font-weight:600;color:#0d251b">Mobile — explore & detail, 390 × 844</div>
+    </div>
+
+    <div id="screen-1c" style="width:1000px;height:940px;border-radius:26px;background:linear-gradient(180deg,#dfe8dc,#cfe0d3);display:flex;align-items:center;justify-content:center;gap:52px;padding:48px;box-sizing:border-box;box-shadow:0 30px 70px -30px rgba(13,37,27,0.35)">
+
+      <!-- phone 1 -->
+      <div style="position:relative;width:390px;height:844px;border-radius:44px;background:#0d251b;padding:9px;box-sizing:border-box;box-shadow:0 26px 50px -22px rgba(13,37,27,0.6)">
+        <div style="position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#a9dcea url('assets/map-region.png') 45% 30%/190% no-repeat">
+          <div style="position:absolute;top:0;left:0;right:0;height:56px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;box-sizing:border-box;font-size:13px;font-weight:600;color:#0d251b">
+            <div>9:41</div><div style="width:104px;height:26px;border-radius:16px;background:#0d251b;margin-bottom:-2px"></div><div>􀋂 􀛨</div>
+          </div>
+
+          <div style="position:absolute;top:66px;left:16px;right:16px;display:flex;gap:10px">
+            <div style="flex:1;background:rgba(255,255,255,0.95);border-radius:16px;padding:13px 16px;font-size:14.5px;color:#6b8779;font-weight:500;box-shadow:0 10px 24px -14px rgba(13,37,27,0.5)">Search the hill country</div>
+            <div style="width:48px;height:48px;border-radius:16px;background:#0d251b;color:#f7f5ec;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">3D</div>
+          </div>
+
+          <div style="position:absolute;top:270px;left:150px;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <div style="background:#0d251b;color:#f7f5ec;border-radius:10px;padding:7px 11px;font-size:12.5px;font-weight:700;font-family:'Bricolage Grotesque',sans-serif">Sri Pada 2,243 m</div>
+            <div style="width:2px;height:18px;background:#0d251b"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#ff5c46;border:3px solid #fff;margin-top:-4px"></div>
+          </div>
+
+          <div style="position:absolute;bottom:0;left:0;right:0;background:#f7f5ec;border-radius:28px 28px 0 0;padding:16px 18px 26px;display:flex;flex-direction:column;gap:14px;box-shadow:0 -16px 40px -20px rgba(13,37,27,0.45)">
+            <div style="width:46px;height:5px;border-radius:3px;background:#d3dbcd;align-self:center"></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:21px;color:#0d251b">Nearby trails</div>
+              <div style="font-size:13px;font-weight:600;color:#2f7d54">Map view</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <div style="background:#0d251b;color:#f7f5ec;font-size:13px;font-weight:600;border-radius:999px;padding:9px 14px">All</div>
+              <div style="background:#e8eee5;color:#2c4a3b;font-size:13px;font-weight:600;border-radius:999px;padding:9px 14px">Sunrise</div>
+              <div style="background:#e8eee5;color:#2c4a3b;font-size:13px;font-weight:600;border-radius:999px;padding:9px 14px">Easy</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="background:#fff;border-radius:18px;padding:12px;display:flex;gap:12px;align-items:center">
+                <div style="width:56px;height:56px;border-radius:14px;flex:none;background:#e5f0e4 url('assets/map-trail.png') 40% 40%/240% no-repeat"></div>
+                <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0">
+                  <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16.5px;color:#0d251b">Sri Pada</div>
+                  <div style="font-size:12.5px;color:#6b8779;font-weight:500">5.5 km · +1,050 m · 3–4 h</div>
+                </div>
+                <div style="background:#ffe7e2;color:#c1341f;font-size:11px;font-weight:700;border-radius:7px;padding:5px 8px;flex:none">HARD</div>
+              </div>
+              <div style="background:#fff;border-radius:18px;padding:12px;display:flex;gap:12px;align-items:center">
+                <div style="width:56px;height:56px;border-radius:14px;flex:none;background:#e5f0e4 url('assets/map-region.png') 60% 45%/260% no-repeat"></div>
+                <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0">
+                  <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:16.5px;color:#0d251b">World's End</div>
+                  <div style="font-size:12.5px;color:#6b8779;font-weight:500">9.5 km loop · +200 m · 3 h</div>
+                </div>
+                <div style="background:#e4f2e6;color:#22694a;font-size:11px;font-weight:700;border-radius:7px;padding:5px 8px;flex:none">EASY</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- phone 2 -->
+      <div style="position:relative;width:390px;height:844px;border-radius:44px;background:#0d251b;padding:9px;box-sizing:border-box;box-shadow:0 26px 50px -22px rgba(13,37,27,0.6)">
+        <div style="position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:#f7f5ec;display:flex;flex-direction:column">
+          <div style="position:relative;height:404px;flex:none;background:#a9dcea url('assets/map-trail.png') 45% 55%/150% no-repeat">
+            <div style="position:absolute;top:0;left:0;right:0;height:56px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;box-sizing:border-box;font-size:13px;font-weight:600;color:#0d251b">
+              <div>9:41</div><div style="width:104px;height:26px;border-radius:16px;background:#0d251b;margin-bottom:-2px"></div><div>􀋂 􀛨</div>
+            </div>
+            <div style="position:absolute;top:70px;left:16px;width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;font-size:17px;color:#0d251b">←</div>
+            <div style="position:absolute;bottom:74px;left:50%;transform:translateX(-50%);background:rgba(13,37,27,0.9);color:#f7f5ec;border-radius:999px;padding:10px 16px;font-size:12.5px;font-weight:600;display:flex;gap:12px;white-space:nowrap">
+              <div>Pinch to zoom</div><div style="color:#7fa392">·</div><div>Two fingers to tilt</div>
+            </div>
+            <div style="position:absolute;bottom:16px;right:16px;display:flex;flex-direction:column;gap:8px">
+              <div style="width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;font-size:19px;color:#0d251b">+</div>
+              <div style="width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;font-size:19px;color:#0d251b">–</div>
+            </div>
+          </div>
+
+          <div style="flex:1;padding:20px 18px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:27px;line-height:1.02;color:#0d251b;letter-spacing:-0.01em">Dothalugala Ridge</div>
+              <div style="display:flex;gap:7px">
+                <div style="background:#fdf0dc;color:#8a5a12;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 9px">MODERATE</div>
+                <div style="background:#e8eee5;color:#2c4a3b;font-size:11.5px;font-weight:600;border-radius:7px;padding:6px 9px">Knuckles</div>
+                <div style="background:#e8eee5;color:#2c4a3b;font-size:11.5px;font-weight:600;border-radius:7px;padding:6px 9px">Guide advised</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:9px">
+              <div style="flex:1;background:#fff;border-radius:14px;padding:11px;display:flex;flex-direction:column;gap:2px">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:#6b8779">KM</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;color:#0d251b">7.0</div>
+              </div>
+              <div style="flex:1;background:#fff;border-radius:14px;padding:11px;display:flex;flex-direction:column;gap:2px">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:#6b8779">ASCENT</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;color:#0d251b">350 m</div>
+              </div>
+              <div style="flex:1;background:#fff;border-radius:14px;padding:11px;display:flex;flex-direction:column;gap:2px">
+                <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:#6b8779">TIME</div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;color:#0d251b">4 h</div>
+              </div>
+            </div>
+
+            <div style="background:#fff;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:14.5px;color:#0d251b">Profile</div>
+                <div style="font-size:11.5px;font-weight:600;color:#6b8779">1,250 → 1,600 m</div>
+              </div>
+              <svg viewBox="0 0 320 78" style="width:100%;height:78px">
+                <polyline points="0,62 32,58 64,50 96,54 128,42 160,34 192,26 224,18 256,12 288,22 320,30" fill="none" stroke="#ff5c46" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                <polyline points="0,62 32,58 64,50 96,54 128,42 160,34 192,26 224,18 256,12 288,22 320,30 320,78 0,78" fill="rgba(255,92,70,0.12)" stroke="none"></polyline>
+              </svg>
+            </div>
+
+            <div style="margin-top:auto;display:flex;gap:10px">
+              <div style="flex:1;background:#ff5c46;color:#fff;border-radius:16px;padding:15px;text-align:center;font-size:15px;font-weight:700">Fly the route</div>
+              <div style="width:52px;height:52px;border-radius:16px;background:#e5ece2;display:flex;align-items:center;justify-content:center;font-size:19px;color:#0d251b">♡</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1d · UI KIT ============ -->
+  <div id="1d" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.14em;color:#0d251b;background:#cfe3d3;border-radius:999px;padding:6px 14px">1D</div>
+      <div style="font-size:17px;font-weight:600;color:#0d251b">Handoff sheet — tokens, components, interactions</div>
+    </div>
+
+    <div id="screen-1d" style="width:1440px;background:#f7f5ec;border-radius:26px;padding:40px;box-sizing:border-box;display:flex;flex-direction:column;gap:32px;box-shadow:0 30px 70px -30px rgba(13,37,27,0.35)">
+
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid #e2e6da;padding-bottom:18px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:32px;color:#0d251b;letter-spacing:-0.02em">Kanda design tokens</div>
+          <div style="font-size:14.5px;color:#4a6a59">Bricolage Grotesque 800 for headings · Outfit 400/600 for UI · 4 px spacing grid · 12/14/16/20/26 radii</div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#6b8779;text-align:right">Terrain art: 3D relief mesh<br>real coastline + peak elevations</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Palette</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:#0d251b"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Ink</div><div style="font-size:11.5px;color:#6b8779">#0D251B</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:#2f7d54"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Moss</div><div style="font-size:11.5px;color:#6b8779">#2F7D54</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:#5cb17a"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Leaf</div><div style="font-size:11.5px;color:#6b8779">#5CB17A</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:#ff5c46"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Route</div><div style="font-size:11.5px;color:#6b8779">#FF5C46</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:#a9dcea"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Water</div><div style="font-size:11.5px;color:#6b8779">#A9DCEA</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:#f7f5ec;border:2px solid #e2e6da"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Paper</div><div style="font-size:11.5px;color:#6b8779">#F7F5EC</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:#e8eee5"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Chip</div><div style="font-size:11.5px;color:#6b8779">#E8EEE5</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:72px;border-radius:14px;background:linear-gradient(90deg,#5cb17a,#74c276,#9ad170,#cddd8c,#f2f0dc)"></div><div style="font-size:12px;font-weight:700;color:#0d251b">Elevation</div><div style="font-size:11.5px;color:#6b8779">0 → 2,524 m</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Type scale</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:baseline;gap:16px"><div style="font-size:11.5px;font-weight:600;color:#6b8779;width:96px;flex:none">Display / 44</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:36px;color:#0d251b;letter-spacing:-0.02em">Dothalugala Ridge</div></div>
+            <div style="display:flex;align-items:baseline;gap:16px"><div style="font-size:11.5px;font-weight:600;color:#6b8779;width:96px;flex:none">Title / 19</div><div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;color:#0d251b">Sri Pada · Adam's Peak</div></div>
+            <div style="display:flex;align-items:baseline;gap:16px"><div style="font-size:11.5px;font-weight:600;color:#6b8779;width:96px;flex:none">Body / 15</div><div style="font-size:15px;color:#2c4a3b">5.5 km up · +1,050 m · 3–4 h · night start for sunrise</div></div>
+            <div style="display:flex;align-items:baseline;gap:16px"><div style="font-size:11.5px;font-weight:600;color:#6b8779;width:96px;flex:none">Meta / 12</div><div style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#6b8779">KNUCKLES CONSERVATION FOREST</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Buttons & chips</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <div style="background:#ff5c46;color:#fff;border-radius:14px;padding:14px 22px;font-size:14.5px;font-weight:700">Fly the route</div>
+              <div style="background:#0d251b;color:#f7f5ec;border-radius:14px;padding:14px 22px;font-size:14.5px;font-weight:600">Open trail</div>
+              <div style="background:#e5ece2;color:#0d251b;border-radius:14px;padding:14px 22px;font-size:14.5px;font-weight:600">Download GPX</div>
+              <div style="border:2px solid #cdd6c8;color:#2c4a3b;border-radius:14px;padding:12px 20px;font-size:14.5px;font-weight:600">Ghost</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="background:#e4f2e6;color:#22694a;font-size:12px;font-weight:700;border-radius:8px;padding:7px 11px">EASY</div>
+              <div style="background:#fdf0dc;color:#8a5a12;font-size:12px;font-weight:700;border-radius:8px;padding:7px 11px">MODERATE</div>
+              <div style="background:#ffe7e2;color:#c1341f;font-size:12px;font-weight:700;border-radius:8px;padding:7px 11px">HARD</div>
+              <div style="background:#e8eee5;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:7px 11px">Permit required</div>
+              <div style="background:#e8eee5;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:7px 11px">Sunrise</div>
+              <div style="background:#0d251b;color:#f7f5ec;font-size:12px;font-weight:600;border-radius:999px;padding:8px 14px">Filter · active</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Map markers</div>
+          <div style="background:#fff;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:18px;height:18px;border-radius:50%;background:#ff5c46;border:4px solid #fff;box-shadow:0 0 0 2px #ffd9d2"></div>
+              <div style="font-size:14px;font-weight:600;color:#0d251b">Trailhead / waypoint</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:16px;height:16px;border-radius:50%;background:#f7f5ec;border:4px solid #0d251b"></div>
+              <div style="font-size:14px;font-weight:600;color:#0d251b">Summit</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:16px;height:16px;border-radius:50%;background:#a9dcea;border:4px solid #2f7d54"></div>
+              <div style="font-size:14px;font-weight:600;color:#0d251b">Waterfall / river crossing</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:34px;height:6px;border-radius:4px;background:#ff5c46"></div>
+              <div style="font-size:14px;font-weight:600;color:#0d251b">Route line · 6 px, rounded caps</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:34px;height:4px;border-radius:3px;background:#93cde0"></div>
+              <div style="font-size:14px;font-weight:600;color:#0d251b">River · 4 px</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Trail card anatomy</div>
+          <div style="background:#fff;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;border:2px solid #ff5c46">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:64px;height:64px;border-radius:16px;flex:none;background:#e5f0e4 url('assets/map-trail.png') 40% 45%/240% no-repeat"></div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;color:#0d251b;line-height:1.1">Trail name</div>
+                <div style="font-size:13px;color:#6b8779;font-weight:500">Trailhead · district</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="background:#ffe7e2;color:#c1341f;font-size:12px;font-weight:700;border-radius:8px;padding:6px 10px">DIFFICULTY</div>
+              <div style="background:#eef3ea;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px">distance</div>
+              <div style="background:#eef3ea;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px">ascent</div>
+              <div style="background:#eef3ea;color:#2c4a3b;font-size:12px;font-weight:600;border-radius:8px;padding:6px 10px">time</div>
+            </div>
+            <div style="font-size:12.5px;color:#6b8779;font-weight:500">Selected card: 2 px #FF5C46 border + white 96 % ground. Idle: white 90 %, no border.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;color:#0d251b">Interaction notes</div>
+          <div style="background:#0d251b;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:14px;color:#f7f5ec;font-weight:600">Drag → orbit yaw ±180°, pitch clamp 12°–72°</div>
+            <div style="font-size:14px;color:#f7f5ec;font-weight:600">Pinch / wheel → zoom, 12 km – 400 km window</div>
+            <div style="font-size:14px;color:#f7f5ec;font-weight:600">Tap trail → camera flies to bounds in 700 ms ease-out</div>
+            <div style="font-size:14px;color:#f7f5ec;font-weight:600">Labels fade in under 60 km window, collide-cull by priority</div>
+            <div style="font-size:14px;color:#f7f5ec;font-weight:600">Vertical exaggeration 4× at island view, 2× when zoomed</div>
+            <div style="font-size:13px;color:#9dc0ac;font-weight:500;padding-top:4px">Relief mesh: heightfield masked by real coastline; peaks from surveyed elevations (Pidurutalagala 2,524 m · Kirigalpotta 2,395 m · Sri Pada 2,243 m).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+</x-dc>
+</body>
+</html>
