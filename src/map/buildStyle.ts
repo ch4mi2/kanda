@@ -72,11 +72,12 @@ export function buildStyle(): StyleSpecification {
           // expression array, but the style types want the narrower
           // ColorRampProperty shape.
           'color-relief-color': steppedColorRamp() as never,
-          // Sample the DEM texel-for-texel instead of bilinear-blending
-          // between texels. The DEM is already at its native resolution
-          // (z12 ~= 38 m/px); 'linear' just smears that into mush when the
-          // camera overzooms. 'nearest' keeps the elevation bands crisp.
-          resampling: 'nearest',
+          // 'linear' (bilinear) between DEM texels. 'nearest' was tried to
+          // fix "blurry" but it renders every 30 m texel as a hard square —
+          // the single biggest source of the "jaggery" look (Phase 4 plan).
+          // Crispness is meant to come from the band edges and, later,
+          // contour lines — not from visible pixel squares.
+          resampling: 'linear',
         },
       },
       {

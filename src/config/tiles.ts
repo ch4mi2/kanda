@@ -89,16 +89,20 @@ export const PITCH_MAX = 72;
 export const ORBIT_YAW_SENSITIVITY = 0.35; // deg of bearing per px dragged
 export const ORBIT_PITCH_SENSITIVITY = 0.25; // deg of pitch per px dragged
 
-// Vertical exaggeration is adaptive, driven by zoom (design handoff: ~4x at
-// island view easing to ~2x zoomed in). At true 1x a 2,524 m island 400 km
-// across reads as flat and the app looks broken. MapLibre 6's setTerrain only
+// Vertical exaggeration is adaptive, driven by zoom (~2.5x at island view
+// easing to ~1.4x zoomed in). At true 1x a 2,524 m island 400 km across
+// reads as flat and the app looks broken. MapLibre 6's setTerrain only
 // takes a plain number for exaggeration (no zoom expression), so MapView
 // recomputes it on the `zoom` event via this curve. The manual slider is a
 // multiplier on top — demoted to a fine-tune, not the primary control.
+// Softened from 4.0/2.8/2.0 in Phase 4A. Exaggeration multiplies SRTM's
+// inherent ~30 m speckle as well as real relief; at 4x that noise reads as
+// fake micro-ridging along every slope. 2.5x still makes a 2,524 m island
+// 400 km across read as unmistakably mountainous.
 const EXAGGERATION_STOPS: Array<[number, number]> = [
-  [6.5, 4.0], // whole-island view
-  [9, 2.8], // regional
-  [12, 2.0], // zoomed to a massif
+  [6.5, 2.5], // whole-island view
+  [9, 1.8], // regional
+  [12, 1.4], // zoomed to a massif
 ];
 
 /** Adaptive terrain exaggeration for a given zoom, scaled by the user's

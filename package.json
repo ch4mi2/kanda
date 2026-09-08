@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "fetch:peaks": "node scripts/fetch-peaks.mjs",
     "fetch:terrain": "node scripts/fetch-terrain.mjs",
+    "repair:dem": "node scripts/repair-dem.mjs --repair",
     "pack:pmtiles": "node scripts/pack-pmtiles.mjs"
   },
   "dependencies": {
