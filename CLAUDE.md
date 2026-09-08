@@ -30,9 +30,11 @@ src/
     MapView.tsx       Imperative MapLibre lifecycle in a thin React wrapper.
     orbitDrag.ts      Left-drag / one-finger-drag → orbit the camera.
     peaksLayer.ts     Peak symbols, 3 zoom tiers, canvas-generated triangle icon.
-  components/         PeakCard, ExaggerationSlider, Legend, Attribution.
+    nearbyPeaks.ts    Haversine + initial-bearing maths for the nearby list.
+  components/         PeakCard, NearbyPeaks, ExaggerationSlider, Legend, Attribution.
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
                       Overpass at runtime.
+  data/usePeaks.ts    Loads the GeoJSON once for the nearby-peaks maths.
 scripts/
   fetch-peaks.mjs         Overpass → src/data/peaks.geojson
   fetch-terrain.mjs       AWS → public/tiles/terrain/ (~2,024 tiles, 54 MB)

@@ -71,7 +71,8 @@
   right: 12px;
 }
 
-/* Peak card: bottom sheet on mobile, clear of the exaggeration dock. */
+/* Peak card + nearby list: bottom sheet on mobile, clear of the
+   exaggeration dock. Flex column so the nearby list can scroll on its own. */
 .app__panel--peak {
   left: 12px;
   right: 12px;
@@ -81,6 +82,10 @@
   box-shadow: none;
   backdrop-filter: none;
   width: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 58vh;
 }
 
 /* Attribution tucks under the header on the left; the bottom row and the
@@ -229,6 +234,67 @@
   text-decoration: underline;
 }
 
+/* --- Nearby peaks --- */
+.nearby {
+  background: rgba(22, 28, 24, 0.82);
+  backdrop-filter: blur(6px);
+  color: #f2efe9;
+  border-radius: 10px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  padding: 12px 14px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.nearby__title {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.nearby__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nearby__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  text-align: left;
+  padding: 7px 4px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nearby__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nearby__name {
+  font-size: 0.9rem;
+}
+
+.nearby__ele {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  align-self: center;
+}
+
+.nearby__meta {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
 /* --- Attribution --- */
 .attribution__toggle {
   display: block;
@@ -287,7 +353,8 @@
     right: 16px;
     left: auto;
     bottom: auto;
-    width: min(300px, calc(100vw - 32px));
+    width: min(320px, calc(100vw - 32px));
+    max-height: calc(100% - 32px);
   }
 
   .attribution {
