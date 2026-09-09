@@ -12,6 +12,7 @@
 import { mkdir, writeFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { tilesForBbox } from './lib/tilemath.mjs';
 
 const SOURCE_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
 const MIN_ZOOM = 0;
@@ -20,36 +21,12 @@ const CONCURRENCY = 8;
 
 // [west, south, east, north] — same bbox as SRI_LANKA_BBOX in
 // src/config/tiles.ts, kept in sync manually since this is a plain script.
-const BBOX = { west: 79.5, south: 5.7, east: 82.0, north: 10.0 };
+const BBOX = [79.5, 5.7, 82.0, 10.0];
 
 const OUT_DIR = path.resolve(
   fileURLToPath(new URL('.', import.meta.url)),
   '../public/tiles/terrain',
 );
-
-function lonToTileX(lon, z) {
-  return Math.floor(((lon + 180) / 360) * 2 ** z);
-}
-function latToTileY(lat, z) {
-  const rad = (lat * Math.PI) / 180;
-  return Math.floor(
-    ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * 2 ** z,
-  );
-}
-
-function tilesForZoom(z) {
-  const xMin = lonToTileX(BBOX.west, z);
-  const xMax = lonToTileX(BBOX.east, z);
-  const yMin = latToTileY(BBOX.north, z);
-  const yMax = latToTileY(BBOX.south, z);
-  const tiles = [];
-  for (let x = xMin; x <= xMax; x++) {
-    for (let y = yMin; y <= yMax; y++) {
-      tiles.push({ z, x, y });
-    }
-  }
-  return tiles;
-}
 
 async function fileExists(p) {
   try {
@@ -105,7 +82,7 @@ async function runPool(items, worker, concurrency) {
 async function main() {
   let allTiles = [];
   for (let z = MIN_ZOOM; z <= MAX_ZOOM; z++) {
-    allTiles = allTiles.concat(tilesForZoom(z));
+    allTiles = allTiles.concat(tilesForBbox(BBOX, z));
   }
   console.log(`Fetching ${allTiles.length} terrain tiles (z${MIN_ZOOM}-z${MAX_ZOOM}) into ${OUT_DIR}`);
   console.log(`Concurrency: ${CONCURRENCY}. Existing files are skipped (resumable).`);

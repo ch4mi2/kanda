@@ -17,6 +17,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { inflateSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { lonToMercX as lonToX, latToMercY as latToY } from './lib/tilemath.mjs';
 
 const TILE_DIR = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../public/tiles/terrain');
 const OUT = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../src/data/contours.geojson');
@@ -87,12 +88,6 @@ function decodePng(buf) {
 const decodeHeight = (r, g, b) => r * 256 + g + b / 256 - 32768;
 
 // --- DEM sampler over the tiles covering BBOX ------------------------------
-const lonToX = (lon, z) => ((lon + 180) / 360) * 2 ** z;
-const latToY = (lat, z) => {
-  const r = (lat * Math.PI) / 180;
-  return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z;
-};
-
 async function buildSampler() {
   const x0 = Math.floor(lonToX(BBOX[0], SAMPLE_Z));
   const x1 = Math.floor(lonToX(BBOX[2], SAMPLE_Z));

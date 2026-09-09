@@ -28,6 +28,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { deflateSync, inflateSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { lonToMercX as lonToX, latToMercY as latToY } from './lib/tilemath.mjs';
 
 const HERE = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
 const TILE_DIR = path.join(HERE, '../public/tiles/terrain');
@@ -171,11 +172,6 @@ function encodePng({ width, height, data }) {
 
 // --- DEM sampling -----------------------------------------------------------
 const decodeHeight = (r, g, b) => r * 256 + g + b / 256 - 32768;
-const lonToX = (lon, z) => ((lon + 180) / 360) * 2 ** z;
-const latToY = (lat, z) => {
-  const r = (lat * Math.PI) / 180;
-  return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z;
-};
 
 async function buildSampler(bbox) {
   const x0 = Math.floor(lonToX(bbox[0], SAMPLE_Z));
