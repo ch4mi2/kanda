@@ -28,17 +28,25 @@ src/
   skins/             Skin type + the "Kanda" pack. The map's whole look is
                      data here, not code — buildStyle takes a Skin and owns
                      no palette. "Skin packs" is later a menu over SKINS[].
+                     lstar.ts (sRGB→CIE L*), color.ts (rgba parse + ramp
+                     sampling) support the monotonic ramp + sun-driven tints.
   map/
-    buildStyle.ts     MapLibre style plumbing: takes a Skin, wires sources +
-                      layers + sky. Glyphs are self-hosted (public/fonts/).
+    buildStyle.ts     MapLibre style plumbing: takes a Skin + a sun position,
+                      wires sources + layers + sky. hillshadeLightForSun() and
+                      skyForSun() are re-applied live by MapView. Self-hosted
+                      glyphs (public/fonts/).
+    sunPosition.ts    NOAA solar position (no dep) + SLST helpers — drives the
+                      hillshade light direction/altitude and the fog tint.
     MapView.tsx       Imperative MapLibre lifecycle in a thin React wrapper.
     middleDragRotate.ts  Middle-button drag → rotate + tilt (the one gesture
                       MapLibre has no built-in handler for).
     peaksLayer.ts     Peak symbols, 3 zoom tiers, canvas-generated triangle
-                      icon; setPeakElevationFloor() for the filter chips.
+                      icon; setPeakElevationFloor() for the filter chips. Label
+                      size/opacity ramp with zoom so distance is felt (5A.4).
     nearbyPeaks.ts    Haversine + initial-bearing maths for the nearby list.
   components/         PeakCard, NearbyPeaks, SearchField, FilterChips,
-                     GestureHint, ExaggerationSlider, Legend, Attribution.
+                     GestureHint, ExaggerationSlider, TimeOfDaySlider (sun
+                     scrub), Legend, Attribution.
   index.css          Design tokens (palette, 4 px grid, radii, type scale).
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
                       Overpass at runtime.
@@ -111,8 +119,9 @@ broken-slow. This was a real bug, not a hypothetical.
    and two-finger drag rotate + tilt, wheel/pinch zooms. `map/middleDragRotate.ts`
    adds middle-button rotate/tilt — the only gesture MapLibre has no handler
    for — with the sign matched to MapLibre's own `MouseRotateHandler`. Pitch is
-   clamped 12°–72° via `minPitch`/`maxPitch`. Camera zoom is capped at
-   `MAX_ZOOM` (13) so it can't push past the z12 DEM.
+   clamped 12°–80° via `minPitch`/`maxPitch` (`PITCH_MAX` lifted from 72 in
+   Phase 5A so the resting view is inside the terrain-fog band — see gotcha #9).
+   Camera zoom is capped at `MAX_ZOOM` (13) so it can't push past the z12 DEM.
 2. **`style.load`, not `load`.** The `load` event can hang indefinitely waiting
    on every visible tile across a wide oblique view. Do setup on `style.load`.
 3. **`demotiles.maplibre.org` glyphs — done (Phase 4D).** Glyph PBFs are
@@ -149,7 +158,24 @@ broken-slow. This was a real bug, not a hypothetical.
    `hillshade-illumination-anchor` to `viewport`, which adds the camera
    bearing to the light direction every frame — orbiting re-shades every
    slope and the whole map appears to change colour. Kanda's skin forces
-   `'map'`. Any new skin must too.
+   `'map'` (set inside `buildStyle.hillshadeLightForSun`). Any new skin must too.
+9. **Terrain fog is pitch-gated (Phase 5A).** MapLibre's `sky` fog is genuine
+   distance fog but `calculateFogBlendOpacity` returns 0 below 60° pitch,
+   ramps 60→70, full ≥70. `DEFAULT_PITCH` is 68 and `PITCH_MAX` 80 so aerial
+   perspective actually renders; drop either back toward 60 and the depth cue
+   silently vanishes.
+10. **Hillshade + fog follow the real sun (Phase 5A).** `src/map/sunPosition.ts`
+   (NOAA, no dep) drives `hillshade-illumination-direction/-altitude` and the
+   fog tint. `buildStyle.hillshadeLightForSun` / `skyForSun` build the paint;
+   `MapView` re-applies both on the `TimeOfDaySlider` via `setPaintProperty`
+   /`setSky` without rebuilding the style. `hillshade-method` is `'igor'`.
+
+## Tests
+
+`npm test` (vitest, added Phase 5A). `src/skins/lstar.test.ts` locks the
+elevation ramp to **monotonic in CIE L\*** — the pre-Phase-5 ramp was a V
+(brightest mid-slope) which made tall peaks read as dark; don't reintroduce it.
+`src/map/sunPosition.test.ts` sanity-checks the solar maths.
 
 ## Design
 
@@ -189,6 +215,7 @@ with genuinely different hues per band.
 npm run dev             # localhost:5173
 npm run build           # tsc + vite build
 npm run lint            # oxlint
+npm test                # vitest — ramp monotonicity + sun position
 npm run fetch:peaks     # refresh peaks from Overpass
 npm run fetch:osm       # refresh water.geojson + rivers.geojson from Overpass
 npm run fetch:terrain   # download the 54 MB tile pyramid (resumable)
