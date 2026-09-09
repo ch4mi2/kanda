@@ -48,6 +48,9 @@ src/
                       icon; setPeakElevationFloor() for the filter chips. Label
                       size/opacity ramp with zoom so distance is felt (5A.4).
                       setPeaksVisible() — summit view hides the tiers.
+    treesLayer.ts     Billboard tree sprites over the forest blocks (canvas
+                      icon, colours from Skin.foliage). Hidden below z10.3;
+                      summit view lowers that. src/data/trees.geojson.
     nearbyPeaks.ts    Haversine, initial-bearing, destinationPoint maths for
                       the nearby list and summit view.
   components/         PeakCard ("Stand here" → summit view), NearbyPeaks,
@@ -61,6 +64,8 @@ src/
   data/water.geojson  ~740 water bodies (reservoirs, tanks) 50-60,000 ha.
   data/rivers.geojson ~450 named rivers, simplified.
   data/forest.geojson ~270 forest blocks >700 ha (OSM, ODbL).
+  data/trees.geojson  ~5k point "trees" scattered inside forest.geojson,
+                      pre-generated. npm run generate:trees (deterministic).
   data/contours.geojson  highland contour lines 800-2400 m, pre-generated
                       from the DEM (public domain). npm run generate:contours
                       — run it AFTER repair:dem.
@@ -72,6 +77,7 @@ scripts/
   fetch-terrain.mjs       AWS → public/tiles/terrain/ (~2,024 tiles, 54 MB)
   repair-dem.mjs          Repair DEM spikes/pits + one light smooth pass
   generate-contours.mjs   local DEM → src/data/contours.geojson (highlands)
+  generate-trees.mjs      forest.geojson → src/data/trees.geojson (tree scatter)
   fetch-glyphs.mjs        demotiles → public/fonts/ (Noto Sans PBF ranges)
   pack-pmtiles.mjs        public/tiles/terrain/ → public/tiles/terrain.pmtiles
 design/               Exported Claude Design source. Tokens live in the
@@ -176,7 +182,10 @@ broken-slow. This was a real bug, not a hypothetical.
    (NOAA, no dep) drives `hillshade-illumination-direction/-altitude` and the
    fog tint. `buildStyle.hillshadeLightForSun` / `skyForSun` build the paint;
    `MapView` re-applies both on the `TimeOfDaySlider` via `setPaintProperty`
-   /`setSky` without rebuilding the style. `hillshade-method` is `'igor'`.
+   /`setSky` without rebuilding the style. `hillshade-method` is `'combined'`
+   (not `'igor'` — too matte, Chamithu called it "just mist"), exaggeration
+   ~0.9, illumination altitude **clamped 10–62°** so equatorial-noon sun still
+   casts. Keep relief strong; don't trade it back for haze.
 11. **Summit view fights MapLibre 6.8 (Phase 5B, `src/map/summitView.ts`).**
    All verified in the maplibre source, all easy to get wrong:
    - **No free-camera API.** `get/setFreeCameraOptions` are Mapbox-only.
@@ -198,6 +207,11 @@ broken-slow. This was a real bug, not a hypothetical.
      feed it straight into a sight-line calc; fall back to the OSM `ele`.
    - Above 90° pitch also needs `setCenterClampedToGround(false)`, and drop
      `maxBounds` (pitch-90 frustum spills continent-wide, gotcha #1).
+   - **Look-around is "grab the world"** (`bearing -= dx`, `pitch += dy`) —
+     the point under the cursor tracks the cursor, like PeakFinder / Street
+     View. That's the *opposite* sign to the overhead map's rotate gestures
+     (gotcha #1) and it's deliberate; Chamithu called the other way "inverted".
+     Arrow keys stay direct-look.
 
 ## Tests
 
@@ -250,6 +264,8 @@ npm run fetch:osm       # refresh water.geojson + rivers.geojson from Overpass
 npm run fetch:terrain   # download the 54 MB tile pyramid (resumable)
 npm run repair:dem      # repair DEM spikes/pits + one smooth pass (in place)
 npm run fetch:glyphs    # download the self-hosted glyph PBFs
+npm run generate:contours  # local DEM -> contours.geojson (after repair:dem)
+npm run generate:trees  # forest.geojson -> trees.geojson (deterministic)
 npm run pack:pmtiles    # re-pack the loose pyramid into terrain.pmtiles
 ```
 
