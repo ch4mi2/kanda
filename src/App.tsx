@@ -4,12 +4,14 @@ import MapView from './map/MapView';
 import PeakCard from './components/PeakCard';
 import NearbyPeaks from './components/NearbyPeaks';
 import ExaggerationSlider from './components/ExaggerationSlider';
+import TimeOfDaySlider from './components/TimeOfDaySlider';
 import Legend from './components/Legend';
 import Attribution from './components/Attribution';
 import SearchField from './components/SearchField';
 import FilterChips from './components/FilterChips';
 import GestureHint from './components/GestureHint';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
+import { slstNowMinutes } from './map/sunPosition';
 import { setPeakElevationFloor } from './map/peaksLayer';
 import { usePeaks } from './data/usePeaks';
 import type { NearbyPeak, PeakFeature } from './map/nearbyPeaks';
@@ -34,6 +36,7 @@ function toSelected(f: PeakFeature, map: MLMap | null): SelectedPeak {
 
 export default function App() {
   const [exaggeration, setExaggeration] = useState(DEFAULT_EXAGGERATION);
+  const [sunMinutes, setSunMinutes] = useState(slstNowMinutes);
   const [selectedPeak, setSelectedPeak] = useState<SelectedPeak | null>(null);
   const [map, setMap] = useState<MLMap | null>(null);
   const [elevationFloor, setElevationFloor] = useState(0);
@@ -92,6 +95,7 @@ export default function App() {
     <div className="app">
       <MapView
         exaggeration={exaggeration}
+        sunMinutes={sunMinutes}
         onPeakSelect={setSelectedPeak}
         onMapReady={handleMapReady}
       />
@@ -113,6 +117,7 @@ export default function App() {
       </div>
 
       <div className="dock">
+        <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
         <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
       </div>
 

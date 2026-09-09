@@ -219,6 +219,27 @@
   width: min(320px, calc(100vw - 32px));
   z-index: 2;
   display: none;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.timeofday__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.timeofday__readout {
+  font-size: 11px;
+  color: var(--panel-fg-dim);
+}
+
+.timeofday input[type='range'] {
+  width: 100%;
+  margin: var(--s2) 0 0;
+  accent-color: var(--route);
 }
 
 .exaggeration {
@@ -630,7 +651,7 @@
   /* Desktop has room for the relief dock and the sheet at once. */
   .dock,
   .app:has(.sheet) .dock {
-    display: block;
+    display: flex;
   }
 
   .legend {

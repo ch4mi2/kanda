@@ -13,10 +13,14 @@
 export type ElevationBand = [number, string];
 
 export interface HillshadeSkin {
+  /**
+   * MapLibre hillshade-method. 'igor' and 'multidirectional' are purpose-built
+   * for "read the landform" (Swiss-relief style); 'standard' is the raw
+   * Lambertian default that was crushing the bands to mud. Kanda uses 'igor'.
+   */
+  method: 'standard' | 'basic' | 'combined' | 'igor' | 'multidirectional';
   /** MapLibre hillshade-exaggeration (0-1ish). Relief shading strength. */
   exaggeration: number;
-  /** Degrees clockwise from north the light comes from. */
-  illuminationDirection: number;
   /**
    * 'map' anchors the sun to map north; 'viewport' anchors it to the camera.
    * MapLibre defaults to 'viewport', which ADDS the camera bearing to the
@@ -26,9 +30,21 @@ export interface HillshadeSkin {
    * head. Always 'map' unless a skin has a deliberate reason otherwise.
    */
   illuminationAnchor: 'map' | 'viewport';
-  shadowColor: string;
-  highlightColor: string;
   accentColor: string;
+  /**
+   * Extra fixed fill lights blended with the real sun for Swiss-style relief,
+   * each `[azimuthDeg, altitudeDeg]`. Only 'multidirectional' reads past the
+   * first light; keep `[]` for a single-sun look (what 'igor' wants).
+   */
+  fillLights: Array<[number, number]>;
+  /**
+   * Sun altitude (degrees) -> shadow / highlight tint, interpolated by the live
+   * sun altitude: warm and soft near the horizon, neutral overhead, a dim blue
+   * "night" floor below it. buildStyle.ts owns no palette, so the whole
+   * time-of-day mood lives in these keyframes. Ascending by altitude.
+   */
+  shadowByAltitude: Array<[number, string]>;
+  highlightByAltitude: Array<[number, string]>;
 }
 
 export interface SkySkin {

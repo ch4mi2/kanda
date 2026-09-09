@@ -1,6 +1,8 @@
 import type { StyleSpecification } from 'maplibre-gl';
-import { terrainSourceSpec } from '../config/tiles';
+import { DEFAULT_CENTER, terrainSourceSpec } from '../config/tiles';
 import { DEFAULT_SKIN, type Skin } from '../skins';
+import { sampleColorRamp } from '../skins/color';
+import { sunPosition, type SunPosition } from './sunPosition';
 // Committed OSM vector data (npm run fetch:osm), same offline-first pattern as
 // the peaks GeoJSON — never fetched from Overpass at runtime.
 import waterUrl from '../data/water.geojson?url';
@@ -44,7 +46,57 @@ function softColorRamp(skin: Skin): unknown[] {
   return expr;
 }
 
-export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
+const clamp = (n: number, lo: number, hi: number) =>
+  Math.max(lo, Math.min(hi, n));
+const mod360 = (a: number) => ((a % 360) + 360) % 360;
+
+/**
+ * The `hillshade` layer's paint properties for a given sun position. The real
+ * sun is the dominant light (its azimuth + true elevation); any skin fill
+ * lights follow it in the arrays for `multidirectional`. Shadow/highlight tint
+ * is sampled from the skin's altitude keyframes, so shading warms at golden
+ * hour and falls to a dim blue below the horizon — all palette, no code.
+ *
+ * Exported so MapView can re-apply it as the time-of-day slider moves without
+ * rebuilding the style.
+ */
+export function hillshadeLightForSun(skin: Skin, sun: SunPosition) {
+  const hs = skin.hillshade;
+  const lights: Array<[number, number]> = [
+    [sun.azimuthDeg, sun.altitudeDeg],
+    ...hs.fillLights,
+  ];
+  return {
+    'hillshade-method': hs.method,
+    'hillshade-exaggeration': hs.exaggeration,
+    'hillshade-illumination-anchor': hs.illuminationAnchor,
+    'hillshade-illumination-direction': lights.map(([az]) =>
+      clamp(Math.round(mod360(az)), 0, 359),
+    ),
+    // Floor at 2° so a below-horizon sun still yields readable form, not a slab.
+    'hillshade-illumination-altitude': lights.map(([, alt]) =>
+      clamp(Math.round(alt), 2, 90),
+    ),
+    'hillshade-shadow-color': lights.map(([, alt]) =>
+      sampleColorRamp(hs.shadowByAltitude, alt),
+    ),
+    'hillshade-highlight-color': lights.map(([, alt]) =>
+      sampleColorRamp(hs.highlightByAltitude, alt),
+    ),
+    'hillshade-accent-color': hs.accentColor,
+  };
+}
+
+/** Sun position over the island centre right now — buildStyle's default when
+ *  no explicit sun is passed (MapView pushes the slider value on mount). */
+export function currentSun(): SunPosition {
+  return sunPosition(new Date(), DEFAULT_CENTER[1], DEFAULT_CENTER[0]);
+}
+
+export function buildStyle(
+  skin: Skin = DEFAULT_SKIN,
+  sun: SunPosition = currentSun(),
+): StyleSpecification {
   return {
     version: 8,
     // Self-hosted glyph PBFs (public/fonts/, npm run fetch:glyphs). Same
@@ -89,16 +141,11 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
         id: 'hillshade',
         type: 'hillshade',
         source: 'terrain-dem',
-        paint: {
-          'hillshade-exaggeration': skin.hillshade.exaggeration,
-          'hillshade-illumination-direction': skin.hillshade.illuminationDirection,
-          // Without this MapLibre defaults to 'viewport' and the sun orbits
-          // with the camera — the "colours change when I rotate" bug.
-          'hillshade-illumination-anchor': skin.hillshade.illuminationAnchor,
-          'hillshade-shadow-color': skin.hillshade.shadowColor,
-          'hillshade-highlight-color': skin.hillshade.highlightColor,
-          'hillshade-accent-color': skin.hillshade.accentColor,
-        },
+        // Direction/altitude/tint come from the live sun. 'illumination-anchor'
+        // stays 'map' (inside the helper) — 'viewport' would add the camera
+        // bearing every frame and re-shade the whole map as you orbit
+        // (CLAUDE.md gotcha #8).
+        paint: hillshadeLightForSun(skin, sun) as never,
       },
       // Rivers first so a reservoir fill draws over the line feeding it.
       {

@@ -54,15 +54,35 @@ export const KANDA_SKIN: Skin = {
   // Knuckles, Peak Wilderness...) without hiding the relief under them.
   forest: 'rgba(44, 92, 66, 0.5)',
   hillshade: {
-    // Lighter and cooler than a literal shaded-relief: the colour should carry
-    // the map, the shading should just give it form. A heavy dark hillshade
-    // was crushing every band to mud.
-    exaggeration: 0.42,
-    illuminationDirection: 315,
+    // 'igor' reads landform far better than the Lambertian 'standard' default,
+    // which was crushing every band to mud. Direction + altitude are driven by
+    // the real sun at runtime (buildStyle's hillshadeLightForSun), so shading
+    // tells a time-of-day story instead of a fixed NW keylight.
+    method: 'igor',
+    exaggeration: 0.55,
     illuminationAnchor: 'map',
-    shadowColor: 'rgba(58, 70, 104, 0.32)', // cool blue-violet, soft
-    highlightColor: 'rgba(255, 246, 224, 0.28)', // warm, subtle
     accentColor: 'rgba(0, 0, 0, 0)',
+    // 'igor' is single-light; multidirectional Swiss fill is a future skin.
+    fillLights: [],
+    // Cool blue-violet shadow that deepens and warms slightly at golden hour,
+    // and a night-blue floor so a below-horizon sun still gives readable form
+    // rather than a black slab.
+    shadowByAltitude: [
+      [-12, 'rgba(36, 48, 86, 0.36)'],
+      [2, 'rgba(84, 64, 96, 0.33)'],
+      [12, 'rgba(70, 66, 104, 0.31)'],
+      [45, 'rgba(58, 70, 104, 0.30)'],
+      [90, 'rgba(58, 70, 104, 0.28)'],
+    ],
+    // Sunlit faces: cool and faint at night, warm amber at low sun, easing to
+    // a neutral warm-white overhead.
+    highlightByAltitude: [
+      [-12, 'rgba(72, 98, 150, 0.20)'],
+      [2, 'rgba(255, 212, 156, 0.36)'],
+      [12, 'rgba(255, 234, 202, 0.32)'],
+      [45, 'rgba(255, 247, 231, 0.29)'],
+      [90, 'rgba(255, 250, 240, 0.27)'],
+    ],
   },
   sky: {
     skyColor: '#a9d8ef',

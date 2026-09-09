@@ -13,7 +13,7 @@ import { Protocol as PMTilesProtocol } from 'pmtiles';
 // the build it is emitted as a hashed asset. See the setWorkerUrl call below.
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { buildStyle } from './buildStyle';
+import { buildStyle, hillshadeLightForSun } from './buildStyle';
 import { DEFAULT_SKIN } from '../skins';
 import { addPeaksLayer, PEAK_LAYER_IDS, topPeakFeature } from './peaksLayer';
 import {
@@ -29,8 +29,23 @@ import {
   TERRAIN,
   exaggerationForZoom,
 } from '../config/tiles';
+import { sunDateFromSlstMinutes, sunPosition } from './sunPosition';
 import { attachMiddleDragRotate } from './middleDragRotate';
 import type { SelectedPeak } from '../types';
+
+/** Push the sun-driven hillshade paint for `slstMinutes` onto a live map. */
+function applySun(map: MapLibreMap, slstMinutes: number) {
+  if (!map.getLayer('hillshade')) return;
+  const sun = sunPosition(
+    sunDateFromSlstMinutes(slstMinutes),
+    DEFAULT_CENTER[1],
+    DEFAULT_CENTER[0],
+  );
+  const paint = hillshadeLightForSun(DEFAULT_SKIN, sun);
+  for (const [key, value] of Object.entries(paint)) {
+    map.setPaintProperty('hillshade', key as never, value as never);
+  }
+}
 
 // Point MapLibre at the Vite-produced worker URL. MapLibre's default —
 // `new URL('./maplibre-gl-worker.mjs', import.meta.url)` — otherwise routes
@@ -48,6 +63,8 @@ if (TERRAIN.mode === 'pmtiles') {
 
 interface MapViewProps {
   exaggeration: number;
+  /** Minutes past midnight Sri Lanka Standard Time — drives the hillshade sun. */
+  sunMinutes: number;
   onPeakSelect: (peak: SelectedPeak | null) => void;
   /** Exposes the live map instance so sibling UI (fly-to buttons etc.) can
    *  drive the camera without routing every interaction through props. */
@@ -93,13 +110,21 @@ function peakFromFeature(
   };
 }
 
-export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapViewProps) {
+export default function MapView({
+  exaggeration,
+  sunMinutes,
+  onPeakSelect,
+  onMapReady,
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   // Latest slider multiplier, read by the map's own `zoom` handler (which
   // outlives any single render) without re-subscribing.
   const multiplierRef = useRef(exaggeration);
   multiplierRef.current = exaggeration;
+  // Latest sun-slider value, so the one-shot style.load handler can apply it.
+  const sunMinutesRef = useRef(sunMinutes);
+  sunMinutesRef.current = sunMinutes;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -175,6 +200,7 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
       map.resize();
       applyAdaptiveTerrain();
       map.on('zoom', applyAdaptiveTerrain);
+      applySun(map, sunMinutesRef.current);
       addPeaksLayer(map);
       onMapReady?.(map);
 
@@ -216,6 +242,14 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
       exaggeration: exaggerationForZoom(map.getZoom(), exaggeration),
     });
   }, [exaggeration]);
+
+  // Time-of-day scrub: re-light the hillshade from the sun without rebuilding
+  // the style. The style.load handler applies the initial value.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    applySun(map, sunMinutes);
+  }, [sunMinutes]);
 
   return <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />;
 }
