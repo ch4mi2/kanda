@@ -93,6 +93,24 @@ export function currentSun(): SunPosition {
   return sunPosition(new Date(), DEFAULT_CENTER[1], DEFAULT_CENTER[0]);
 }
 
+/**
+ * The `sky` spec for a given sun position — aerial-perspective fog whose tint
+ * follows the sun (golden low, pale by day). Exported so MapView can push it
+ * via `map.setSky()` as the time-of-day slider moves. Sky/horizon colours
+ * stay fixed; only the haze is time-driven.
+ */
+export function skyForSun(skin: Skin, sun: SunPosition) {
+  const s = skin.sky;
+  return {
+    'sky-color': s.skyColor,
+    'sky-horizon-blend': s.skyHorizonBlend,
+    'horizon-color': s.horizonColor,
+    'horizon-fog-blend': s.horizonFogBlend,
+    'fog-color': sampleColorRamp(s.fogColorByAltitude, sun.altitudeDeg),
+    'fog-ground-blend': s.fogGroundBlend,
+  };
+}
+
 export function buildStyle(
   skin: Skin = DEFAULT_SKIN,
   sun: SunPosition = currentSun(),
@@ -211,13 +229,6 @@ export function buildStyle(
         },
       },
     ],
-    sky: {
-      'sky-color': skin.sky.skyColor,
-      'sky-horizon-blend': skin.sky.skyHorizonBlend,
-      'horizon-color': skin.sky.horizonColor,
-      'horizon-fog-blend': skin.sky.horizonFogBlend,
-      'fog-color': skin.sky.fogColor,
-      'fog-ground-blend': skin.sky.fogGroundBlend,
-    },
+    sky: skyForSun(skin, sun) as never,
   };
 }

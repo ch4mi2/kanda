@@ -13,7 +13,7 @@ import { Protocol as PMTilesProtocol } from 'pmtiles';
 // the build it is emitted as a hashed asset. See the setWorkerUrl call below.
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { buildStyle, hillshadeLightForSun } from './buildStyle';
+import { buildStyle, hillshadeLightForSun, skyForSun } from './buildStyle';
 import { DEFAULT_SKIN } from '../skins';
 import { addPeaksLayer, PEAK_LAYER_IDS, topPeakFeature } from './peaksLayer';
 import {
@@ -45,6 +45,8 @@ function applySun(map: MapLibreMap, slstMinutes: number) {
   for (const [key, value] of Object.entries(paint)) {
     map.setPaintProperty('hillshade', key as never, value as never);
   }
+  // Haze tint tracks the sun too (golden at dawn/dusk).
+  map.setSky(skyForSun(DEFAULT_SKIN, sun) as never);
 }
 
 // Point MapLibre at the Vite-produced worker URL. MapLibre's default —

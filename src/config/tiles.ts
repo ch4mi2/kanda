@@ -74,7 +74,11 @@ export const MAX_ELEVATION_M = 2524; // Pidurutalagala, the tallest peak
 // Central highlands, a good default view showing the main mountain ranges.
 export const DEFAULT_CENTER: [number, number] = [80.7, 6.85];
 export const DEFAULT_ZOOM = 8.3;
-export const DEFAULT_PITCH = 60;
+// 68°, not 60°: MapLibre only renders terrain fog above ~60° pitch
+// (calculateFogBlendOpacity ramps 60->70), so at 60° aerial perspective was
+// switched off and every ridge sat at the same apparent distance. 68° puts
+// the resting view inside the band where haze actually draws. See §5A.3.
+export const DEFAULT_PITCH = 68;
 export const DEFAULT_BEARING = -20;
 
 // The DEM tops out at z12 (~38 m/px). Past ~z13 the camera is just staring
@@ -82,11 +86,13 @@ export const DEFAULT_BEARING = -20;
 export const MIN_ZOOM = 6.5;
 export const MAX_ZOOM = 13;
 
-// Camera rotate/tilt limits. Design handoff sheet: yaw is free (±180°),
-// pitch clamps 12°-72°. Applied as the map's minPitch/maxPitch (so MapLibre's
-// own dragRotate respects them) and re-clamped by the middle-drag handler.
+// Camera rotate/tilt limits. Yaw is free (±180°). Pitch clamps 12°-80°:
+// the design specced 72°, but the terrain-fog band is 60°-70°+, so the top of
+// the range is lifted to 80° to give a clearly-hazed oblique view. Applied as
+// the map's minPitch/maxPitch (so MapLibre's own dragRotate respects them) and
+// re-clamped by the middle-drag handler. (Summit view in 5B pushes past this.)
 export const PITCH_MIN = 12;
-export const PITCH_MAX = 72;
+export const PITCH_MAX = 80;
 // Sensitivity of the middle-button rotate/tilt drag (map/middleDragRotate.ts).
 export const ORBIT_YAW_SENSITIVITY = 0.35; // deg of bearing per px dragged
 export const ORBIT_PITCH_SENSITIVITY = 0.25; // deg of pitch per px dragged

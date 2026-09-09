@@ -51,8 +51,18 @@ export interface SkySkin {
   skyColor: string;
   skyHorizonBlend: number;
   horizonColor: string;
+  /** 0–1, the view depth where the haze shifts from `fogColorByAltitude` to
+   *  `horizonColor`. */
   horizonFogBlend: number;
-  fogColor: string;
+  /**
+   * Aerial perspective. MapLibre's terrain fog is genuine distance fog
+   * (clip-space depth, pow-2 falloff) but it only renders above ~60° pitch —
+   * see §5A.3 of the Phase 5 plan and DEFAULT_PITCH/PITCH_MAX in config/tiles.
+   * Distant ridges wash toward this colour, keyframed by sun altitude (deg):
+   * golden near the horizon, pale by day, dim at night. Ascending by altitude.
+   */
+  fogColorByAltitude: Array<[number, string]>;
+  /** 0–1, the view depth where fog starts. Lower = haze builds nearer. */
   fogGroundBlend: number;
 }
 

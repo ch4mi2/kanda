@@ -88,9 +88,20 @@ export const KANDA_SKIN: Skin = {
     skyColor: '#a9d8ef',
     skyHorizonBlend: 0.6,
     horizonColor: '#e9f1f0',
-    horizonFogBlend: 0.55,
-    fogColor: '#dcedf0', // toward the water colour so the horizon hazes out
-    fogGroundBlend: 0.5,
+    horizonFogBlend: 0.5,
+    // Haze that goes golden as the sun drops, pale and cool by day, dim at
+    // night — so a distant ridge reads as distant. Only visible at pitch
+    // >~60° (why DEFAULT_PITCH is now 68).
+    fogColorByAltitude: [
+      [-10, '#41506a'],
+      [3, '#ecca9f'],
+      [12, '#e7d6c0'],
+      [35, '#dce9ef'],
+      [90, '#e0eef2'],
+    ],
+    // Lower than MapLibre's 0.5 default: the haze starts nearer in view depth,
+    // so mid-distance ranges already separate from the ones behind them.
+    fogGroundBlend: 0.38,
   },
   contour: {
     line: '#4a3626', // dark cocoa — enough contrast on the green AND terracotta
