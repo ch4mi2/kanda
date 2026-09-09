@@ -33,11 +33,10 @@ function softColorRamp(skin: Skin): unknown[] {
 export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
   return {
     version: 8,
-    // MapLibre requires glyphs to be set for symbol layers (peak labels) to
-    // render text. fonts.openmaptiles.org is dead (200s an HTML page for
-    // every range instead of a PBF) despite still resolving; MapLibre's own
-    // demo glyph host is free, keyless, and actually serves the font data.
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    // Self-hosted glyph PBFs (public/fonts/, npm run fetch:glyphs). Same
+    // "Noto Sans Regular/Bold" files demotiles.maplibre.org served — copied
+    // local so peak labels render with the network off (CLAUDE.md gotcha #3).
+    glyphs: `${import.meta.env.BASE_URL}fonts/{fontstack}/{range}.pbf`,
     sources: {
       'terrain-dem': terrainSourceSpec(),
     },

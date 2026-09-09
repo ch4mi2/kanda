@@ -5,7 +5,7 @@ export default function Attribution() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className={`attribution ${open ? 'attribution--open' : ''}`}>
+    <div className="panel attribution">
       <button
         className="attribution__toggle"
         onClick={() => setOpen((o) => !o)}

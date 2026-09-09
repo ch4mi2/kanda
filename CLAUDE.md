@@ -25,20 +25,30 @@ that's deliberate, nothing depends on it, rename it later if you want.
 src/
   config/tiles.ts     ALL tile URLs + camera defaults. Single choke point —
                       change providers here and nowhere else.
+  skins/             Skin type + the "Kanda" pack. The map's whole look is
+                     data here, not code — buildStyle takes a Skin and owns
+                     no palette. "Skin packs" is later a menu over SKINS[].
   map/
-    buildStyle.ts     MapLibre style: color-relief ramp, hillshade, sky, glyphs.
+    buildStyle.ts     MapLibre style plumbing: takes a Skin, wires sources +
+                      layers + sky. Glyphs are self-hosted (public/fonts/).
     MapView.tsx       Imperative MapLibre lifecycle in a thin React wrapper.
     middleDragRotate.ts  Middle-button drag → rotate + tilt (the one gesture
                       MapLibre has no built-in handler for).
-    peaksLayer.ts     Peak symbols, 3 zoom tiers, canvas-generated triangle icon.
+    peaksLayer.ts     Peak symbols, 3 zoom tiers, canvas-generated triangle
+                      icon; setPeakElevationFloor() for the filter chips.
     nearbyPeaks.ts    Haversine + initial-bearing maths for the nearby list.
-  components/         PeakCard, NearbyPeaks, ExaggerationSlider, Legend, Attribution.
+  components/         PeakCard, NearbyPeaks, SearchField, FilterChips,
+                     GestureHint, ExaggerationSlider, Legend, Attribution.
+  index.css          Design tokens (palette, 4 px grid, radii, type scale).
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
                       Overpass at runtime.
   data/usePeaks.ts    Loads the GeoJSON once for the nearby-peaks maths.
+public/fonts/        Self-hosted MapLibre glyph PBFs (npm run fetch:glyphs).
 scripts/
   fetch-peaks.mjs         Overpass → src/data/peaks.geojson
   fetch-terrain.mjs       AWS → public/tiles/terrain/ (~2,024 tiles, 54 MB)
+  repair-dem.mjs          Repair DEM void spikes in the local pyramid
+  fetch-glyphs.mjs        demotiles → public/fonts/ (Noto Sans PBF ranges)
   pack-pmtiles.mjs        public/tiles/terrain/ → public/tiles/terrain.pmtiles
 design/               Exported Claude Design source. Tokens live in the
                       "1D Handoff sheet" section of Kanda Trails UI.dc.html.
@@ -97,9 +107,13 @@ broken-slow. This was a real bug, not a hypothetical.
    `MAX_ZOOM` (13) so it can't push past the z12 DEM.
 2. **`style.load`, not `load`.** The `load` event can hang indefinitely waiting
    on every visible tile across a wide oblique view. Do setup on `style.load`.
-3. **`demotiles.maplibre.org` glyphs must go.** Currently referenced in
-   `buildStyle.ts` — it's MapLibre's *demo* server and a hard network dependency
-   that breaks offline. Self-host glyph PBFs (needs Sinhala + Tamil too).
+3. **`demotiles.maplibre.org` glyphs — done (Phase 4D).** Glyph PBFs are
+   self-hosted in `public/fonts/` (`npm run fetch:glyphs`), `buildStyle.ts`
+   points `glyphs` at `${BASE_URL}fonts/{fontstack}/{range}.pbf`, and the app
+   makes zero external requests. Only Latin + punctuation ranges of "Noto Sans
+   Regular/Bold" are fetched — map labels are romanised peak names. Sinhala/
+   Tamil map glyphs are still a follow-up (only needed if local names ever go
+   on map labels; the PeakCard renders them in HTML with the web font today).
 4. **Vite + maplibre worker.** `optimizeDeps.exclude: ['maplibre-gl']` plus
    `worker: { format: 'es' }` in `vite.config.ts`, and `MapView.tsx` imports the
    worker as `maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url` and feeds it to
@@ -114,8 +128,11 @@ broken-slow. This was a real bug, not a hypothetical.
    `peaksLayer.ts` generates its triangle on a canvas and registers it as an SDF
    image instead.
 6. **Vertical exaggeration is load-bearing.** At true 1.0×, 2,524 m across a
-   400 km island looks flat and the app reads as broken. The design specifies
-   ~4× at island view easing to ~2× zoomed in.
+   400 km island looks flat and the app reads as broken. The design specced
+   ~4×/2×; Phase 4A softened the shipped curve to ~2.5× island / 1.8× regional
+   / 1.4× close (`EXAGGERATION_STOPS` in `config/tiles.ts`) because ≥3×
+   amplifies SRTM's 30 m speckle into fake ridging. `scripts/repair-dem.mjs
+   --smooth` is the knob if it still needs to be smoother.
 
 ## Design
 
@@ -128,15 +145,20 @@ Tokens (from the design's own handoff sheet):
 | Leaf | `#2f7d54` `#22694a` `#5cb17a` | | Paper | `#f7f5ec` |
 | Chip | `#e8eee5` `#eef3ea` | | | |
 
-Type: **Bricolage Grotesque 800** (display) + **Outfit 400/600** (UI), both
-self-hosted. Scale 44/19/15/12. 4 px grid. Radii 12/14/16/20/26.
+Type: **Bricolage Grotesque 800** (display) + **Outfit 400/600** (UI). Scale
+44/19/15/12. 4 px grid. Radii 12/14/16/20/26.
 
-Interactions the design specifies: drag orbits (yaw ±180°, pitch 12°–72°), pinch
-zooms, tap flies to bounds in 700 ms, labels collide-cull by priority.
+Phase 4D landed all of this: tokens are CSS custom properties in `src/index.css`
+(the app reads `var(--ink)` etc., never a raw hex); fonts are self-hosted via
+the `@fontsource/*` packages (bundled by Vite, no Google Fonts CDN), imported in
+`main.tsx`. The chrome was rebuilt to the mockups — brand lockup, `SearchField`,
+`FilterChips` (repointed to an elevation floor), `PeakCard`, `NearbyPeaks`,
+mobile bottom sheet, restyled MapLibre compass/zoom cluster, `GestureHint`.
 
 **The design is trail-centric but trails are cut from scope** (no trustworthy
-trail data source yet). Keep its visual language and component anatomy, repoint
-content from trails to peaks: trail card → peak card, trail list → nearby peaks.
+trail data source yet). Its visual language and component anatomy were kept and
+repointed from trails to peaks: trail card → peak card, trail list → nearby
+peaks, trail filters → elevation-floor chips.
 
 **Known flaw in the design's own mockups:** `design/terrain.html:187` ramps nine
 near-identical greens and then applies `Math.pow(h/MAXH, 2.0)`, which squashes a
@@ -152,7 +174,13 @@ npm run build           # tsc + vite build
 npm run lint            # oxlint
 npm run fetch:peaks     # refresh peaks from Overpass
 npm run fetch:terrain   # download the 54 MB tile pyramid (resumable)
+npm run repair:dem      # repair DEM void spikes in public/tiles/terrain/
+npm run fetch:glyphs    # download the self-hosted glyph PBFs
+npm run pack:pmtiles    # re-pack the loose pyramid into terrain.pmtiles
 ```
+
+`public/tiles/` is gitignored; after a fresh clone run `fetch:terrain` then
+`repair:dem` then `pack:pmtiles`. `public/fonts/` **is** committed.
 
 ## Verifying map work
 

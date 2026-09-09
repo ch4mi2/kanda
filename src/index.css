@@ -1,6 +1,61 @@
+/* Kanda design tokens — from the design handoff sheet
+   (design/Kanda Trails UI.dc.html, section 1D). The rest of the app reads
+   these variables and never hard-codes a hex or a radius. */
 :root {
-  color-scheme: light dark;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Palette */
+  --ink: #0d251b;
+  --ink-80: rgba(13, 37, 27, 0.82);
+  --ink-60: rgba(13, 37, 27, 0.6);
+  --moss: #6b8779;
+  --leaf: #2f7d54;
+  --leaf-deep: #22694a;
+  --leaf-bright: #5cb17a;
+  --route: #ff5c46;
+  --water: #a9dcea;
+  --paper: #f7f5ec;
+  --paper-90: rgba(247, 245, 236, 0.92);
+  --chip: #e8eee5;
+  --chip-alt: #eef3ea;
+  --hairline: #e2e6da;
+
+  /* On-map glass panels sit over dark terrain, so they invert: Ink ground,
+     Paper text. Off-map surfaces use Paper ground, Ink text. */
+  --panel-bg: rgba(13, 37, 27, 0.86);
+  --panel-fg: var(--paper);
+  --panel-fg-dim: #9dc0ac;
+
+  /* 4 px spacing grid */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+
+  /* Radii: 12 / 14 / 16 / 20 / 26 */
+  --r-sm: 12px;
+  --r-md: 14px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 26px;
+  --r-pill: 999px;
+
+  /* Type */
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-ui: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Scale 44 / 19 / 15 / 12 */
+  --t-display: 44px;
+  --t-title: 19px;
+  --t-body: 15px;
+  --t-meta: 12px;
+
+  --shadow-panel: 0 18px 40px -22px rgba(13, 37, 27, 0.6);
+  --shadow-float: 0 12px 28px -14px rgba(13, 37, 27, 0.5);
+
+  color-scheme: light;
+  font-family: var(--font-ui);
+  color: var(--ink);
 }
 
 * {
@@ -17,5 +72,15 @@ body,
 }
 
 body {
-  background: #0b2733;
+  background: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }

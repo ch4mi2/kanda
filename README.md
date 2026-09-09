@@ -65,16 +65,23 @@ npm run fetch:peaks
 src/
   config/tiles.ts     Every tile URL and map default — the one place to
                        change providers, bbox, or camera defaults.
+  skins/              The map's look as data: a Skin type + the "Kanda" pack.
   map/
-    buildStyle.ts      The MapLibre style: color-relief ramp, hillshade, sky.
+    buildStyle.ts      MapLibre style plumbing — takes a Skin, wires layers.
     MapView.tsx         Imperative MapLibre lifecycle in a React wrapper.
     peaksLayer.ts        Peak markers, label tiers, click handling.
-  components/          Exaggeration slider, peak detail card, legend,
-                       attribution panel.
+    middleDragRotate.ts  Middle-button drag → rotate + tilt.
+  components/          Search, filter chips, peak card, nearby peaks, legend,
+                       relief slider, gesture hint, attribution.
+  index.css           Design tokens (palette, grid, radii, type scale).
   data/peaks.geojson   Committed OSM peak data (198 named summits).
+public/fonts/         Self-hosted MapLibre glyph PBFs (committed).
 scripts/
   fetch-peaks.mjs       Regenerates peaks.geojson from Overpass.
   fetch-terrain.mjs     Downloads the offline terrain tile pyramid.
+  repair-dem.mjs        Repairs DEM void spikes in the local pyramid.
+  fetch-glyphs.mjs      Downloads the self-hosted glyph PBFs.
+  pack-pmtiles.mjs      Packs the loose pyramid into one .pmtiles archive.
 ```
 
 ## Data sources & attribution

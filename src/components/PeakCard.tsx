@@ -31,41 +31,51 @@ export default function PeakCard({ peak, map, onClose }: PeakCardProps) {
   };
 
   return (
-    <div className="peak-card">
+    <div className="card peak-card">
       <button className="peak-card__close" onClick={onClose} aria-label="Close">
         ×
       </button>
       <h2 className="peak-card__name">{peak.name}</h2>
       {(peak.name_si || peak.name_ta) && (
-        <p className="peak-card__local-names">
+        <p className="peak-card__local">
           {[peak.name_si, peak.name_ta].filter(Boolean).join(' · ')}
         </p>
       )}
-      <dl className="peak-card__facts">
-        <dt>Elevation</dt>
-        <dd>
-          {peak.displayEle != null ? (
-            <>
-              {peak.displayEle.toLocaleString()} m
-              {peak.eleSource === 'terrain' && (
-                <span className="peak-card__est"> (estimated from terrain)</span>
-              )}
-            </>
-          ) : (
-            'Unknown'
-          )}
-        </dd>
-        <dt>Coordinates</dt>
-        <dd>
-          {peak.lat.toFixed(4)}, {peak.lng.toFixed(4)}
-        </dd>
-      </dl>
+
+      <div className="peak-card__stats">
+        <div className="stat">
+          <span className="stat__k">Elevation</span>
+          <span className="stat__v">
+            {peak.displayEle != null ? (
+              <>
+                {peak.displayEle.toLocaleString()}
+                <small> m{peak.eleSource === 'terrain' ? ' est.' : ''}</small>
+              </>
+            ) : (
+              'Unknown'
+            )}
+          </span>
+        </div>
+        <div className="stat">
+          <span className="stat__k">Position</span>
+          <span className="stat__v">
+            {peak.lat.toFixed(3)}
+            <small>, {peak.lng.toFixed(3)}</small>
+          </span>
+        </div>
+      </div>
+
       <div className="peak-card__actions">
-        <button className="peak-card__fly" onClick={flyHere}>
+        <button className="btn btn--primary" onClick={flyHere}>
           Fly here
         </button>
         {wikiUrl && (
-          <a className="peak-card__wiki" href={wikiUrl} target="_blank" rel="noopener noreferrer">
+          <a
+            className="btn btn--ghost"
+            href={wikiUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Wikipedia ↗
           </a>
         )}

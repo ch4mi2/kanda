@@ -156,7 +156,9 @@ export default function MapView({ exaggeration, onPeakSelect, onMapReady }: MapV
       (window as unknown as { __map?: MapLibreMap }).__map = map;
     }
 
-    map.addControl(new NavigationControl({ visualizePitch: true }), 'top-right');
+    // Bottom-right compass + zoom cluster, per the design. Top-right would
+    // collide with the search field on a phone.
+    map.addControl(new NavigationControl({ visualizePitch: true }), 'bottom-right');
     map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
 
     // 'style.load' fires once the style/sources are parsed and ready to

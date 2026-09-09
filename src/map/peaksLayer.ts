@@ -97,6 +97,25 @@ export function addPeaksLayer(map: MLMap) {
 
 export const PEAK_LAYER_IDS = PEAK_TIERS.map((t) => t.id);
 
+/**
+ * Apply a global minimum-elevation floor across every peak tier — the
+ * filter-chip behaviour ("2,000 m+" etc.). floorM <= 0 restores each tier's
+ * own default filter (including the minor tier's untagged peaks).
+ */
+export function setPeakElevationFloor(map: MLMap, floorM: number) {
+  for (const tier of PEAK_TIERS) {
+    const tierDefault =
+      tier.minEle === 0
+        ? true
+        : ['>=', ['coalesce', ['get', 'ele'], 0], tier.minEle];
+    const filter =
+      floorM > 0
+        ? ['>=', ['coalesce', ['get', 'ele'], 0], Math.max(floorM, tier.minEle)]
+        : tierDefault;
+    map.setFilter(tier.id, filter as never);
+  }
+}
+
 export function reloadPeaksSource(map: MLMap) {
   const source = map.getSource(PEAKS_SOURCE_ID) as GeoJSONSource | undefined;
   source?.setData(peaksGeoJson);

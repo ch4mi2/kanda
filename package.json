@@ -10,10 +10,13 @@
     "preview": "vite preview",
     "fetch:peaks": "node scripts/fetch-peaks.mjs",
     "fetch:terrain": "node scripts/fetch-terrain.mjs",
+    "fetch:glyphs": "node scripts/fetch-glyphs.mjs",
     "repair:dem": "node scripts/repair-dem.mjs --repair",
     "pack:pmtiles": "node scripts/pack-pmtiles.mjs"
   },
   "dependencies": {
+    "@fontsource/bricolage-grotesque": "^5.3.0",
+    "@fontsource/outfit": "^5.3.0",
     "maplibre-contour": "^0.1.0",
     "maplibre-gl": "^6.8.0",
     "pmtiles": "^4.5.0",

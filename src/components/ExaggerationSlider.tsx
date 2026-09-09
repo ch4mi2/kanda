@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MAX_EXAGGERATION, MIN_EXAGGERATION } from '../config/tiles';
 
 interface ExaggerationSliderProps {
@@ -6,11 +7,13 @@ interface ExaggerationSliderProps {
 }
 
 export default function ExaggerationSlider({ value, onChange }: ExaggerationSliderProps) {
+  const [showHint, setShowHint] = useState(false);
+
   return (
-    <div className="exaggeration">
-      <label htmlFor="exaggeration-input">
-        Relief fine-tune: <strong>{value.toFixed(2)}×</strong>
-        {value === 1 && <span className="exaggeration__true"> (default)</span>}
+    <div className="panel exaggeration">
+      <label className="exaggeration__head" htmlFor="exaggeration-input">
+        <span>Relief</span>
+        <span className="exaggeration__value">{value.toFixed(2)}×</span>
       </label>
       <input
         id="exaggeration-input"
@@ -21,12 +24,20 @@ export default function ExaggerationSlider({ value, onChange }: ExaggerationSlid
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
       />
-      <p className="exaggeration__hint">
-        Height is already exaggerated automatically — more when viewing the whole
-        island, less when zoomed in — because at true scale a 2,524 m island
-        400 km across looks flat. This only nudges that; it never changes the
-        elevation data.
-      </p>
+      <button
+        className="exaggeration__toggle"
+        onClick={() => setShowHint((s) => !s)}
+        aria-expanded={showHint}
+      >
+        {showHint ? 'Hide' : 'What is this?'}
+      </button>
+      {showHint && (
+        <p className="exaggeration__hint">
+          Height is already exaggerated automatically — more at island view, less
+          zoomed in — because at true scale a 2,524 m island 400 km across looks
+          flat. This only nudges that; it never changes the elevation data.
+        </p>
+      )}
     </div>
   );
 }
