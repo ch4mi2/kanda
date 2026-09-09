@@ -31,7 +31,36 @@ import {
 } from '../config/tiles';
 import { sunDateFromSlstMinutes, sunPosition } from './sunPosition';
 import { attachMiddleDragRotate } from './middleDragRotate';
+import { createSummitView, type SummitView } from './summitView';
 import type { SelectedPeak } from '../types';
+
+/** Enable or disable every base camera gesture in one call — summit view takes
+ *  the camera over completely and restores this on exit. Middle-drag rotate
+ *  isn't a MapLibre handler, so it's re-attached through `detachRef`. */
+function setBaseGestures(
+  map: MapLibreMap,
+  enabled: boolean,
+  detachRef: { current: () => void },
+) {
+  const handlers = [
+    map.dragPan,
+    map.dragRotate,
+    map.scrollZoom,
+    map.touchZoomRotate,
+    map.touchPitch,
+    map.keyboard,
+  ];
+  for (const h of handlers) {
+    if (enabled) h.enable();
+    else h.disable();
+  }
+  if (enabled) {
+    detachRef.current = attachMiddleDragRotate(map);
+  } else {
+    detachRef.current();
+    detachRef.current = () => {};
+  }
+}
 
 /** Push the sun-driven hillshade paint for `slstMinutes` onto a live map. */
 function applySun(map: MapLibreMap, slstMinutes: number) {
@@ -67,6 +96,8 @@ interface MapViewProps {
   exaggeration: number;
   /** Minutes past midnight Sri Lanka Standard Time — drives the hillshade sun. */
   sunMinutes: number;
+  /** The peak to stand on in summit view, or null for the normal overhead map. */
+  viewpoint: SelectedPeak | null;
   onPeakSelect: (peak: SelectedPeak | null) => void;
   /** Exposes the live map instance so sibling UI (fly-to buttons etc.) can
    *  drive the camera without routing every interaction through props. */
@@ -115,6 +146,7 @@ function peakFromFeature(
 export default function MapView({
   exaggeration,
   sunMinutes,
+  viewpoint,
   onPeakSelect,
   onMapReady,
 }: MapViewProps) {
@@ -127,6 +159,10 @@ export default function MapView({
   // Latest sun-slider value, so the one-shot style.load handler can apply it.
   const sunMinutesRef = useRef(sunMinutes);
   sunMinutesRef.current = sunMinutes;
+  // Teardown for the (non-handler) middle-drag rotate, swapped out while summit
+  // view owns the camera.
+  const detachRotateRef = useRef<() => void>(() => {});
+  const summitRef = useRef<SummitView | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -136,6 +172,8 @@ export default function MapView({
     const applyAdaptiveTerrain = () => {
       const map = mapRef.current;
       if (!map || !map.getSource('terrain-dem')) return;
+      // Summit view manages terrain exaggeration itself (~1.2x, honest heights).
+      if (summitRef.current?.active()) return;
       map.setTerrain({
         source: 'terrain-dem',
         exaggeration: exaggerationForZoom(map.getZoom(), multiplierRef.current),
@@ -175,7 +213,7 @@ export default function MapView({
     // central to a look-around app, but it lives on right-drag, middle-drag,
     // two-finger drag and the on-screen compass — not by stealing left-drag,
     // which left users unable to pan at all.
-    const detachRotate = attachMiddleDragRotate(map);
+    detachRotateRef.current = attachMiddleDragRotate(map);
 
     // Dev-only escape hatch for verifying camera state from the console —
     // `__map.getBearing()` should change AND hold during a drag.
@@ -204,6 +242,10 @@ export default function MapView({
       map.on('zoom', applyAdaptiveTerrain);
       applySun(map, sunMinutesRef.current);
       addPeaksLayer(map);
+      summitRef.current = createSummitView(map, {
+        reliefMultiplier: () => multiplierRef.current,
+        onExit: () => applyAdaptiveTerrain(),
+      });
       onMapReady?.(map);
 
       map.on('mouseenter', PEAK_LAYER_IDS, () => {
@@ -226,7 +268,9 @@ export default function MapView({
     });
 
     return () => {
-      detachRotate();
+      summitRef.current?.destroy();
+      summitRef.current = null;
+      detachRotateRef.current();
       map.remove();
       mapRef.current = null;
     };
@@ -239,11 +283,37 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded() || !map.getSource('terrain-dem')) return;
+    if (summitRef.current?.active()) {
+      summitRef.current.setReliefMultiplier(exaggeration);
+      return;
+    }
     map.setTerrain({
       source: 'terrain-dem',
       exaggeration: exaggerationForZoom(map.getZoom(), exaggeration),
     });
   }, [exaggeration]);
+
+  // Enter / leave summit view when the chosen viewpoint changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    const summit = summitRef.current;
+    if (!map || !summit) return;
+    if (viewpoint) {
+      let ele = viewpoint.displayEle ?? viewpoint.ele ?? 0;
+      if (ele <= 0) {
+        // Last resort — usually displayEle is already set (OSM or a DEM sample
+        // taken at selection time). queryTerrainElevation can return 0 on
+        // unloaded tiles, so only trust a positive result.
+        const sampled = map.queryTerrainElevation([viewpoint.lng, viewpoint.lat]);
+        ele = sampled && sampled > 0 ? sampled : 0;
+      }
+      setBaseGestures(map, false, detachRotateRef);
+      summit.enter({ lng: viewpoint.lng, lat: viewpoint.lat, ele });
+    } else if (summit.active()) {
+      summit.exit();
+      setBaseGestures(map, true, detachRotateRef);
+    }
+  }, [viewpoint]);
 
   // Time-of-day scrub: re-light the hillshade from the sun without rebuilding
   // the style. The style.load handler applies the initial value.

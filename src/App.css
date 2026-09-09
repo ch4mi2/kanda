@@ -520,6 +520,79 @@
   color: var(--route);
 }
 
+/* ---------- summit view ---------- */
+
+.summit-bar {
+  position: absolute;
+  top: var(--s3);
+  left: var(--s3);
+  right: var(--s3);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s3);
+}
+
+.summit-bar__back {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: var(--s2) var(--s3);
+  font: inherit;
+  font-size: var(--t-meta);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+
+.summit-bar__where {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.summit-bar__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--t-body);
+  color: var(--ink);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summit-bar__ele {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--moss);
+}
+
+.summit-bar__hint {
+  font-size: 11px;
+  color: var(--moss);
+  white-space: nowrap;
+  flex: none;
+  display: none;
+}
+
+@media (min-width: 721px) {
+  .summit-bar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(440px, calc(100vw - 32px));
+  }
+  .summit-bar__hint {
+    display: block;
+  }
+}
+
 /* ---------- gesture hint ---------- */
 
 .hint {

@@ -5,6 +5,8 @@ interface PeakCardProps {
   peak: SelectedPeak;
   map: MLMap | null;
   onClose: () => void;
+  /** Enter summit view standing on this peak. */
+  onStand: () => void;
 }
 
 function wikipediaUrl(wikipedia: string): string | null {
@@ -15,7 +17,7 @@ function wikipediaUrl(wikipedia: string): string | null {
   return `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
 }
 
-export default function PeakCard({ peak, map, onClose }: PeakCardProps) {
+export default function PeakCard({ peak, map, onClose, onStand }: PeakCardProps) {
   const wikiUrl = peak.wikipedia ? wikipediaUrl(peak.wikipedia) : null;
 
   const flyHere = () => {
@@ -66,7 +68,10 @@ export default function PeakCard({ peak, map, onClose }: PeakCardProps) {
       </div>
 
       <div className="peak-card__actions">
-        <button className="btn btn--primary" onClick={flyHere}>
+        <button className="btn btn--primary" onClick={onStand}>
+          Stand here
+        </button>
+        <button className="btn btn--ghost" onClick={flyHere}>
           Fly here
         </button>
         {wikiUrl && (

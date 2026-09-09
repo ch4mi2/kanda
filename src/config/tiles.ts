@@ -138,5 +138,32 @@ export const DEFAULT_EXAGGERATION = 1.0; // multiplier — see exaggerationForZo
 export const MIN_EXAGGERATION = 0.5;
 export const MAX_EXAGGERATION = 1.8;
 
+// ---- Summit view (Phase 5B) ----
+// Stand *on* a peak at eye level and look around. The camera sits at the
+// summit; "looking" recomputes a target point this far out along the current
+// heading and re-solves the camera with calculateCameraOptionsFromTo (there is
+// no free-camera API in MapLibre).
+export const SUMMIT_LOOK_DISTANCE_KM = 40;
+// Eye clearance above the (exaggerated) summit surface. ~25 m, not 1.7 m: far
+// enough that _elevateCameraIfInsideTerrain (which silently rewrites pitch/zoom
+// when the camera is inside terrain, with no off switch) can't nudge us, and
+// visually indistinguishable from standing at this scale.
+export const SUMMIT_EYE_MARGIN_M = 25;
+// Relief multiplier baseline while in summit view — near-honest heights, which
+// is the whole point of standing there. The user's relief slider still rides
+// on top of this.
+export const SUMMIT_EXAGGERATION = 1.2;
+// Look pitch: 90 = level horizon. Clamp to a narrow cone around the horizon —
+// a summit panorama is about what's *out there*, not your own feet or the
+// empty sky. Below ~84 the near slope drops out of the DEM mesh and leaves a
+// void under the horizon.
+export const SUMMIT_PITCH_MIN = 84;
+export const SUMMIT_PITCH_MAX = 99;
+// maxPitch must clear SUMMIT_PITCH_MAX (default maxPitch is 60; the hard
+// MapLibre ceiling is 180). Above 90 also needs setCenterClampedToGround(false).
+export const SUMMIT_MAX_PITCH = 115;
+// Peaks within this range of the summit are candidates for a skyline label.
+export const SUMMIT_LABEL_RADIUS_KM = 65;
+
 export const PEAKS_ATTRIBUTION =
   'Peaks: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)';

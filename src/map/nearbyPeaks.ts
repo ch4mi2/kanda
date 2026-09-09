@@ -48,6 +48,29 @@ export function initialBearingDeg(
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
+/**
+ * The point `distanceKm` away from `origin` along the great circle heading
+ * `bearingDeg` (clockwise from north). Used by summit view to place the
+ * camera's look-at target ~40 km out along the current heading.
+ */
+export function destinationPoint(
+  [lng, lat]: [number, number],
+  distanceKm: number,
+  bearingDeg: number,
+): [number, number] {
+  const δ = distanceKm / EARTH_RADIUS_KM;
+  const θ = toRad(bearingDeg);
+  const φ1 = toRad(lat);
+  const λ1 = toRad(lng);
+  const sinφ2 =
+    Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ);
+  const φ2 = Math.asin(Math.min(1, Math.max(-1, sinφ2)));
+  const y = Math.sin(θ) * Math.sin(δ) * Math.cos(φ1);
+  const x = Math.cos(δ) - Math.sin(φ1) * sinφ2;
+  const λ2 = λ1 + Math.atan2(y, x);
+  return [((toDeg(λ2) + 540) % 360) - 180, toDeg(φ2)];
+}
+
 const COMPASS_16 = [
   'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
   'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW',

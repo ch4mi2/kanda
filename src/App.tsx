@@ -10,6 +10,7 @@ import Attribution from './components/Attribution';
 import SearchField from './components/SearchField';
 import FilterChips from './components/FilterChips';
 import GestureHint from './components/GestureHint';
+import SummitBar from './components/SummitBar';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
 import { slstNowMinutes } from './map/sunPosition';
 import { setPeakElevationFloor } from './map/peaksLayer';
@@ -38,6 +39,9 @@ export default function App() {
   const [exaggeration, setExaggeration] = useState(DEFAULT_EXAGGERATION);
   const [sunMinutes, setSunMinutes] = useState(slstNowMinutes);
   const [selectedPeak, setSelectedPeak] = useState<SelectedPeak | null>(null);
+  // Non-null while standing on a summit (5B). Drives MapView's summit mode and
+  // swaps the overhead chrome for the summit bar.
+  const [viewpoint, setViewpoint] = useState<SelectedPeak | null>(null);
   const [map, setMap] = useState<MLMap | null>(null);
   const [elevationFloor, setElevationFloor] = useState(0);
   const peaks = usePeaks();
@@ -91,56 +95,66 @@ export default function App() {
     [map],
   );
 
+  const inSummit = viewpoint != null;
+
   return (
     <div className="app">
       <MapView
         exaggeration={exaggeration}
         sunMinutes={sunMinutes}
+        viewpoint={viewpoint}
         onPeakSelect={setSelectedPeak}
         onMapReady={handleMapReady}
       />
 
-      <div className="topstack">
-        <div className="card brand">
-          <span className="brand__mark">K</span>
-          <span className="brand__text">
-            <span className="brand__name">KANDA</span>
-            <span className="brand__tag">Peaks of Sri Lanka</span>
-          </span>
-        </div>
-        <SearchField
-          peaks={peaks}
-          elevationFloor={elevationFloor}
-          onPick={pickFromSearch}
-        />
-        <FilterChips value={elevationFloor} onChange={setElevationFloor} />
-      </div>
+      {inSummit ? (
+        <SummitBar peak={viewpoint} onExit={() => setViewpoint(null)} />
+      ) : (
+        <>
+          <div className="topstack">
+            <div className="card brand">
+              <span className="brand__mark">K</span>
+              <span className="brand__text">
+                <span className="brand__name">KANDA</span>
+                <span className="brand__tag">Peaks of Sri Lanka</span>
+              </span>
+            </div>
+            <SearchField
+              peaks={peaks}
+              elevationFloor={elevationFloor}
+              onPick={pickFromSearch}
+            />
+            <FilterChips value={elevationFloor} onChange={setElevationFloor} />
+          </div>
 
-      <div className="dock">
-        <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
-        <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
-      </div>
+          <div className="dock">
+            <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
+            <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
+          </div>
 
-      <Legend />
+          <Legend />
 
-      {selectedPeak && (
-        <div className="sheet">
-          <PeakCard
-            peak={selectedPeak}
-            map={map}
-            onClose={() => setSelectedPeak(null)}
-          />
-          <NearbyPeaks
-            origin={selectedPeak}
-            peaks={peaks}
-            elevationFloor={elevationFloor}
-            map={map}
-            onPick={pickNearby}
-          />
-        </div>
+          {selectedPeak && (
+            <div className="sheet">
+              <PeakCard
+                peak={selectedPeak}
+                map={map}
+                onClose={() => setSelectedPeak(null)}
+                onStand={() => setViewpoint(selectedPeak)}
+              />
+              <NearbyPeaks
+                origin={selectedPeak}
+                peaks={peaks}
+                elevationFloor={elevationFloor}
+                map={map}
+                onPick={pickNearby}
+              />
+            </div>
+          )}
+
+          {!selectedPeak && <GestureHint />}
+        </>
       )}
-
-      {!selectedPeak && <GestureHint />}
 
       <Attribution />
     </div>
