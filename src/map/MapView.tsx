@@ -13,7 +13,14 @@ import { Protocol as PMTilesProtocol } from 'pmtiles';
 // the build it is emitted as a hashed asset. See the setWorkerUrl call below.
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { buildStyle, hillshadeLightForSun, skyForSun } from './buildStyle';
+import {
+  buildStyle,
+  hillshadeDetailForSun,
+  hillshadeLightForSun,
+  skyForSun,
+  HILLSHADE_DETAIL_LAYER_ID,
+  HILLSHADE_LAYER_ID,
+} from './buildStyle';
 import { DEFAULT_SKIN } from '../skins';
 import { addPeaksLayer, PEAK_LAYER_IDS, topPeakFeature } from './peaksLayer';
 import { addTreesLayer } from './treesLayer';
@@ -65,15 +72,21 @@ function setBaseGestures(
 
 /** Push the sun-driven hillshade paint for `slstMinutes` onto a live map. */
 function applySun(map: MapLibreMap, slstMinutes: number) {
-  if (!map.getLayer('hillshade')) return;
+  if (!map.getLayer(HILLSHADE_LAYER_ID)) return;
   const sun = sunPosition(
     sunDateFromSlstMinutes(slstMinutes),
     DEFAULT_CENTER[1],
     DEFAULT_CENTER[0],
   );
-  const paint = hillshadeLightForSun(DEFAULT_SKIN, sun);
-  for (const [key, value] of Object.entries(paint)) {
-    map.setPaintProperty('hillshade', key as never, value as never);
+  const passes: Array<[string, Record<string, unknown> | null]> = [
+    [HILLSHADE_LAYER_ID, hillshadeLightForSun(DEFAULT_SKIN, sun)],
+    [HILLSHADE_DETAIL_LAYER_ID, hillshadeDetailForSun(DEFAULT_SKIN, sun)],
+  ];
+  for (const [layerId, paint] of passes) {
+    if (!paint || !map.getLayer(layerId)) continue;
+    for (const [key, value] of Object.entries(paint)) {
+      map.setPaintProperty(layerId, key as never, value as never);
+    }
   }
   // Haze tint tracks the sun too (golden at dawn/dusk).
   map.setSky(skyForSun(DEFAULT_SKIN, sun) as never);

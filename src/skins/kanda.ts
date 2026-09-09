@@ -74,28 +74,42 @@ export const KANDA_SKIN: Skin = {
     // 'igor' was too matte for that. Direction + altitude still track the real
     // sun (buildStyle's hillshadeLightForSun) for the time-of-day story.
     method: 'combined',
-    exaggeration: 0.9,
+    exaggeration: 1,
     illuminationAnchor: 'map',
-    accentColor: 'rgba(0, 0, 0, 0)',
+    // Dark crest accent — picks out ridge edges the flat bands otherwise hide.
+    accentColor: 'rgba(18, 14, 10, 0.3)',
     fillLights: [],
-    // Deep cool shadow — this is what makes it read as cast shadow rather than
-    // haze. Warms toward violet at golden hour; a dim blue floor for night.
+    // Near-black shadow at high opacity. A washed blue-grey here is what made
+    // the relief read as haze; the dark side of a ridge should be *dark*.
+    // Still faintly cool/violet rather than pure black so it sits in the
+    // palette, and it warms a touch at golden hour.
     shadowByAltitude: [
-      [-12, 'rgba(28, 38, 74, 0.5)'],
-      [3, 'rgba(74, 52, 84, 0.5)'],
-      [15, 'rgba(52, 52, 92, 0.48)'],
-      [45, 'rgba(44, 56, 96, 0.46)'],
-      [90, 'rgba(44, 56, 96, 0.42)'],
+      [-12, 'rgba(8, 12, 30, 0.74)'],
+      [3, 'rgba(34, 16, 30, 0.8)'],
+      [15, 'rgba(18, 16, 36, 0.76)'],
+      [45, 'rgba(14, 20, 40, 0.7)'],
+      [90, 'rgba(16, 22, 38, 0.62)'],
     ],
     // Sunlit faces: cool and faint at night, warm amber at low sun, easing to
-    // a neutral warm-white overhead.
+    // a neutral warm-white overhead. Brighter now, to widen the gap against
+    // the darker shadow.
     highlightByAltitude: [
       [-12, 'rgba(72, 98, 150, 0.22)'],
-      [3, 'rgba(255, 208, 150, 0.42)'],
-      [15, 'rgba(255, 232, 198, 0.36)'],
-      [45, 'rgba(255, 246, 230, 0.32)'],
-      [90, 'rgba(255, 250, 240, 0.3)'],
+      [3, 'rgba(255, 206, 142, 0.5)'],
+      [15, 'rgba(255, 232, 196, 0.44)'],
+      [45, 'rgba(255, 248, 233, 0.4)'],
+      [90, 'rgba(255, 252, 244, 0.36)'],
     ],
+    // Second pass: multidirectional, hard and dark. This is what supplies the
+    // "black shadow" and the surface texture — one pass at max exaggeration
+    // simply can't go darker.
+    detail: {
+      method: 'multidirectional',
+      exaggeration: 1,
+      shadowColor: 'rgba(6, 8, 16, 0.42)',
+      highlightColor: 'rgba(255, 253, 245, 0.12)',
+      accentColor: 'rgba(10, 8, 6, 0.4)',
+    },
   },
   sky: {
     skyColor: '#a9d8ef',

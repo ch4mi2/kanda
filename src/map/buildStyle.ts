@@ -90,6 +90,37 @@ export function hillshadeLightForSun(skin: Skin, sun: SunPosition) {
   };
 }
 
+export const HILLSHADE_LAYER_ID = 'hillshade';
+export const HILLSHADE_DETAIL_LAYER_ID = 'hillshade-detail';
+
+/**
+ * Paint for the stacked second hillshade pass, or null if the skin has none.
+ *
+ * Four lights on a ring anchored to the sun's azimuth. Lighting a surface from
+ * all sides means only *concavities* stay dark — gullies, valley floors, the
+ * inside of a cirque — which is the closest thing to ambient occlusion
+ * MapLibre can do, and it's what makes terrain look carved rather than tinted.
+ * Fixed dark colours: this pass is the shadow, not the time-of-day story.
+ */
+export function hillshadeDetailForSun(skin: Skin, sun: SunPosition) {
+  const d = skin.hillshade.detail;
+  if (!d) return null;
+  const ring = [0, 90, 180, 270].map((offset) =>
+    clamp(Math.round(mod360(sun.azimuthDeg + offset)), 0, 359),
+  );
+  const alt = clamp(Math.round(sun.altitudeDeg), 10, 62);
+  return {
+    'hillshade-method': d.method,
+    'hillshade-exaggeration': d.exaggeration,
+    'hillshade-illumination-anchor': skin.hillshade.illuminationAnchor,
+    'hillshade-illumination-direction': ring,
+    'hillshade-illumination-altitude': ring.map(() => alt),
+    'hillshade-shadow-color': ring.map(() => d.shadowColor),
+    'hillshade-highlight-color': ring.map(() => d.highlightColor),
+    'hillshade-accent-color': d.accentColor,
+  };
+}
+
 /** Sun position over the island centre right now — buildStyle's default when
  *  no explicit sun is passed (MapView pushes the slider value on mount). */
 export function currentSun(): SunPosition {
@@ -159,7 +190,7 @@ export function buildStyle(
         paint: { 'fill-color': skin.forest },
       },
       {
-        id: 'hillshade',
+        id: HILLSHADE_LAYER_ID,
         type: 'hillshade',
         source: 'terrain-dem',
         // Direction/altitude/tint come from the live sun. 'illumination-anchor'
@@ -167,6 +198,15 @@ export function buildStyle(
         // bearing every frame and re-shade the whole map as you orbit
         // (CLAUDE.md gotcha #8).
         paint: hillshadeLightForSun(skin, sun) as never,
+      },
+      // Stacked shadow/texture pass. Present only if the skin defines one;
+      // an empty paint object on a hidden layer is harmless if it doesn't.
+      {
+        id: HILLSHADE_DETAIL_LAYER_ID,
+        type: 'hillshade',
+        source: 'terrain-dem',
+        layout: { visibility: skin.hillshade.detail ? 'visible' : 'none' },
+        paint: (hillshadeDetailForSun(skin, sun) ?? {}) as never,
       },
       // Rivers first so a reservoir fill draws over the line feeding it.
       {

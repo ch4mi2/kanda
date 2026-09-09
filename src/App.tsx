@@ -5,6 +5,7 @@ import PeakCard from './components/PeakCard';
 import NearbyPeaks from './components/NearbyPeaks';
 import ExaggerationSlider from './components/ExaggerationSlider';
 import TimeOfDaySlider from './components/TimeOfDaySlider';
+import LayerToggles from './components/LayerToggles';
 import Legend from './components/Legend';
 import Attribution from './components/Attribution';
 import SearchField from './components/SearchField';
@@ -16,6 +17,11 @@ import CompassStrip from './components/CompassStrip';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
 import { slstNowMinutes } from './map/sunPosition';
 import { setPeakElevationFloor } from './map/peaksLayer';
+import {
+  applyLayerVisibility,
+  DEFAULT_LAYER_VISIBILITY,
+  type LayerVisibility,
+} from './map/layerToggles';
 import { usePeaks } from './data/usePeaks';
 import type { NearbyPeak, PeakFeature } from './map/nearbyPeaks';
 import type { SelectedPeak } from './types';
@@ -46,6 +52,9 @@ export default function App() {
   const [viewpoint, setViewpoint] = useState<SelectedPeak | null>(null);
   const [map, setMap] = useState<MLMap | null>(null);
   const [elevationFloor, setElevationFloor] = useState(0);
+  const [layerVis, setLayerVis] = useState<LayerVisibility>(
+    DEFAULT_LAYER_VISIBILITY,
+  );
   const peaks = usePeaks();
 
   const handleMapReady = useCallback((m: MLMap) => setMap(m), []);
@@ -55,6 +64,12 @@ export default function App() {
     if (!map || !map.getLayer('peaks-major')) return;
     setPeakElevationFloor(map, elevationFloor);
   }, [map, elevationFloor]);
+
+  // Optional map furniture (contours, trees, hydronyms).
+  useEffect(() => {
+    if (!map || !map.isStyleLoaded()) return;
+    applyLayerVisibility(map, layerVis);
+  }, [map, layerVis]);
 
   const flyToPeak = useCallback(
     (lng: number, lat: number) => {
@@ -153,6 +168,7 @@ export default function App() {
           </div>
 
           <div className="dock">
+            <LayerToggles value={layerVis} onChange={setLayerVis} />
             <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
             <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
           </div>

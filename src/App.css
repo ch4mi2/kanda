@@ -223,6 +223,49 @@
   gap: var(--s2);
 }
 
+/* layer on/off chips */
+.layers {
+  padding: var(--s3) var(--s4);
+}
+
+.layers__head {
+  display: block;
+  font-size: var(--t-meta);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--panel-fg-dim);
+  margin-bottom: var(--s2);
+}
+
+.layers__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.layers__chip {
+  border: 1px solid rgba(247, 245, 236, 0.25);
+  background: transparent;
+  color: var(--panel-fg-dim);
+  border-radius: var(--r-pill);
+  padding: var(--s1) var(--s3);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.layers__chip:hover {
+  border-color: rgba(247, 245, 236, 0.5);
+  color: var(--paper);
+}
+.layers__chip--on {
+  background: var(--paper);
+  border-color: var(--paper);
+  color: var(--ink);
+}
+
 .timeofday__row {
   display: flex;
   justify-content: space-between;

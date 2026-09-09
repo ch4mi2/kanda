@@ -12,13 +12,40 @@
  *  entry's floor is the bottom of the ramp (sea floor); the last is the tops. */
 export type ElevationBand = [number, string];
 
+export type HillshadeMethod =
+  | 'standard'
+  | 'basic'
+  | 'combined'
+  | 'igor'
+  | 'multidirectional';
+
+/**
+ * A second hillshade pass stacked over the first, sharing the sun direction.
+ *
+ * `hillshade-exaggeration` caps at 1.0 and MapLibre has no cast-shadow or
+ * ambient-occlusion renderer — a hillshade is a per-pixel normal-vs-light dot
+ * product, it never throws a ridge's shadow into the next valley. Stacking a
+ * second, harder pass is the only way to push past that ceiling: it deepens
+ * the dark side toward real black and adds the high-frequency surface texture
+ * a single soft pass can't.
+ */
+export interface HillshadeDetailSkin {
+  method: HillshadeMethod;
+  exaggeration: number;
+  /** Keep these dark and fairly opaque — this pass is the "shadow". */
+  shadowColor: string;
+  highlightColor: string;
+  /** Edge accent on ridge crests. Transparent disables it. */
+  accentColor: string;
+}
+
 export interface HillshadeSkin {
   /**
    * MapLibre hillshade-method. 'igor' and 'multidirectional' are purpose-built
    * for "read the landform" (Swiss-relief style); 'standard' is the raw
-   * Lambertian default that was crushing the bands to mud. Kanda uses 'igor'.
+   * Lambertian default that was crushing the bands to mud.
    */
-  method: 'standard' | 'basic' | 'combined' | 'igor' | 'multidirectional';
+  method: HillshadeMethod;
   /** MapLibre hillshade-exaggeration (0-1ish). Relief shading strength. */
   exaggeration: number;
   /**
@@ -45,6 +72,8 @@ export interface HillshadeSkin {
    */
   shadowByAltitude: Array<[number, string]>;
   highlightByAltitude: Array<[number, string]>;
+  /** Optional second pass stacked on top — see HillshadeDetailSkin. */
+  detail: HillshadeDetailSkin | null;
 }
 
 export interface SkySkin {
