@@ -231,6 +231,78 @@ export function buildStyle(
           'text-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0, 11.8, 0.9],
         },
       },
+      // ---- hydronyms (names already in water.geojson / rivers.geojson) ----
+      // Two water tiers by area (`ha`), same idea as the peak tiers: the big
+      // reservoirs read at island view, small tanks wait until you're close.
+      {
+        id: 'water-labels-major',
+        type: 'symbol',
+        source: 'water',
+        minzoom: 8.2,
+        filter: ['all', ['has', 'name'], ['>=', ['coalesce', ['get', 'ha'], 0], 500]],
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Noto Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 8, 10, 12, 14],
+          'text-max-width': 7,
+          'text-optional': true,
+          // Bigger bodies win label collisions.
+          'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'ha'], 0]],
+        },
+        paint: {
+          'text-color': skin.hydroLabel.water,
+          'text-halo-color': skin.hydroLabel.halo,
+          'text-halo-width': 1.3,
+          'text-opacity': ['interpolate', ['linear'], ['zoom'], 8.2, 0, 9.2, 0.95],
+        },
+      },
+      {
+        id: 'water-labels-minor',
+        type: 'symbol',
+        source: 'water',
+        minzoom: 10.5,
+        filter: [
+          'all',
+          ['has', 'name'],
+          ['<', ['coalesce', ['get', 'ha'], 0], 500],
+          ['>=', ['coalesce', ['get', 'ha'], 0], 20],
+        ],
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Noto Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 11, 10, 14, 12.5],
+          'text-max-width': 7,
+          'text-optional': true,
+          'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'ha'], 0]],
+        },
+        paint: {
+          'text-color': skin.hydroLabel.water,
+          'text-halo-color': skin.hydroLabel.halo,
+          'text-halo-width': 1.3,
+          'text-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0, 11.8, 0.92],
+        },
+      },
+      {
+        id: 'river-labels',
+        type: 'symbol',
+        source: 'rivers',
+        minzoom: 10.5,
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['get', 'name'],
+          'text-font': ['Noto Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 10.5, 9, 14, 12],
+          'text-letter-spacing': 0.06,
+          'text-max-angle': 40,
+          'symbol-spacing': 550,
+        },
+        paint: {
+          'text-color': skin.hydroLabel.river,
+          'text-halo-color': skin.hydroLabel.halo,
+          'text-halo-width': 1.4,
+          'text-opacity': ['interpolate', ['linear'], ['zoom'], 10.5, 0, 11.3, 0.88],
+        },
+      },
     ],
     sky: skyForSun(skin, sun) as never,
   };

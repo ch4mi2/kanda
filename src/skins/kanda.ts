@@ -60,6 +60,13 @@ export const KANDA_SKIN: Skin = {
     canopy: '#2c6b43',
     canopyLight: '#43935e',
   },
+  // Deep teal on the water names, a lighter blue on the rivers — both cool
+  // enough to sit apart from the warm peak/contour labels, with a paper halo.
+  hydroLabel: {
+    water: '#1f5d6b',
+    river: '#337a90',
+    halo: 'rgba(247, 245, 236, 0.9)',
+  },
   hillshade: {
     // 'combined' blends a slope term with the directional term, so ridges and
     // valleys stay legible even when the sun is high (near the equator it's

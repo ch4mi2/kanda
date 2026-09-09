@@ -76,6 +76,16 @@ export interface FoliageSkin {
   canopyLight: string;
 }
 
+/** Water-body and river name-label colours (src/data/water|rivers.geojson —
+ *  both carry `name`). */
+export interface HydroLabelSkin {
+  /** Lake / reservoir name. */
+  water: string;
+  /** River name. */
+  river: string;
+  halo: string;
+}
+
 /** Highland contour styling (src/data/contours.geojson, pre-generated). */
 export interface ContourSkin {
   /** Line + label colour. */
@@ -108,6 +118,8 @@ export interface Skin {
   forest: string;
   /** Billboard-tree sprite colours (src/data/trees.geojson). */
   foliage: FoliageSkin;
+  /** Lake / river name-label colours. */
+  hydroLabel: HydroLabelSkin;
   hillshade: HillshadeSkin;
   sky: SkySkin;
   contour: ContourSkin;
