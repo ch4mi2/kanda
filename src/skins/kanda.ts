@@ -41,6 +41,9 @@ export const KANDA_SKIN: Skin = {
   water: '#8fd0dc',
   lake: '#79c1d3',
   river: '#57aecb',
+  // Deep blue-green, half-transparent — darkens the forested blocks (Sinharaja,
+  // Knuckles, Peak Wilderness...) without hiding the relief under them.
+  forest: 'rgba(44, 92, 66, 0.5)',
   hillshade: {
     // Lighter and cooler than a literal shaded-relief: the colour should carry
     // the map, the shading should just give it form. A heavy dark hillshade

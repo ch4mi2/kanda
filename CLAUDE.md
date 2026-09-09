@@ -42,8 +42,9 @@ src/
   index.css          Design tokens (palette, 4 px grid, radii, type scale).
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
                       Overpass at runtime.
-  data/water.geojson  ~920 water bodies (reservoirs, tanks) 40-60,000 ha.
-  data/rivers.geojson ~450 named rivers, simplified. Both committed, ODbL.
+  data/water.geojson  ~740 water bodies (reservoirs, tanks) 50-60,000 ha.
+  data/rivers.geojson ~450 named rivers, simplified.
+  data/forest.geojson ~270 forest blocks >700 ha. All three committed, ODbL.
   data/usePeaks.ts    Loads the GeoJSON once for the nearby-peaks maths.
 public/fonts/        Self-hosted MapLibre glyph PBFs (npm run fetch:glyphs).
 scripts/

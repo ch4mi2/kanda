@@ -5,6 +5,7 @@ import { DEFAULT_SKIN, type Skin } from '../skins';
 // the peaks GeoJSON — never fetched from Overpass at runtime.
 import waterUrl from '../data/water.geojson?url';
 import riversUrl from '../data/rivers.geojson?url';
+import forestUrl from '../data/forest.geojson?url';
 
 // buildStyle owns MapLibre style plumbing only — sources, layer wiring, sky.
 // Every colour and the shape of the hypsometric ramp come from the Skin (see
@@ -53,6 +54,7 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
       'terrain-dem': terrainSourceSpec(),
       water: { type: 'geojson', data: waterUrl },
       rivers: { type: 'geojson', data: riversUrl },
+      forest: { type: 'geojson', data: forestUrl },
     },
     layers: [
       {
@@ -72,6 +74,14 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
           // 30 m texel as a hard square (Phase 4A).
           resampling: 'linear',
         },
+      },
+      // Forest tint sits between the elevation ramp and the hillshade so the
+      // shading falls on the forested blocks too, giving them form.
+      {
+        id: 'forest',
+        type: 'fill',
+        source: 'forest',
+        paint: { 'fill-color': skin.forest },
       },
       {
         id: 'hillshade',

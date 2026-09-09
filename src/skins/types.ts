@@ -67,6 +67,9 @@ export interface Skin {
   lake: string;
   /** Named-river line colour (src/data/rivers.geojson). */
   river: string;
+  /** Forest-block tint (src/data/forest.geojson). Use an rgba with alpha < 1
+   *  so the elevation ramp and hillshade still read through it as texture. */
+  forest: string;
   hillshade: HillshadeSkin;
   sky: SkySkin;
   contour: ContourSkin;
