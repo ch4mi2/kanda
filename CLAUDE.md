@@ -37,16 +37,24 @@ src/
                       glyphs (public/fonts/).
     sunPosition.ts    NOAA solar position (no dep) + SLST helpers — drives the
                       hillshade light direction/altitude and the fog tint.
+    summitView.ts     Phase 5B — the "stand on the peak and spin" camera mode.
+                      createSummitView(map, deps): enter/exit, look-around,
+                      terrain + pitch/bounds takeover. See gotcha #11.
     MapView.tsx       Imperative MapLibre lifecycle in a thin React wrapper.
+                      Attaches summitView on a `viewpoint` prop.
     middleDragRotate.ts  Middle-button drag → rotate + tilt (the one gesture
                       MapLibre has no built-in handler for).
     peaksLayer.ts     Peak symbols, 3 zoom tiers, canvas-generated triangle
                       icon; setPeakElevationFloor() for the filter chips. Label
                       size/opacity ramp with zoom so distance is felt (5A.4).
-    nearbyPeaks.ts    Haversine + initial-bearing maths for the nearby list.
-  components/         PeakCard, NearbyPeaks, SearchField, FilterChips,
-                     GestureHint, ExaggerationSlider, TimeOfDaySlider (sun
-                     scrub), Legend, Attribution.
+                      setPeaksVisible() — summit view hides the tiers.
+    nearbyPeaks.ts    Haversine, initial-bearing, destinationPoint maths for
+                      the nearby list and summit view.
+  components/         PeakCard ("Stand here" → summit view), NearbyPeaks,
+                     SearchField, FilterChips, GestureHint, ExaggerationSlider,
+                     TimeOfDaySlider (sun scrub), Legend, Attribution.
+                     Summit view: SummitBar (exit), SummitLabels (skyline +
+                     occlusion), CompassStrip (heading ribbon).
   index.css          Design tokens (palette, 4 px grid, radii, type scale).
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
                       Overpass at runtime.
@@ -169,6 +177,27 @@ broken-slow. This was a real bug, not a hypothetical.
    fog tint. `buildStyle.hillshadeLightForSun` / `skyForSun` build the paint;
    `MapView` re-applies both on the `TimeOfDaySlider` via `setPaintProperty`
    /`setSky` without rebuilding the style. `hillshade-method` is `'igor'`.
+11. **Summit view fights MapLibre 6.8 (Phase 5B, `src/map/summitView.ts`).**
+   All verified in the maplibre source, all easy to get wrong:
+   - **No free-camera API.** `get/setFreeCameraOptions` are Mapbox-only.
+     Placing the camera at a summit looking out = pick a target ~40 km along
+     the heading and `map.calculateCameraOptionsFromTo(eye, alt, target, alt)`.
+     A level line of sight yields pitch exactly 90; `setBearing()` orbits the
+     40 km-away centre, so every look-around delta re-solves the whole camera.
+   - **`_elevateCameraIfInsideTerrain`** silently rewrites pitch + zoom on
+     every camera path when the camera is inside terrain — no margin, no off
+     switch. Mitigated by a ~25 m eye margin **and** a
+     `map.setTransformCameraUpdate` hook that re-asserts pitch/zoom (it runs
+     after the elevate pass).
+   - **`map.transform` is gone** — it's `map._camera.transform` in 6.x (no
+     public getter on the Map type). `SummitLabels` reaches through it for
+     nothing now; occlusion is a **CPU DEM march** along the sight line
+     (`queryTerrainElevation` samples) because `isLocationOccluded` is a
+     mercator no-op and `depthAtPoint` over-reported occlusion here.
+   - **`queryTerrainElevation` returns 0 / null on unloaded tiles** — never
+     feed it straight into a sight-line calc; fall back to the OSM `ele`.
+   - Above 90° pitch also needs `setCenterClampedToGround(false)`, and drop
+     `maxBounds` (pitch-90 frustum spills continent-wide, gotcha #1).
 
 ## Tests
 
@@ -240,3 +269,14 @@ Screenshots lie less than assumptions here. Always:
 - Test at the `mobile` viewport preset; most users are on phones.
 - Use a **fresh browser tab** for console checks — the console buffer persists
   across navigations in a reused tab and will show you stale errors.
+- The local tile pyramid is **slow to serve on a cold `npm run preview`** — the
+  island can take 20-40 s to fully paint on first load. Wait it out before
+  judging a screenshot; a blank blue map right after navigate is loading, not
+  broken.
+- **Summit view is the acceptance test for the user story.** Stand on Gombaniya
+  (search it → "Stand here"): the camera sits at the summit, dragging pivots in
+  place (not an orbit), the compass strip tracks your heading, and Knuckles /
+  Lakegala / Kirigalpotta appear as skyline labels with ridge-hidden ones
+  ghosted. `summitView`/`SummitLabels` occlusion tuning
+  (`RIDGE_FUDGE_M`, step counts) is eye-calibrated — sanity-check against
+  summits you know.
