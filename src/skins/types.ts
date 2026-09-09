@@ -74,6 +74,14 @@ export interface HillshadeSkin {
   highlightByAltitude: Array<[number, string]>;
   /** Optional second pass stacked on top — see HillshadeDetailSkin. */
   detail: HillshadeDetailSkin | null;
+  /**
+   * Optional slope-only pass that greys out steep ground — cliffs and crags
+   * read as rock rather than as whatever colour their elevation says.
+   * `color-relief` can only see height, never steepness, so this is the only
+   * way to get it. Implemented as a hillshade lit from almost directly
+   * overhead: flat ground stays untouched, steep faces take `color`.
+   */
+  rock: { exaggeration: number; color: string } | null;
 }
 
 export interface SkySkin {
@@ -93,6 +101,26 @@ export interface SkySkin {
   fogColorByAltitude: Array<[number, string]>;
   /** 0–1, the view depth where fog starts. Lower = haze builds nearer. */
   fogGroundBlend: number;
+}
+
+/**
+ * The coastline: sea colour by depth, plus the strand band just above 0 m.
+ *
+ * The Terrarium DEM carries real bathymetry and Phase 4 threw it away, painting
+ * every depth one flat colour. That's most of why a Kanda coastline reads as a
+ * cut-out next to a game map's — those get their richness from turquoise
+ * shallows grading to open blue, with a sand rim on top.
+ *
+ * Deliberately NOT part of `elevationBands`: the strand is bright and the first
+ * land band is dark, which would break the ramp's monotonic-lightness rule
+ * (see lstar.test.ts). A few metres of beach isn't a height cue.
+ */
+export interface ShoreSkin {
+  /** `[elevation m (negative), colour]`, ascending toward 0. */
+  byDepth: Array<[number, string]>;
+  /** Sand colour, held from 0 m to `sandTopM`. */
+  sand: string;
+  sandTopM: number;
 }
 
 /** Billboard-tree sprite colours (src/data/trees.geojson, pre-generated).
@@ -135,8 +163,11 @@ export interface Skin {
   elevationBands: ElevationBand[];
   /** Metres of cross-fade centred on each band boundary. 0 = hard step. */
   bandBlendM: number;
-  /** The sea — a single flat colour (softColorRamp clamps all depths to it). */
+  /** Representative sea colour — the Legend swatch and any flat fallback.
+   *  The rendered sea grades by depth; see `shore`. */
   water: string;
+  /** Sea-by-depth ramp + the strand band. */
+  shore: ShoreSkin;
   /** Inland water fill (reservoirs, tanks). Slightly off `water` so a lake in
    *  a valley doesn't read as a hole through to the ocean. */
   lake: string;

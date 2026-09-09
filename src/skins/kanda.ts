@@ -39,15 +39,29 @@ const bands: Skin['elevationBands'] = [
 export const KANDA_SKIN: Skin = {
   id: 'kanda',
   name: 'Kanda',
-  // Matches `water` so terrain edges melt into the sea rather than showing a
-  // hard shelf against a different-coloured void.
-  background: '#8fd0dc',
+  // Matches the deepest `shore` stop so the edge of the DEM's coverage melts
+  // into open ocean instead of showing a seam against a different colour.
+  background: '#2f6f91',
   elevationBands: bands,
   // Tight cross-fade: just enough to anti-alias the band edges. Wider reads as
   // a gradient stripe following every contour; this reads as a clean cel-shaded
   // zone.
   bandBlendM: 12,
   water: '#8fd0dc',
+  // Open blue out deep, turquoise over the shelf, a pale surf line at the
+  // shore, then a narrow strand. This is the single biggest thing separating
+  // the old flat-cyan coastline from a game map's.
+  shore: {
+    byDepth: [
+      [-4000, '#2f6f91'],
+      [-900, '#3b86a6'],
+      [-180, '#57a8c0'],
+      [-40, '#84cddb'],
+      [-6, '#b9e9ea'],
+    ],
+    sand: '#e6d9b2',
+    sandTopM: 8,
+  },
   lake: '#79c1d3',
   river: '#57aecb',
   // Deep blue-green, half-transparent — darkens the forested blocks (Sinharaja,
@@ -110,6 +124,9 @@ export const KANDA_SKIN: Skin = {
       highlightColor: 'rgba(255, 253, 245, 0.12)',
       accentColor: 'rgba(10, 8, 6, 0.4)',
     },
+    // Steep ground goes stony grey-brown regardless of its elevation — the
+    // Knuckles crags, Lakegala's face, the Adam's Peak cone.
+    rock: { exaggeration: 1, color: 'rgba(104, 98, 92, 0.5)' },
   },
   sky: {
     skyColor: '#a9d8ef',

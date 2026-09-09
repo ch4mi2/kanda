@@ -19,10 +19,14 @@ const OUT = path.join(HERE, '../src/data/trees.geojson');
 // ~500 m grid at this latitude, jittered — dense enough to read as forest from
 // a hillside, sparse enough that the whole file stays small and island view
 // (where the layer is hidden anyway) wouldn't choke.
-const GRID_DEG = 0.006;
-const JITTER = 0.7; // fraction of a cell
-const KEEP = 0.7; // random thin
-const MAX_TREES = 5000;
+// Denser and smaller than the first pass: individually-legible lollipop trees
+// read as objects (and MapLibre billboards are constant *screen* size, so
+// distant ones looked as big as near ones). A tighter scatter of small sprites
+// reads as canopy texture instead, which is what the reference art does.
+const GRID_DEG = 0.004;
+const JITTER = 0.8; // fraction of a cell
+const KEEP = 0.75; // random thin
+const MAX_TREES = 11000;
 
 // Mulberry32 — tiny deterministic PRNG.
 function rng(seed) {

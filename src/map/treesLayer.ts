@@ -63,14 +63,17 @@ export function addTreesLayer(map: MLMap, skin: Skin = DEFAULT_SKIN) {
       'icon-image': TREE_ICON_ID,
       'icon-anchor': 'bottom', // trunk sits on the ground
       // `s` is the per-tree size jitter baked in by generate-trees.
+      // Small. Billboards don't shrink with distance (icon-size is a function
+      // of zoom, not of range), so anything big enough to read as an object up
+      // close renders absurdly large on a far hillside.
       'icon-size': [
         'interpolate',
         ['linear'],
         ['zoom'],
         TREE_MIN_ZOOM,
-        ['*', 0.11, ['get', 's']],
+        ['*', 0.06, ['get', 's']],
         13,
-        ['*', 0.42, ['get', 's']],
+        ['*', 0.24, ['get', 's']],
       ],
       // Draw them all — collision detection across thousands of icons every
       // frame isn't worth it, and a dense stamp reads fine as forest.

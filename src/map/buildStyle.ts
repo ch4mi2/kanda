@@ -19,24 +19,27 @@ import contoursUrl from '../data/contours.geojson?url';
 // flat, then cross-fade over a narrow window centred on each boundary — a
 // cel-shaded band, not a smeared gradient.
 //
-// Everything below sea level is clamped to the skin's flat `water` colour: the
-// tiles carry bathymetry, but a game map's sea is one clean colour, not a
-// depth gradient. The land ramp's own first stop is at (or above) 0 m.
+// Below sea level the ramp now follows the DEM's real bathymetry (skin.shore)
+// instead of clamping every depth to one flat colour — shallows read turquoise
+// and grade to open blue, with a narrow sand strand riding the 0 m line. The
+// land ramp proper starts just above the strand.
 function softColorRamp(skin: Skin): unknown[] {
   const bands = skin.elevationBands;
   const halfBlend = Math.max(0, skin.bandBlendM) / 2;
   const eps = 0.1; // keeps stops strictly ascending when blend is 0
-  const firstLandEle = bands[0][0];
+  const { byDepth, sand, sandTopM } = skin.shore;
 
   const expr: unknown[] = ['interpolate', ['linear'], ['elevation']];
-  // Flat water for all depths, then a short fade up onto the coast.
-  expr.push(-12000, skin.water);
-  expr.push(Math.max(firstLandEle - 1, -1), skin.water);
+  for (const [depth, color] of byDepth) expr.push(depth, color);
+  // Strand: hold sand across the whole band so it reads as a rim, not a fade.
+  expr.push(0, sand);
+  expr.push(sandTopM, sand);
 
+  // Land starts above the strand, with a short fade off the sand.
+  const landStart = sandTopM + 4;
   bands.forEach(([ele, color], i) => {
     if (i === 0) {
-      // Fade water -> first land colour across ~2 m at the shoreline.
-      expr.push(ele + 1, color);
+      expr.push(Math.max(landStart, ele + 1), color);
       return;
     }
     const lo = ele - Math.max(halfBlend, eps);
@@ -92,6 +95,27 @@ export function hillshadeLightForSun(skin: Skin, sun: SunPosition) {
 
 export const HILLSHADE_LAYER_ID = 'hillshade';
 export const HILLSHADE_DETAIL_LAYER_ID = 'hillshade-detail';
+export const HILLSHADE_ROCK_LAYER_ID = 'hillshade-rock';
+
+/**
+ * Slope-only pass: light from 88° (near-overhead) so flat ground takes no
+ * shadow at all and only steep faces pick up the rock tint. Sun-independent
+ * by design — a cliff is a cliff at any hour.
+ */
+export function hillshadeRock(skin: Skin) {
+  const r = skin.hillshade.rock;
+  if (!r) return null;
+  return {
+    'hillshade-method': 'combined',
+    'hillshade-exaggeration': r.exaggeration,
+    'hillshade-illumination-anchor': skin.hillshade.illuminationAnchor,
+    'hillshade-illumination-direction': [315],
+    'hillshade-illumination-altitude': [88],
+    'hillshade-shadow-color': [r.color],
+    'hillshade-highlight-color': ['rgba(0, 0, 0, 0)'],
+    'hillshade-accent-color': 'rgba(0, 0, 0, 0)',
+  };
+}
 
 /**
  * Paint for the stacked second hillshade pass, or null if the skin has none.
@@ -207,6 +231,14 @@ export function buildStyle(
         source: 'terrain-dem',
         layout: { visibility: skin.hillshade.detail ? 'visible' : 'none' },
         paint: (hillshadeDetailForSun(skin, sun) ?? {}) as never,
+      },
+      // Slope-only rock tint — steep ground reads stony whatever its height.
+      {
+        id: HILLSHADE_ROCK_LAYER_ID,
+        type: 'hillshade',
+        source: 'terrain-dem',
+        layout: { visibility: skin.hillshade.rock ? 'visible' : 'none' },
+        paint: (hillshadeRock(skin) ?? {}) as never,
       },
       // Rivers first so a reservoir fill draws over the line feeding it.
       {
