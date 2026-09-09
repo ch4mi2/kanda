@@ -8,24 +8,32 @@ import { DEFAULT_SKIN, type Skin } from '../skins';
 
 // color-relief-color is a colour-ramp (interpolated) property, so `step` isn't
 // reliably valid. Epsilon-paired stops emulate steps: hold the previous colour
-// until just before the boundary, then move to the next. With a non-zero blend
-// the "just before" becomes a real cross-fade window centred on the boundary,
-// which is what softens the stair-step terracing.
+// flat, then cross-fade over a narrow window centred on each boundary — a
+// cel-shaded band, not a smeared gradient.
+//
+// Everything below sea level is clamped to the skin's flat `water` colour: the
+// tiles carry bathymetry, but a game map's sea is one clean colour, not a
+// depth gradient. The land ramp's own first stop is at (or above) 0 m.
 function softColorRamp(skin: Skin): unknown[] {
   const bands = skin.elevationBands;
   const halfBlend = Math.max(0, skin.bandBlendM) / 2;
-  // Epsilon keeps stops strictly ascending when blend is 0.
-  const eps = 0.1;
+  const eps = 0.1; // keeps stops strictly ascending when blend is 0
+  const firstLandEle = bands[0][0];
+
   const expr: unknown[] = ['interpolate', ['linear'], ['elevation']];
+  // Flat water for all depths, then a short fade up onto the coast.
+  expr.push(-12000, skin.water);
+  expr.push(Math.max(firstLandEle - 1, -1), skin.water);
+
   bands.forEach(([ele, color], i) => {
-    if (i > 0) {
-      const lo = ele - Math.max(halfBlend, eps);
-      expr.push(lo, bands[i - 1][1]);
-      if (halfBlend > 0) expr.push(ele + halfBlend, color);
-      else expr.push(ele, color);
-    } else {
-      expr.push(ele, color);
+    if (i === 0) {
+      // Fade water -> first land colour across ~2 m at the shoreline.
+      expr.push(ele + 1, color);
+      return;
     }
+    const lo = ele - Math.max(halfBlend, eps);
+    expr.push(lo, bands[i - 1][1]);
+    expr.push(halfBlend > 0 ? ele + halfBlend : ele, color);
   });
   return expr;
 }

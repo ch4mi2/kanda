@@ -1,9 +1,9 @@
 import { DEFAULT_SKIN } from '../skins';
 
-// A readable subset of the active skin's terrain ramp — every other band,
-// skipping the below-sea-level floor, so the swatches stay legible.
+// A readable subset of the active skin's terrain ramp — every other band —
+// plus the flat water colour at the foot.
 const LEGEND_STOPS = DEFAULT_SKIN.elevationBands.filter(
-  ([ele], i) => ele >= 0 && (i % 2 === 1 || ele === 0),
+  ([ele], i) => i % 2 === 0 || ele === DEFAULT_SKIN.elevationBands.at(-1)![0],
 );
 
 export default function Legend() {
@@ -13,12 +13,16 @@ export default function Legend() {
         {[...LEGEND_STOPS].reverse().map(([ele, color]) => (
           <div key={ele} className="legend__stop">
             <span className="legend__swatch" style={{ background: color }} />
-            <span>
-              {ele.toLocaleString()}
-              {ele === 0 ? ' m · sea level' : ' m'}
-            </span>
+            <span>{ele === 0 ? 'coast' : `${ele.toLocaleString()} m`}</span>
           </div>
         ))}
+        <div className="legend__stop">
+          <span
+            className="legend__swatch"
+            style={{ background: DEFAULT_SKIN.water }}
+          />
+          <span>sea</span>
+        </div>
       </div>
     </div>
   );
