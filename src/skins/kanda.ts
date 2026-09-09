@@ -39,6 +39,8 @@ export const KANDA_SKIN: Skin = {
   // zone.
   bandBlendM: 12,
   water: '#8fd0dc',
+  lake: '#79c1d3',
+  river: '#57aecb',
   hillshade: {
     // Lighter and cooler than a literal shaded-relief: the colour should carry
     // the map, the shading should just give it form. A heavy dark hillshade

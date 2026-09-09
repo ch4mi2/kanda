@@ -58,12 +58,15 @@ export interface Skin {
   background: string;
   /** The hypsometric tint ramp, in real metres (MapLibre ['elevation']). */
   elevationBands: ElevationBand[];
-  /** Metres of cross-fade centred on each band boundary. 0 = hard step.
-   *  ~25-40 m keeps zones distinct (so peaks stay readable) without the
-   *  razor "rice paddy" terracing hard steps give on a tilted 3D surface. */
+  /** Metres of cross-fade centred on each band boundary. 0 = hard step. */
   bandBlendM: number;
-  /** Water tint — for the future water layer and as a contour/label accent. */
+  /** The sea — a single flat colour (softColorRamp clamps all depths to it). */
   water: string;
+  /** Inland water fill (reservoirs, tanks). Slightly off `water` so a lake in
+   *  a valley doesn't read as a hole through to the ocean. */
+  lake: string;
+  /** Named-river line colour (src/data/rivers.geojson). */
+  river: string;
   hillshade: HillshadeSkin;
   sky: SkySkin;
   contour: ContourSkin;

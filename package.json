@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "fetch:peaks": "node scripts/fetch-peaks.mjs",
+    "fetch:osm": "node scripts/fetch-osm-features.mjs",
     "fetch:terrain": "node scripts/fetch-terrain.mjs",
     "fetch:glyphs": "node scripts/fetch-glyphs.mjs",
     "repair:dem": "node scripts/repair-dem.mjs --repair",

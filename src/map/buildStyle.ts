@@ -1,6 +1,10 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import { terrainSourceSpec } from '../config/tiles';
 import { DEFAULT_SKIN, type Skin } from '../skins';
+// Committed OSM vector data (npm run fetch:osm), same offline-first pattern as
+// the peaks GeoJSON — never fetched from Overpass at runtime.
+import waterUrl from '../data/water.geojson?url';
+import riversUrl from '../data/rivers.geojson?url';
 
 // buildStyle owns MapLibre style plumbing only — sources, layer wiring, sky.
 // Every colour and the shape of the hypsometric ramp come from the Skin (see
@@ -47,6 +51,8 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
     glyphs: `${import.meta.env.BASE_URL}fonts/{fontstack}/{range}.pbf`,
     sources: {
       'terrain-dem': terrainSourceSpec(),
+      water: { type: 'geojson', data: waterUrl },
+      rivers: { type: 'geojson', data: riversUrl },
     },
     layers: [
       {
@@ -80,6 +86,28 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
           'hillshade-shadow-color': skin.hillshade.shadowColor,
           'hillshade-highlight-color': skin.hillshade.highlightColor,
           'hillshade-accent-color': skin.hillshade.accentColor,
+        },
+      },
+      // Rivers first so a reservoir fill draws over the line feeding it.
+      {
+        id: 'rivers',
+        type: 'line',
+        source: 'rivers',
+        paint: {
+          'line-color': skin.river,
+          'line-opacity': 0.85,
+          // Hairline far out, a real ribbon once you're looking at a valley.
+          'line-width': ['interpolate', ['linear'], ['zoom'], 7, 0.6, 10, 1.4, 13, 3.5],
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        id: 'water',
+        type: 'fill',
+        source: 'water',
+        paint: {
+          'fill-color': skin.lake,
+          'fill-outline-color': skin.river,
         },
       },
     ],
