@@ -42,7 +42,12 @@ import {
   latToMercY as latToY,
   lonToRefPx,
   latToRefPy,
+  refPxX,
+  refPxY,
   refPxPerScreenPx,
+  tileXToLon,
+  tileYToLat,
+  tilesForBbox,
 } from './lib/tilemath.mjs';
 
 const HERE = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
@@ -54,12 +59,33 @@ const MANIFEST = path.join(HERE, '../src/data/textures.json');
 const SAMPLE_Z = 12; // DEM ceiling — see CLAUDE.md
 const DEM_TEXEL_M = 38; // ~1 z12 texel at this latitude; the slope/aspect step
 
-// Named single-image regions. `knuckles` is the prototype window: dramatic
-// relief, big forest blocks, the peaks the app's founding story names.
+// Named single-image regions for --single iteration. `knuckles` is the old
+// prototype window: dramatic relief, big forest blocks, the peaks the app's
+// founding story names.
 const REGIONS = {
   knuckles: { bbox: [80.62, 7.24, 81.02, 7.58], size: 2048 },
   highlands: { bbox: [80.2, 6.45, 81.35, 7.75], size: 4096 },
 };
+
+// ---- tile bake (--tiles) ------------------------------------------------
+// KEEP IN SYNC with src/config/tiles.ts (SRI_LANKA_BBOX, TEXTURE_HIGHLANDS_BBOX
+// and TEXTURE.base/highlands zoom ranges). This is a plain .mjs and can't
+// import the TS config — same manual-sync deal as BBOX in fetch-terrain.mjs.
+const SRI_LANKA_BBOX = [79.5, 5.7, 82.0, 10.0];
+// Highlands window: contains 68 of the 70 peaks above 1,000 m, the Adam's Peak
+// approach and the western escarpment, with margin. The budget knob is the
+// size of *this* window, not the texture quality.
+const TEXTURE_HIGHLANDS_BBOX = [80.05, 6.1, 81.45, 7.75];
+const TEXTURE_REGIONS = [
+  { minzoom: 10, maxzoom: 12, bbox: SRI_LANKA_BBOX },
+  { minzoom: 13, maxzoom: 14, bbox: TEXTURE_HIGHLANDS_BBOX },
+];
+
+// Global forest raster resolution. z11 over the island is ~3.8k x 6.4k = ~24 MB
+// and gives a ~230 m feather after blurMask(r=3). Built once, shared by every
+// tile — the scanline fill never runs in the per-tile hot loop.
+const FOREST_RASTER_Z = 11;
+const TILE_OUT_DIR = path.join(HERE, '../public/tiles/texture');
 
 // ---- texture palette anchors ---------------------------------------------
 // Prototype-era values, mirroring Skin.foliage / the upper elevation bands.
@@ -467,11 +493,12 @@ function rockStreak(U, V, ca, sa, zEff, seed) {
 }
 
 // --- forest mask (scanline fill; even-odd so holes work) ------------------
-function rasterizeForest(features, bbox, W, H) {
-  const [w, s, e, n] = bbox;
+// `toPx(lon)` / `toPy(lat)` project a coordinate into raster pixel space. The
+// single-image bake passes a linear-in-degrees projection (fine over a small
+// window); the global raster passes a mercator one so it lines up with how the
+// tile bake samples it.
+function rasterizeForest(features, W, H, toPx, toPy) {
   const mask = new Uint8Array(W * H);
-  const toPx = (lon) => ((lon - w) / (e - w)) * W;
-  const toPy = (lat) => ((n - lat) / (n - s)) * H;
 
   for (const f of features) {
     const polys =
@@ -552,13 +579,43 @@ function blurMask(mask, W, H, r) {
 
 const smoothBand = (lo, hi, v) => smoothstep01(clamp01((v - lo) / (hi - lo)));
 
-// Triangular-PDF dither keyed on world position (~1.2 m cells): deterministic,
-// seam-safe (same value either side of a tile edge), and finer than any output
-// pixel across z10-14, so it reads as film grain, not structure.
+// Ordered (Bayer 8x8) dither keyed on world position, ~1 cell per output pixel
+// at z14. Deterministic and seam-safe (a pure function of world position, so
+// identical either side of a tile edge). Ordered rather than blue-/white-noise
+// on purpose: it breaks posterisation banding just as well on smooth gradients
+// but, being periodic, it costs the deflate stream a fraction of what
+// incompressible white-noise speckle does — and the texture budget lives or
+// dies on bytes/tile.
+const BAYER8 = (() => {
+  const g = [];
+  for (let y = 0; y < 8; y++) {
+    g[y] = [];
+    for (let x = 0; x < 8; x++) {
+      let v = 0;
+      for (let i = 0; i < 3; i++) {
+        const bx = (x >> i) & 1;
+        const by = (y >> i) & 1;
+        v = (v << 2) | ((bx ^ by) << 1) | by;
+      }
+      g[y][x] = (v + 0.5) / 64 - 0.5; // centre on zero, span ~[-0.5, 0.5]
+    }
+  }
+  return g;
+})();
+const BAYER_STEP = 64; // ref px per cell ~= one z14 output pixel
 function ditherAt(U, V) {
-  const cu = Math.round(U / 8);
-  const cv = Math.round(V / 8);
-  return (hash2(cu, cv, 24007) + hash2(cu + 1013, cv - 271, 55127) - 1) * 0.5;
+  const cu = Math.floor(U / BAYER_STEP) & 7;
+  const cv = Math.floor(V / BAYER_STEP) & 7;
+  return BAYER8[cv][cu];
+}
+
+/** How much dither to apply at effective zoom `zEff`: full where the ~150 m
+ *  octave is band-limited away and open ground is a smooth field that would
+ *  posterise (z10-11), fading to zero by ~z13 where the fine octaves are back
+ *  and break up the bands on their own. Also the reason z13/z14 tiles stay
+ *  compressible — incompressible dither speckle there would blow the budget. */
+function ditherScaleFor(zEff) {
+  return clamp01(1 - octaveWeight(lambdaK(2), zEff));
 }
 
 // --- per-pixel composition ----------------------------------------------
@@ -656,9 +713,21 @@ async function bakeSingle({ bbox, size }, outPath) {
   // r scaled to this image's resolution for a ~230 m feather.
   const mPerPx = (mercWidth * 40075016) / W;
   const blurR = Math.max(1, Math.round(230 / mPerPx));
-  const forestMask = blurMask(rasterizeForest(forest.features, bbox, W, H), W, H, blurR);
+  const forestMask = blurMask(
+    rasterizeForest(
+      forest.features,
+      W,
+      H,
+      (lon) => ((lon - w) / (e - w)) * W,
+      (lat) => ((n - lat) / (n - s)) * H,
+    ),
+    W,
+    H,
+    blurR,
+  );
 
   console.log('  composing…');
+  const dScale = ditherScaleFor(zEff);
   const indices = Buffer.alloc(W * H);
   for (let y = 0; y < H; y++) {
     const lat = n - ((y + 0.5) / H) * (n - s);
@@ -676,7 +745,7 @@ async function bakeSingle({ bbox, size }, outPath) {
         U,
         V,
         zEff,
-        dither: ditherAt(U, V),
+        dither: ditherAt(U, V) * dScale,
       });
     }
   }
@@ -688,6 +757,166 @@ async function bakeSingle({ bbox, size }, outPath) {
   return { W, H, corners: [[w, n], [e, n], [e, s], [w, s]] };
 }
 
+// --- global forest raster (built once, shared by every tile) -----------
+async function buildForestRaster() {
+  const [w, s, e, n] = SRI_LANKA_BBOX;
+  const mx0 = lonToX(w, FOREST_RASTER_Z);
+  const mx1 = lonToX(e, FOREST_RASTER_Z);
+  const my0 = latToY(n, FOREST_RASTER_Z); // north -> smaller mercator Y
+  const my1 = latToY(s, FOREST_RASTER_Z);
+  const W = Math.round((mx1 - mx0) * TILE_SIZE);
+  const H = Math.round((my1 - my0) * TILE_SIZE);
+  const toPx = (lon) => ((lonToX(lon, FOREST_RASTER_Z) - mx0) / (mx1 - mx0)) * W;
+  const toPy = (lat) => ((latToY(lat, FOREST_RASTER_Z) - my0) / (my1 - my0)) * H;
+
+  const forest = JSON.parse(await readFile(FOREST, 'utf8'));
+  console.log(`  forest raster ${W}x${H} (z${FOREST_RASTER_Z}), rasterising…`);
+  const data = blurMask(rasterizeForest(forest.features, W, H, toPx, toPy), W, H, 3);
+
+  // Bilinear sample, mercator-linear like the raster itself.
+  function sample(lon, lat) {
+    const fx = toPx(lon) - 0.5;
+    const fy = toPy(lat) - 0.5;
+    let xi = Math.floor(fx);
+    let yi = Math.floor(fy);
+    const dx = fx - xi;
+    const dy = fy - yi;
+    const cx = (v) => (v < 0 ? 0 : v > W - 1 ? W - 1 : v);
+    const cy = (v) => (v < 0 ? 0 : v > H - 1 ? H - 1 : v);
+    xi = cx(xi);
+    yi = cy(yi);
+    const x1 = cx(xi + 1);
+    const y1 = cy(yi + 1);
+    const a = data[yi * W + xi];
+    const b = data[yi * W + x1];
+    const c = data[y1 * W + xi];
+    const d = data[y1 * W + x1];
+    return ((a * (1 - dx) + b * dx) * (1 - dy) + (c * (1 - dx) + d * dx) * dy) / 255;
+  }
+  return { sample };
+}
+
+// One canonical fully-transparent tile — every all-sea / no-data tile writes
+// these exact bytes, so they SHA-1-dedup to a single blob in the archive and
+// the loose dev server never has to fall back to index.html (CLAUDE.md).
+let EMPTY_TILE = null;
+function emptyTilePng() {
+  if (!EMPTY_TILE) {
+    EMPTY_TILE = encodeIndexedPng({
+      width: TILE_SIZE,
+      height: TILE_SIZE,
+      indices: Buffer.alloc(TILE_SIZE * TILE_SIZE),
+      palette: PALETTE,
+    });
+  }
+  return EMPTY_TILE;
+}
+
+/**
+ * One 256x256 texture tile. No apron: every input (world noise, dither, the
+ * shared forest raster, and slope/aspect via independent metric-offset DEM
+ * resampling) is a pure function of world position, so two adjacent tiles
+ * agree exactly along their shared edge.
+ */
+function bakeTile({ z, x, y }, dem, forest) {
+  const indices = Buffer.alloc(TILE_SIZE * TILE_SIZE);
+  const dScale = ditherScaleFor(z);
+  let allEmpty = true;
+  for (let py = 0; py < TILE_SIZE; py++) {
+    const lat = tileYToLat(y + (py + 0.5) / TILE_SIZE, z);
+    const V = refPxY(y, py, z);
+    for (let px = 0; px < TILE_SIZE; px++) {
+      const lon = tileXToLon(x + (px + 0.5) / TILE_SIZE, z);
+      const U = refPxX(x, px, z);
+      const h = dem.height(lon, lat);
+      if (!Number.isFinite(h) || h <= 1) continue; // stays index 0
+      const { slopeDeg, aspect } = dem.slopeAspect(lon, lat);
+      const idx = composeIndex({
+        h,
+        slopeDeg,
+        aspect,
+        fm: forest.sample(lon, lat),
+        U,
+        V,
+        zEff: z,
+        dither: ditherAt(U, V) * dScale,
+      });
+      indices[py * TILE_SIZE + px] = idx;
+      if (idx !== 0) allEmpty = false;
+    }
+  }
+  if (allEmpty) return emptyTilePng();
+  return encodeIndexedPng({ width: TILE_SIZE, height: TILE_SIZE, indices, palette: PALETTE });
+}
+
+function bboxesIntersect(a, b) {
+  return a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+}
+
+async function bakeTiles(opts) {
+  const onlyZ = opts.onlyZ; // Set<number> | undefined
+  const onlyBbox = opts.onlyBbox; // [w,s,e,n] | undefined
+
+  const forest = await buildForestRaster();
+
+  let written = 0;
+  let empty = 0;
+  let bytes = 0;
+  const perZoom = new Map(); // z -> { n, bytes }
+  const start = Date.now();
+
+  for (const region of TEXTURE_REGIONS) {
+    const zooms = [];
+    for (let z = region.minzoom; z <= region.maxzoom; z++) {
+      if (!onlyZ || onlyZ.has(z)) zooms.push(z);
+    }
+    if (!zooms.length) continue;
+    if (onlyBbox && !bboxesIntersect(region.bbox, onlyBbox)) continue;
+
+    console.log(`\nregion [${region.bbox.join(', ')}] z${zooms[0]}-${zooms[zooms.length - 1]}`);
+    const dem = await buildDem(region.bbox);
+
+    for (const z of zooms) {
+      let tiles = tilesForBbox(region.bbox, z);
+      if (onlyBbox) {
+        tiles = tiles.filter((t) => {
+          const tb = [
+            tileXToLon(t.x, z),
+            tileYToLat(t.y + 1, z),
+            tileXToLon(t.x + 1, z),
+            tileYToLat(t.y, z),
+          ];
+          return bboxesIntersect(tb, onlyBbox);
+        });
+      }
+      let zn = 0;
+      let zb = 0;
+      for (const t of tiles) {
+        const png = bakeTile(t, dem, forest);
+        const dir = path.join(TILE_OUT_DIR, String(t.z), String(t.x));
+        await mkdir(dir, { recursive: true });
+        await writeFile(path.join(dir, `${t.y}.png`), png);
+        written++;
+        zn++;
+        zb += png.length;
+        bytes += png.length;
+        if (png === EMPTY_TILE) empty++;
+      }
+      perZoom.set(z, { n: zn, bytes: zb });
+      const mb = (zb / 1e6).toFixed(1);
+      console.log(`  z${z}: ${zn} tiles, ${mb} MB (${(zb / zn).toFixed(0)} B/tile avg)`);
+    }
+  }
+
+  const secs = ((Date.now() - start) / 1000).toFixed(1);
+  console.log(`\n${written} tiles in ${secs}s — ${(bytes / 1e6).toFixed(1)} MB, ${empty} empty`);
+  console.log('per-zoom bytes/tile (non-empty avg):');
+  for (const [z, v] of [...perZoom].sort((a, b) => a[0] - b[0])) {
+    const ne = v.n; // includes empties; report both
+    console.log(`  z${z}: ${(v.bytes / ne).toFixed(0)} B/tile over ${ne} tiles`);
+  }
+}
+
 // --- CLI --------------------------------------------------------------
 function parseArgs(argv) {
   const opts = { flags: new Set(), pos: [] };
@@ -697,6 +926,9 @@ function parseArgs(argv) {
     else if (a === '--bbox') opts.bbox = argv[++i].split(',').map(Number);
     else if (a === '--size') opts.size = Number(argv[++i]);
     else if (a === '--out') opts.out = argv[++i];
+    else if (a === '--only-z') {
+      opts.onlyZ = new Set(argv[++i].split(',').map(Number));
+    } else if (a === '--only-bbox') opts.onlyBbox = argv[++i].split(',').map(Number);
     else if (!a.startsWith('-')) opts.pos.push(a);
   }
   return opts;
@@ -704,6 +936,12 @@ function parseArgs(argv) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
+
+  // Tile bake: node generate-texture.mjs --tiles [--only-z 10,11,12] [--only-bbox w,s,e,n]
+  if (opts.flags.has('tiles')) {
+    await bakeTiles(opts);
+    return;
+  }
 
   // Explicit single window: node generate-texture.mjs --single --bbox a,b,c,d --size N
   if (opts.flags.has('single') || opts.bbox) {
