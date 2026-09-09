@@ -42,6 +42,7 @@ export const KANDA_SKIN: Skin = {
   hillshade: {
     exaggeration: 0.6,
     illuminationDirection: 315,
+    illuminationAnchor: 'map',
     shadowColor: 'rgba(35, 25, 20, 0.9)',
     highlightColor: 'rgba(255, 250, 235, 0.7)',
     accentColor: 'rgba(0, 0, 0, 0)',

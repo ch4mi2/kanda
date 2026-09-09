@@ -66,6 +66,9 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
         paint: {
           'hillshade-exaggeration': skin.hillshade.exaggeration,
           'hillshade-illumination-direction': skin.hillshade.illuminationDirection,
+          // Without this MapLibre defaults to 'viewport' and the sun orbits
+          // with the camera — the "colours change when I rotate" bug.
+          'hillshade-illumination-anchor': skin.hillshade.illuminationAnchor,
           'hillshade-shadow-color': skin.hillshade.shadowColor,
           'hillshade-highlight-color': skin.hillshade.highlightColor,
           'hillshade-accent-color': skin.hillshade.accentColor,

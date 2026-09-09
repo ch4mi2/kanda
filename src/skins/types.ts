@@ -17,6 +17,15 @@ export interface HillshadeSkin {
   exaggeration: number;
   /** Degrees clockwise from north the light comes from. */
   illuminationDirection: number;
+  /**
+   * 'map' anchors the sun to map north; 'viewport' anchors it to the camera.
+   * MapLibre defaults to 'viewport', which ADDS the camera bearing to the
+   * light direction every frame (see its shader uniform setup) — so every
+   * slope re-shades as you orbit and the whole map appears to change colour.
+   * For a look-around app that is always wrong: the sun does not follow your
+   * head. Always 'map' unless a skin has a deliberate reason otherwise.
+   */
+  illuminationAnchor: 'map' | 'viewport';
   shadowColor: string;
   highlightColor: string;
   accentColor: string;
