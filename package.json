@@ -15,6 +15,7 @@
     "fetch:glyphs": "node scripts/fetch-glyphs.mjs",
     "repair:dem": "node scripts/repair-dem.mjs --repair --smooth",
     "generate:contours": "node scripts/generate-contours.mjs",
+    "generate:trees": "node scripts/generate-trees.mjs",
     "pack:pmtiles": "node scripts/pack-pmtiles.mjs"
   },
   "dependencies": {

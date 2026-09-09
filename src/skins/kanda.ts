@@ -53,6 +53,13 @@ export const KANDA_SKIN: Skin = {
   // Deep blue-green, half-transparent — darkens the forested blocks (Sinharaja,
   // Knuckles, Peak Wilderness...) without hiding the relief under them.
   forest: 'rgba(44, 92, 66, 0.5)',
+  // Cartoon broadleaf tree, deliberately a couple of shades off the forest
+  // tint so a scatter of them over a wooded hillside reads as canopy, not noise.
+  foliage: {
+    trunk: '#6b4a2f',
+    canopy: '#2c6b43',
+    canopyLight: '#43935e',
+  },
   hillshade: {
     // 'combined' blends a slope term with the directional term, so ridges and
     // valleys stay legible even when the sun is high (near the equator it's

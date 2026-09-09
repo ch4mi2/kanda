@@ -16,6 +16,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildStyle, hillshadeLightForSun, skyForSun } from './buildStyle';
 import { DEFAULT_SKIN } from '../skins';
 import { addPeaksLayer, PEAK_LAYER_IDS, topPeakFeature } from './peaksLayer';
+import { addTreesLayer } from './treesLayer';
 import {
   DEFAULT_BEARING,
   DEFAULT_CENTER,
@@ -241,6 +242,7 @@ export default function MapView({
       applyAdaptiveTerrain();
       map.on('zoom', applyAdaptiveTerrain);
       applySun(map, sunMinutesRef.current);
+      addTreesLayer(map);
       addPeaksLayer(map);
       summitRef.current = createSummitView(map, {
         reliefMultiplier: () => multiplierRef.current,

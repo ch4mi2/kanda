@@ -66,6 +66,16 @@ export interface SkySkin {
   fogGroundBlend: number;
 }
 
+/** Billboard-tree sprite colours (src/data/trees.geojson, pre-generated).
+ *  The icon is a flat cartoon tree drawn on a canvas once at load. */
+export interface FoliageSkin {
+  trunk: string;
+  /** Canopy base (the bulk of the blob). */
+  canopy: string;
+  /** Lighter canopy highlight for a hint of form. */
+  canopyLight: string;
+}
+
 /** Highland contour styling (src/data/contours.geojson, pre-generated). */
 export interface ContourSkin {
   /** Line + label colour. */
@@ -96,6 +106,8 @@ export interface Skin {
   /** Forest-block tint (src/data/forest.geojson). Use an rgba with alpha < 1
    *  so the elevation ramp and hillshade still read through it as texture. */
   forest: string;
+  /** Billboard-tree sprite colours (src/data/trees.geojson). */
+  foliage: FoliageSkin;
   hillshade: HillshadeSkin;
   sky: SkySkin;
   contour: ContourSkin;
