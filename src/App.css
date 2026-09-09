@@ -522,6 +522,94 @@
 
 /* ---------- summit view ---------- */
 
+.skyline {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.skyline__peak {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  background: none;
+  border: none;
+  border-radius: var(--r-sm);
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  pointer-events: auto;
+  padding: 2px 6px 0;
+  white-space: nowrap;
+  transform-origin: bottom center;
+  text-shadow:
+    0 1px 2px var(--paper),
+    0 0 6px var(--paper-90);
+}
+.skyline__peak:hover,
+.skyline__peak:focus-visible {
+  background: var(--paper-90);
+  outline: none;
+}
+
+.skyline__name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.05;
+}
+
+.skyline__meta {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-80);
+  line-height: 1;
+}
+
+.skyline__tick {
+  width: 1px;
+  height: 16px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+
+.skyline__peak--hidden .skyline__name {
+  font-weight: 600;
+  font-style: italic;
+}
+.skyline__peak--hidden .skyline__tick {
+  background: repeating-linear-gradient(
+    var(--ink) 0 2px,
+    transparent 2px 4px
+  );
+  opacity: 0.5;
+}
+
+/* Peak card while standing on a summit — no nearby list, docked bottom.
+   `.sheet.sheet--summit` beats the plain `.sheet` desktop rules regardless of
+   source order. */
+.sheet.sheet--summit {
+  top: auto;
+  bottom: var(--s3);
+  left: var(--s3);
+  right: var(--s3);
+  max-height: none;
+}
+@media (min-width: 721px) {
+  .sheet.sheet--summit {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: var(--s4);
+    width: min(360px, calc(100vw - 32px));
+  }
+}
+
+
 .summit-bar {
   position: absolute;
   top: var(--s3);

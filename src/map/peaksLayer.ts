@@ -157,6 +157,19 @@ export function setPeakElevationFloor(map: MLMap, floorM: number) {
   }
 }
 
+/**
+ * Show or hide every peak symbol tier at once. Summit view hides them and
+ * renders its own HTML skyline labels instead (they can express "visible" vs
+ * "hidden behind a ridge", which a symbol layer cannot).
+ */
+export function setPeaksVisible(map: MLMap, visible: boolean) {
+  for (const id of PEAK_LAYER_IDS) {
+    if (map.getLayer(id)) {
+      map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+    }
+  }
+}
+
 export function reloadPeaksSource(map: MLMap) {
   const source = map.getSource(PEAKS_SOURCE_ID) as GeoJSONSource | undefined;
   source?.setData(peaksGeoJson);

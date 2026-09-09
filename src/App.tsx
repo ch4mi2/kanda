@@ -11,6 +11,7 @@ import SearchField from './components/SearchField';
 import FilterChips from './components/FilterChips';
 import GestureHint from './components/GestureHint';
 import SummitBar from './components/SummitBar';
+import SummitLabels from './components/SummitLabels';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
 import { slstNowMinutes } from './map/sunPosition';
 import { setPeakElevationFloor } from './map/peaksLayer';
@@ -108,7 +109,29 @@ export default function App() {
       />
 
       {inSummit ? (
-        <SummitBar peak={viewpoint} onExit={() => setViewpoint(null)} />
+        <>
+          <SummitBar peak={viewpoint} onExit={() => setViewpoint(null)} />
+          <SummitLabels
+            map={map}
+            origin={viewpoint}
+            peaks={peaks}
+            reliefMultiplier={exaggeration}
+            onPick={(f) => setSelectedPeak(toSelected(f, map))}
+          />
+          {selectedPeak && selectedPeak.id !== viewpoint.id && (
+            <div className="sheet sheet--summit">
+              <PeakCard
+                peak={selectedPeak}
+                map={map}
+                onClose={() => setSelectedPeak(null)}
+                onStand={() => {
+                  setViewpoint(selectedPeak);
+                  setSelectedPeak(null);
+                }}
+              />
+            </div>
+          )}
+        </>
       ) : (
         <>
           <div className="topstack">
@@ -140,7 +163,10 @@ export default function App() {
                 peak={selectedPeak}
                 map={map}
                 onClose={() => setSelectedPeak(null)}
-                onStand={() => setViewpoint(selectedPeak)}
+                onStand={() => {
+                  setViewpoint(selectedPeak);
+                  setSelectedPeak(null);
+                }}
               />
               <NearbyPeaks
                 origin={selectedPeak}
