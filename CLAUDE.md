@@ -42,12 +42,15 @@ src/
   index.css          Design tokens (palette, 4 px grid, radii, type scale).
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
                       Overpass at runtime.
+  data/water.geojson  ~920 water bodies (reservoirs, tanks) 40-60,000 ha.
+  data/rivers.geojson ~450 named rivers, simplified. Both committed, ODbL.
   data/usePeaks.ts    Loads the GeoJSON once for the nearby-peaks maths.
 public/fonts/        Self-hosted MapLibre glyph PBFs (npm run fetch:glyphs).
 scripts/
   fetch-peaks.mjs         Overpass → src/data/peaks.geojson
+  fetch-osm-features.mjs  Overpass → src/data/water.geojson + rivers.geojson
   fetch-terrain.mjs       AWS → public/tiles/terrain/ (~2,024 tiles, 54 MB)
-  repair-dem.mjs          Repair DEM void spikes in the local pyramid
+  repair-dem.mjs          Repair DEM spikes/pits + one light smooth pass
   fetch-glyphs.mjs        demotiles → public/fonts/ (Noto Sans PBF ranges)
   pack-pmtiles.mjs        public/tiles/terrain/ → public/tiles/terrain.pmtiles
 design/               Exported Claude Design source. Tokens live in the
@@ -129,10 +132,19 @@ broken-slow. This was a real bug, not a hypothetical.
    image instead.
 6. **Vertical exaggeration is load-bearing.** At true 1.0×, 2,524 m across a
    400 km island looks flat and the app reads as broken. The design specced
-   ~4×/2×; Phase 4A softened the shipped curve to ~2.5× island / 1.8× regional
-   / 1.4× close (`EXAGGERATION_STOPS` in `config/tiles.ts`) because ≥3×
-   amplifies SRTM's 30 m speckle into fake ridging. `scripts/repair-dem.mjs
-   --smooth` is the knob if it still needs to be smoother.
+   ~4×/2×; the shipped curve is ~2.5× island / 1.8× regional / 1.4× close
+   (`EXAGGERATION_STOPS` in `config/tiles.ts`) because ≥3× amplifies SRTM's
+   30 m speckle into fake ridging.
+7. **`repair-dem.mjs` writes WHOLE-metre elevations.** The `--smooth` pass
+   writes a fractional value to every land pixel; without rounding to whole
+   metres that collapses PNG delta-filter compression and the packed PMTiles
+   goes 48 MB → 106 MB. SRTM's real precision is metres, so `encodeHeight`
+   always rounds. Don't "restore" the 1/256 m fraction.
+8. **Hillshade illumination anchor.** MapLibre defaults
+   `hillshade-illumination-anchor` to `viewport`, which adds the camera
+   bearing to the light direction every frame — orbiting re-shades every
+   slope and the whole map appears to change colour. Kanda's skin forces
+   `'map'`. Any new skin must too.
 
 ## Design
 
@@ -173,11 +185,16 @@ npm run dev             # localhost:5173
 npm run build           # tsc + vite build
 npm run lint            # oxlint
 npm run fetch:peaks     # refresh peaks from Overpass
+npm run fetch:osm       # refresh water.geojson + rivers.geojson from Overpass
 npm run fetch:terrain   # download the 54 MB tile pyramid (resumable)
-npm run repair:dem      # repair DEM void spikes in public/tiles/terrain/
+npm run repair:dem      # repair DEM spikes/pits + one smooth pass (in place)
 npm run fetch:glyphs    # download the self-hosted glyph PBFs
 npm run pack:pmtiles    # re-pack the loose pyramid into terrain.pmtiles
 ```
+
+After a fresh clone: `fetch:terrain` → `repair:dem` → `pack:pmtiles`, then set
+`VITE_TILE_MODE` in `.env.local`. `public/tiles/` is gitignored; everything in
+`src/data/` and `public/fonts/` is committed.
 
 `public/tiles/` is gitignored; after a fresh clone run `fetch:terrain` then
 `repair:dem` then `pack:pmtiles`. `public/fonts/` **is** committed.

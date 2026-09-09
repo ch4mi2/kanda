@@ -12,7 +12,7 @@
     "fetch:osm": "node scripts/fetch-osm-features.mjs",
     "fetch:terrain": "node scripts/fetch-terrain.mjs",
     "fetch:glyphs": "node scripts/fetch-glyphs.mjs",
-    "repair:dem": "node scripts/repair-dem.mjs --repair",
+    "repair:dem": "node scripts/repair-dem.mjs --repair --smooth",
     "pack:pmtiles": "node scripts/pack-pmtiles.mjs"
   },
   "dependencies": {

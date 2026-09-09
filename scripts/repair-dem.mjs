@@ -21,10 +21,10 @@
 //              reads as fake micro-ridging. One pass by default; --smooth=N
 //              for N passes.
 //
-// Idempotent: --repair re-run on already-clean tiles changes nothing. --smooth
-// is NOT idempotent (each pass blurs further) — that is deliberate, it is a
-// tunable knob, compare results by eye. public/tiles/ is gitignored, so a bad
-// run costs a re-fetch, not lost work.
+// `npm run repair:dem` runs `--repair --smooth` (one pass) — that is the
+// shipped pipeline. --repair is idempotent; --smooth is NOT (each pass blurs
+// further), so re-running repair:dem on already-smoothed tiles over-softens.
+// Re-fetch (public/tiles/ is gitignored) before re-smoothing to compare passes.
 //
 //   node scripts/repair-dem.mjs --repair
 //   node scripts/repair-dem.mjs --repair --smooth
@@ -204,8 +204,14 @@ function encodePng({ width, height, channels, data }) {
 // --- Terrarium encode / decode ------------------------------------------------
 const decodeHeight = (r, g, b) => r * 256 + g + b / 256 - 32768;
 
+// Encode to WHOLE metres — the low byte (1/256 m fraction) is always 0. The
+// source SRTM tiles are already ~whole-metre (only 0.6% of pixels carry a
+// fraction), and PNG's delta filters compress whole-metre data far better:
+// a --smooth pass writes a fractional value to every land pixel otherwise,
+// which more than doubles the packed PMTiles size (48 MB -> 106 MB). SRTM's
+// real vertical precision is metres, so nothing is lost.
 function encodeHeight(h) {
-  let v = Math.round((h + 32768) * 256);
+  let v = (Math.round(h) + 32768) * 256;
   if (v < 0) v = 0;
   if (v > 0xffffff) v = 0xffffff;
   return [(v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff];
