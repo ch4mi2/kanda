@@ -44,7 +44,10 @@ src/
                       Overpass at runtime.
   data/water.geojson  ~740 water bodies (reservoirs, tanks) 50-60,000 ha.
   data/rivers.geojson ~450 named rivers, simplified.
-  data/forest.geojson ~270 forest blocks >700 ha. All three committed, ODbL.
+  data/forest.geojson ~270 forest blocks >700 ha (OSM, ODbL).
+  data/contours.geojson  highland contour lines 800-2400 m, pre-generated
+                      from the DEM (public domain). npm run generate:contours
+                      — run it AFTER repair:dem.
   data/usePeaks.ts    Loads the GeoJSON once for the nearby-peaks maths.
 public/fonts/        Self-hosted MapLibre glyph PBFs (npm run fetch:glyphs).
 scripts/
@@ -52,6 +55,7 @@ scripts/
   fetch-osm-features.mjs  Overpass → src/data/water.geojson + rivers.geojson
   fetch-terrain.mjs       AWS → public/tiles/terrain/ (~2,024 tiles, 54 MB)
   repair-dem.mjs          Repair DEM spikes/pits + one light smooth pass
+  generate-contours.mjs   local DEM → src/data/contours.geojson (highlands)
   fetch-glyphs.mjs        demotiles → public/fonts/ (Noto Sans PBF ranges)
   pack-pmtiles.mjs        public/tiles/terrain/ → public/tiles/terrain.pmtiles
 design/               Exported Claude Design source. Tokens live in the

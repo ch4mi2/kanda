@@ -13,6 +13,7 @@
     "fetch:terrain": "node scripts/fetch-terrain.mjs",
     "fetch:glyphs": "node scripts/fetch-glyphs.mjs",
     "repair:dem": "node scripts/repair-dem.mjs --repair --smooth",
+    "generate:contours": "node scripts/generate-contours.mjs",
     "pack:pmtiles": "node scripts/pack-pmtiles.mjs"
   },
   "dependencies": {

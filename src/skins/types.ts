@@ -40,14 +40,14 @@ export interface SkySkin {
   fogGroundBlend: number;
 }
 
-/** Contour styling. Contours themselves are a backlog item (maplibre-contour);
- *  the shape is here so a skin can already describe how they should look. */
+/** Highland contour styling (src/data/contours.geojson, pre-generated). */
 export interface ContourSkin {
+  /** Line + label colour. */
   line: string;
   labelHalo: string;
   /** px width of an ordinary contour; index lines are drawn thicker. */
   width: number;
-  /** every Nth contour is an index (labelled, heavier) line. */
+  /** metres between labelled "index" contours (the script tags these). */
   indexEvery: number;
 }
 

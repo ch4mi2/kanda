@@ -6,6 +6,7 @@ import { DEFAULT_SKIN, type Skin } from '../skins';
 import waterUrl from '../data/water.geojson?url';
 import riversUrl from '../data/rivers.geojson?url';
 import forestUrl from '../data/forest.geojson?url';
+import contoursUrl from '../data/contours.geojson?url';
 
 // buildStyle owns MapLibre style plumbing only — sources, layer wiring, sky.
 // Every colour and the shape of the hypsometric ramp come from the Skin (see
@@ -55,6 +56,7 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
       water: { type: 'geojson', data: waterUrl },
       rivers: { type: 'geojson', data: riversUrl },
       forest: { type: 'geojson', data: forestUrl },
+      contours: { type: 'geojson', data: contoursUrl },
     },
     layers: [
       {
@@ -118,6 +120,47 @@ export function buildStyle(skin: Skin = DEFAULT_SKIN): StyleSpecification {
         paint: {
           'fill-color': skin.lake,
           'fill-outline-color': skin.river,
+        },
+      },
+      // Highland contours (src/data/contours.geojson, 800-2400 m). Only worth
+      // drawing once you're looking at a massif — noise at island view.
+      {
+        id: 'contours',
+        type: 'line',
+        source: 'contours',
+        minzoom: 9.5,
+        paint: {
+          'line-color': skin.contour.line,
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            9.5,
+            ['case', ['==', ['get', 'index'], 1], 0.8, 0.3],
+            13,
+            ['case', ['==', ['get', 'index'], 1], 2.2, 1],
+          ],
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 9.5, 0, 10.5, 0.45, 13, 0.6],
+        },
+      },
+      {
+        id: 'contour-labels',
+        type: 'symbol',
+        source: 'contours',
+        minzoom: 11,
+        filter: ['==', ['get', 'index'], 1],
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['concat', ['to-string', ['get', 'ele']], ' m'],
+          'text-font': ['Noto Sans Regular'],
+          'text-size': 10,
+          'symbol-spacing': 400,
+        },
+        paint: {
+          'text-color': skin.contour.line,
+          'text-halo-color': skin.contour.labelHalo,
+          'text-halo-width': 1.4,
+          'text-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0, 11.8, 0.9],
         },
       },
     ],

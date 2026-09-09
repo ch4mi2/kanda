@@ -64,9 +64,9 @@ export const KANDA_SKIN: Skin = {
     fogGroundBlend: 0.5,
   },
   contour: {
-    line: 'rgba(13, 37, 27, 0.35)',
-    labelHalo: '#f7f5ec',
+    line: '#4a3626', // dark cocoa — enough contrast on the green AND terracotta
+    labelHalo: 'rgba(247, 245, 236, 0.9)',
     width: 1,
-    indexEvery: 5,
+    indexEvery: 1000, // metres between labelled "index" contours
   },
 };
