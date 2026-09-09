@@ -65,8 +65,16 @@ export function refPxX(x, px, z) {
 export function refPxY(y, py, z) {
   return ((y + (py + 0.5) / TILE_SIZE) / 2 ** z) * TILE_SIZE * 2 ** REF_Z;
 }
-// Reference px spanned by one screen pixel at tile zoom z. Used to band-limit
-// octaves: 2**(REF_Z - z - log2(TILE_SIZE)).
+// Same world field addressed straight from lon/lat (the --single bake has no
+// tile grid). Identical to refPxX/refPxY once you substitute the tile-pixel
+// centre's longitude/latitude, so both bake paths sample one continuous field.
+export const lonToRefPx = (lon) => lonToMercX(lon, 0) * TILE_SIZE * 2 ** REF_Z;
+export const latToRefPy = (lat) => latToMercY(lat, 0) * TILE_SIZE * 2 ** REF_Z;
+// Reference px spanned by one screen pixel at tile zoom z. One screen px at
+// zoom z covers 1/(256*2**z) of the world in normalised units, one ref px
+// covers 1/(256*2**REF_Z); the ratio is 2**(REF_Z - z). Used to band-limit
+// octaves. (The Phase 6 plan wrote 2**(REF_Z - z - 8); the 256=2**8 factor
+// cancels in the ratio, so the -8 was a slip — this is the correct form.)
 export function refPxPerScreenPx(z) {
-  return 2 ** (REF_Z - z - 8);
+  return 2 ** (REF_Z - z);
 }

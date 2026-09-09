@@ -1,34 +1,49 @@
 #!/usr/bin/env node
-// Bakes a *diffuse detail texture* for a region and writes it as a PNG that the
-// map drapes over the terrain.
+// Bakes a *diffuse detail texture* for the terrain and writes it as PNG the
+// map drapes over the mesh — canopy mottle, rock striation, open-ground grain.
 //
 //   node scripts/generate-texture.mjs knuckles      (npm run generate:texture)
+//   node scripts/generate-texture.mjs --single --bbox 80.62,7.24,81.02,7.58 --size 2048
 //
 // Why this exists
 // ---------------
 // MapLibre's `color-relief` paints one flat colour per elevation band and
-// nothing else — no surface detail at all. Reference art (the Sketchfab
-// terrain renders) gets its richness from a diffuse texture map draped on the
-// mesh, which for them is satellite/landcover imagery. Kanda can't use imagery
-// (licensed, non-redistributable, multi-GB — it would end keyless + offline),
-// so we bake our own from data we already have:
+// nothing else — no surface detail. Reference art (Sketchfab terrain renders)
+// gets its richness from a diffuse texture map draped on the mesh, which for
+// them is satellite/landcover imagery. Kanda can't use imagery (licensed,
+// non-redistributable, multi-GB — it would end keyless + offline), so we bake
+// our own from data we already have:
 //
-//   * the local DEM      -> slope, aspect, elevation
-//   * forest.geojson     -> where canopy texture goes
-//   * value-noise fbm    -> the actual high-frequency detail
+//   * the local DEM   -> slope, aspect, elevation (bilinear, z12)
+//   * forest.geojson  -> where canopy texture goes
+//   * value-noise fbm -> the high-frequency detail
 //
-// The output is deliberately an RGBA *overlay*, not a replacement: alpha is
-// near zero where there's nothing interesting to say, so the Skin's elevation
-// ramp still shows through and skins still control the palette. It sits above
-// color-relief and below the hillshade passes, so the shading lights it.
+// The output is an *overlay*, not a replacement: alpha is near zero where
+// there's nothing interesting to say, so the Skin's elevation ramp still
+// shows through. It sits above color-relief and below the hillshade passes.
 //
-// Deterministic — fixed PRNG seed, so re-running doesn't churn the diff.
+// Phase 6: the noise is now a pure function of REF_Z=20 world-mercator pixels
+// (not image/tile pixel coords) with band-limited octaves, so tiles at
+// different zooms are low-passes of one continuous field and cannot seam.
+// Slope/aspect are central-differenced at a fixed ~38 m DEM-texel offset, not
+// from adjacent output pixels, so the 38 m DEM grid can't print through the
+// rock mask. Output is an indexed PNG against a shared 256-entry palette —
+// 3-5x smaller than RGBA, and identical-looking tiles hash-dedup in PMTiles.
+//
+// Deterministic — pure function of world position + fixed seeds.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { deflateSync, inflateSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { lonToMercX as lonToX, latToMercY as latToY } from './lib/tilemath.mjs';
+import {
+  TILE_SIZE,
+  lonToMercX as lonToX,
+  latToMercY as latToY,
+  lonToRefPx,
+  latToRefPy,
+  refPxPerScreenPx,
+} from './lib/tilemath.mjs';
 
 const HERE = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
 const TILE_DIR = path.join(HERE, '../public/tiles/terrain');
@@ -37,44 +52,50 @@ const OUT_DIR = path.join(HERE, '../public/textures');
 const MANIFEST = path.join(HERE, '../src/data/textures.json');
 
 const SAMPLE_Z = 12; // DEM ceiling — see CLAUDE.md
+const DEM_TEXEL_M = 38; // ~1 z12 texel at this latitude; the slope/aspect step
 
-// Regions to bake. `knuckles` is the prototype window: dramatic relief, big
-// forest blocks, and the peaks the app's founding story names.
+// Named single-image regions. `knuckles` is the prototype window: dramatic
+// relief, big forest blocks, the peaks the app's founding story names.
 const REGIONS = {
   knuckles: { bbox: [80.62, 7.24, 81.02, 7.58], size: 2048 },
   highlands: { bbox: [80.2, 6.45, 81.35, 7.75], size: 4096 },
 };
 
-// ---- texture palette -------------------------------------------------------
-// Prototype only: these mirror Skin.foliage / the upper elevation bands. If
-// this pipeline graduates, they should come from the Skin rather than living
-// in a second place. Kept as [r,g,b].
+// ---- texture palette anchors ---------------------------------------------
+// Prototype-era values, mirroring Skin.foliage / the upper elevation bands.
+// If this graduates they should come from the Skin. Each material is a
+// dark->light luminance ramp; the composited alpha says how much shows.
 const CANOPY_DARK = [20, 62, 38];
 const CANOPY_LIGHT = [96, 158, 92];
-const ROCK_LIGHT = [156, 145, 128];
 const ROCK_DARK = [54, 47, 40];
-// Neutral pair used for pure light/dark grain on open ground. Neutral matters:
-// tinting open ground with any hue would desaturate the Skin's elevation ramp
-// across the whole region. These only move luminance — a poor man's
-// multiply/screen, since MapLibre raster layers have no blend mode.
-// Soft, not black-and-white: a hard flip between extremes at high frequency
-// reads as television static once it's composited.
+const ROCK_LIGHT = [156, 145, 128];
+// Neutral pair for open-ground grain — only luminance moves, no hue, or the
+// Skin's elevation ramp would desaturate across the whole map. Soft, not
+// black/white: a hard flip at high frequency reads as TV static once
+// composited (CLAUDE.md gotcha #14).
 const GRAIN_DARK = [44, 42, 34];
 const GRAIN_LIGHT = [232, 226, 208];
 
-// Slope (degrees) over which ground grades into bare rock. Rock has to stay a
-// *minority* material: Sri Lanka's highlands are forest and grassland with
-// crags in them, not the Alps. At 13/31 the Knuckles came out uniformly brown
-// because almost every pixel there is steep.
+// Slope (deg) over which ground grades into bare rock. Rock stays a minority
+// material: Sri Lanka's highlands are forest and grassland with crags, not the
+// Alps. At 13/31 the Knuckles came out uniformly brown (almost every pixel is
+// steep).
 const ROCK_SLOPE_LO = 26;
 const ROCK_SLOPE_HI = 45;
 // Above this the ground goes stony even where it isn't especially steep — a
-// light touch, since the summits here are grassland (Horton Plains) not scree.
+// light touch; these summits are grassland (Horton Plains), not scree.
 const SCREE_ELE = 1900;
-// Ceiling on any one pixel — the ramp underneath must still read through.
+// Ceiling on any one pixel's alpha — the ramp underneath must read through.
 const MAX_ALPHA = 0.66;
 
-// --- PNG (same minimal codec as repair-dem.mjs / generate-contours.mjs) -----
+// Per-material alpha envelopes (pre-clamp; the compositor mixes between them).
+const GRAIN_ALPHA_MAX = 0.16;
+const CANOPY_ALPHA_LO = 0.3;
+const CANOPY_ALPHA_HI = 0.56;
+const ROCK_ALPHA_LO = 0.14;
+const ROCK_ALPHA_HI = 0.42;
+
+// --- PNG codec (same minimal one as repair-dem.mjs / generate-contours.mjs) -
 const PNG_SIG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const CRC_TABLE = (() => {
   const t = new Int32Array(256);
@@ -145,39 +166,153 @@ function chunk(type, body) {
   out.writeUInt32BE(crc32(out.subarray(4, 8 + body.length)), 8 + body.length);
   return out;
 }
-function encodePng({ width, height, data }) {
-  const stride = width * 4;
-  const raw = Buffer.alloc((stride + 1) * height);
-  // Filter 1 (Sub) compresses noisy RGBA a lot better than filter 0 here.
+
+/**
+ * Indexed (colour-type 3) PNG. `indices` is one byte per pixel; `palette` is
+ * up to 256 `[r,g,b,a]`. Filter type 0 (None) on every row — Sub/Paeth on
+ * palette *indices* is meaningless and measurably worse. Chunk order is
+ * IHDR -> PLTE -> tRNS -> IDAT -> IEND.
+ */
+function encodeIndexedPng({ width, height, indices, palette }) {
+  const raw = Buffer.alloc((width + 1) * height);
   for (let y = 0; y < height; y++) {
-    const dst = y * (stride + 1);
-    raw[dst] = 1;
-    for (let x = 0; x < stride; x++) {
-      const prev = x >= 4 ? data[y * stride + x - 4] : 0;
-      raw[dst + 1 + x] = (data[y * stride + x] - prev) & 0xff;
-    }
+    const dst = y * (width + 1);
+    raw[dst] = 0;
+    indices.copy(raw, dst + 1, y * width, y * width + width);
   }
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
   ihdr[8] = 8;
-  ihdr[9] = 6; // RGBA
+  ihdr[9] = 3; // indexed colour
+  const plte = Buffer.alloc(palette.length * 3);
+  const trns = Buffer.alloc(palette.length);
+  palette.forEach(([r, g, b, a], i) => {
+    plte[i * 3] = r;
+    plte[i * 3 + 1] = g;
+    plte[i * 3 + 2] = b;
+    trns[i] = a;
+  });
   return Buffer.concat([
     PNG_SIG,
     chunk('IHDR', ihdr),
+    chunk('PLTE', plte),
+    chunk('tRNS', trns),
     chunk('IDAT', deflateSync(raw, { level: 9 })),
     chunk('IEND', Buffer.alloc(0)),
   ]);
 }
 
-// --- DEM sampling -----------------------------------------------------------
+// --- shared palette -------------------------------------------------------
+// index 0                fully transparent ("nothing here")
+// 1..64    grain    8 luminance x 8 alpha
+// 65..128  canopy   8 luminance x 8 alpha
+// 129..192 rock     8 luminance x 8 alpha
+// 193..255 canopy<->rock blend, 9 blend steps x 7 luminance (63 entries)
+//
+// Identical in every tile, so tiles that composite to the same picture encode
+// byte-identically and SHA-1-dedup in the archive. Alpha is quantised to 8
+// levels over 0..MAX_ALPHA — the continuous per-pixel alpha is the single
+// biggest reason the old RGBA output was incompressible.
+const LUM_STEPS = 8;
+const ALPHA_STEPS = 8;
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+const mixc = (a, b, t) => a + (b - a) * t;
+const mixrgb = (d, l, t) => [
+  Math.round(mixc(d[0], l[0], t)),
+  Math.round(mixc(d[1], l[1], t)),
+  Math.round(mixc(d[2], l[2], t)),
+];
+const alphaByte = (aIdx) => Math.round(((aIdx + 1) / ALPHA_STEPS) * MAX_ALPHA * 255);
+
+const BLEND_STEPS = 9;
+const BLEND_LUM = 7;
+
+function buildPalette() {
+  const palette = [[0, 0, 0, 0]];
+  for (const [dark, light] of [
+    [GRAIN_DARK, GRAIN_LIGHT],
+    [CANOPY_DARK, CANOPY_LIGHT],
+    [ROCK_DARK, ROCK_LIGHT],
+  ]) {
+    for (let l = 0; l < LUM_STEPS; l++) {
+      const [r, g, b] = mixrgb(dark, light, l / (LUM_STEPS - 1));
+      for (let a = 0; a < ALPHA_STEPS; a++) palette.push([r, g, b, alphaByte(a)]);
+    }
+  }
+  // canopy<->rock blend spares
+  for (let bl = 0; bl < BLEND_STEPS; bl++) {
+    const rockFrac = (bl + 1) / (BLEND_STEPS + 1);
+    for (let l = 0; l < BLEND_LUM; l++) {
+      const t = l / (BLEND_LUM - 1);
+      const canopy = mixrgb(CANOPY_DARK, CANOPY_LIGHT, t);
+      const rock = mixrgb(ROCK_DARK, ROCK_LIGHT, t);
+      palette.push([
+        ...mixrgb(canopy, rock, rockFrac),
+        alphaByte(4), // representative mid alpha
+      ]);
+    }
+  }
+  while (palette.length < 256) palette.push([0, 0, 0, 0]);
+  return palette;
+}
+
+const PALETTE = buildPalette();
+// Premultiplied palette for nearest-match on blend pixels only.
+const PAL_PM = PALETTE.map(([r, g, b, a]) => {
+  const af = a / 255;
+  return [r * af, g * af, b * af, a];
+});
+
+const matBase = (mat) => 1 + mat * LUM_STEPS * ALPHA_STEPS; // grain 0 / canopy 1 / rock 2
+// `dither` is a per-pixel [-0.5, 0.5) value applied at ~1 bucket amplitude
+// before rounding, so posterised luminance/alpha bands break up into noise
+// instead of showing hard block edges — far cheaper than doubling LUM_STEPS.
+function quantIdx(mat, lumT, alpha, dither = 0) {
+  const aByte = clamp01(alpha / MAX_ALPHA) + dither / ALPHA_STEPS;
+  if (aByte < 0.5 / ALPHA_STEPS) return 0; // rounds to transparent
+  const aIdx = Math.max(0, Math.min(ALPHA_STEPS - 1, Math.round(aByte * ALPHA_STEPS - 1)));
+  const lIdx = Math.max(
+    0,
+    Math.min(LUM_STEPS - 1, Math.round(clamp01(lumT) * (LUM_STEPS - 1) + dither)),
+  );
+  return matBase(mat) + lIdx * ALPHA_STEPS + aIdx;
+}
+/** Nearest palette entry to a composited RGBA (premultiplied distance). Only
+ *  used where two materials genuinely overlap — pure pixels hit quantIdx. */
+function nearestIdx(r, g, b, a) {
+  const af = a / 255;
+  const rp = r * af;
+  const gp = g * af;
+  const bp = b * af;
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 1; i < 256; i++) {
+    const p = PAL_PM[i];
+    if (p[3] === 0) continue;
+    const dr = p[0] - rp;
+    const dg = p[1] - gp;
+    const db = p[2] - bp;
+    const da = p[3] - a;
+    const d = dr * dr + dg * dg + db * db + da * da;
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+// --- DEM sampling (bilinear height, fixed-metric slope/aspect) -------------
 const decodeHeight = (r, g, b) => r * 256 + g + b / 256 - 32768;
 
-async function buildSampler(bbox) {
-  const x0 = Math.floor(lonToX(bbox[0], SAMPLE_Z));
-  const x1 = Math.floor(lonToX(bbox[2], SAMPLE_Z));
-  const y0 = Math.floor(latToY(bbox[3], SAMPLE_Z));
-  const y1 = Math.floor(latToY(bbox[1], SAMPLE_Z));
+async function buildDem(bbox) {
+  // One tile of margin so bilinear + the ~38 m slope step never miss a
+  // neighbour at the window edge.
+  const x0 = Math.floor(lonToX(bbox[0], SAMPLE_Z)) - 1;
+  const x1 = Math.floor(lonToX(bbox[2], SAMPLE_Z)) + 1;
+  const y0 = Math.floor(latToY(bbox[3], SAMPLE_Z)) - 1;
+  const y1 = Math.floor(latToY(bbox[1], SAMPLE_Z)) + 1;
   const tiles = new Map();
   let loaded = 0;
   for (let tx = x0; tx <= x1; tx++) {
@@ -189,7 +324,7 @@ async function buildSampler(bbox) {
         tiles.set(`${tx}/${ty}`, img);
         loaded++;
       } catch {
-        /* missing tile — sampler returns NaN */
+        /* missing tile — sea / no-data */
       }
     }
   }
@@ -199,21 +334,64 @@ async function buildSampler(bbox) {
     );
   }
   console.log(`  ${loaded} z${SAMPLE_Z} DEM tiles loaded`);
-  return (lon, lat) => {
-    const fx = lonToX(lon, SAMPLE_Z);
-    const fy = latToY(lat, SAMPLE_Z);
-    const tx = Math.floor(fx);
-    const ty = Math.floor(fy);
+
+  // Global z12 pixel grid: integer coord = texel edge, texel centres at +0.5.
+  function texelH(gx, gy) {
+    const tx = Math.floor(gx / 256);
+    const ty = Math.floor(gy / 256);
     const img = tiles.get(`${tx}/${ty}`);
     if (!img) return NaN;
-    const px = Math.min(img.W - 1, Math.floor((fx - tx) * img.W));
-    const py = Math.min(img.H - 1, Math.floor((fy - ty) * img.H));
+    let px = Math.floor(gx) - tx * 256;
+    let py = Math.floor(gy) - ty * 256;
+    if (px < 0) px = 0;
+    else if (px >= img.W) px = img.W - 1;
+    if (py < 0) py = 0;
+    else if (py >= img.H) py = img.H - 1;
     const i = (py * img.W + px) * img.ch;
     return decodeHeight(img.data[i], img.data[i + 1], img.data[i + 2]);
-  };
+  }
+
+  function height(lon, lat) {
+    const gx = lonToX(lon, SAMPLE_Z) * 256 - 0.5;
+    const gy = latToY(lat, SAMPLE_Z) * 256 - 0.5;
+    const xi = Math.floor(gx);
+    const yi = Math.floor(gy);
+    const fx = gx - xi;
+    const fy = gy - yi;
+    const h00 = texelH(xi, yi);
+    const h10 = texelH(xi + 1, yi);
+    const h01 = texelH(xi, yi + 1);
+    const h11 = texelH(xi + 1, yi + 1);
+    if (!(Number.isFinite(h00) && Number.isFinite(h10) && Number.isFinite(h01) && Number.isFinite(h11))) {
+      // At least one corner is sea/no-data — nearest finite, or NaN.
+      return Number.isFinite(h00) ? h00
+        : Number.isFinite(h10) ? h10
+        : Number.isFinite(h01) ? h01
+        : h11;
+    }
+    return (h00 * (1 - fx) + h10 * fx) * (1 - fy) + (h01 * (1 - fx) + h11 * fx) * fy;
+  }
+
+  function slopeAspect(lon, lat) {
+    const dLat = DEM_TEXEL_M / 110540;
+    const dLon = DEM_TEXEL_M / (111320 * Math.cos((lat * Math.PI) / 180));
+    const hE = height(lon + dLon, lat);
+    const hW = height(lon - dLon, lat);
+    const hN = height(lon, lat + dLat);
+    const hS = height(lon, lat - dLat);
+    const dzdx = (hE - hW) / (2 * DEM_TEXEL_M);
+    const dzdy = (hS - hN) / (2 * DEM_TEXEL_M); // +y runs south (down the image)
+    const slopeDeg = (Math.atan(Math.hypot(dzdx, dzdy)) * 180) / Math.PI;
+    const aspect = Math.atan2(dzdy, dzdx);
+    return { slopeDeg, aspect };
+  }
+
+  return { height, slopeAspect };
 }
 
-// --- value noise ------------------------------------------------------------
+// --- world-space value noise --------------------------------------------
+// Mercator anisotropy over 5.7-10 N varies ~1 %. Ignored — negligible at this
+// scale and it keeps the noise a plain function of (U, V).
 function hash2(x, y, seed) {
   let h =
     Math.imul(x | 0, 374761393) +
@@ -234,21 +412,61 @@ function valueNoise(x, y, seed) {
   const d = hash2(xi + 1, yi + 1, seed);
   return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
 }
-function fbm(x, y, seed, octaves) {
-  let sum = 0;
-  let amp = 0.5;
-  let freq = 1;
-  let norm = 0;
-  for (let i = 0; i < octaves; i++) {
-    sum += amp * valueNoise(x * freq, y * freq, seed + i * 97);
-    norm += amp;
-    amp *= 0.5;
-    freq *= 2;
-  }
-  return sum / norm;
+
+// Octave wavelengths as absolute reference pixels: lambda_k = 256 * 2**k,
+// k = 0..5 -> ~38 m .. ~1.2 km. Fixed, not per-tile frequency.
+const lambdaK = (k) => TILE_SIZE * 2 ** k;
+
+/** Band-limit weight for an octave of wavelength `lambda` (ref px) at effective
+ *  zoom `zEff`: 0 once the octave is finer than ~2 screen px, 1 by ~8, and the
+ *  /2 spreads the fade across two zoom levels so detail arrives smoothly. */
+function octaveWeight(lambda, zEff) {
+  const S = refPxPerScreenPx(zEff); // ref px per screen px
+  return smoothstep01(clamp01((Math.log2(lambda) - Math.log2(S) - 1) / 2));
 }
 
-// --- forest mask (scanline fill; even-odd so holes work) --------------------
+/** Zero-mean fbm over world coords, octaves kLo..kHi, each band-limited.
+ *  Normalisation is FIXED (all octaves) so a low-zoom evaluation is literally
+ *  the low-pass of the high-zoom field — coarse structure identical, only fine
+ *  detail missing. Range ~[-0.5, 0.5] when every octave is present. */
+function worldFbm(U, V, seed, zEff, kLo, kHi) {
+  let sum = 0;
+  let amp = 1;
+  let norm = 0;
+  for (let k = kLo; k < kHi; k++) {
+    const lam = lambdaK(k);
+    norm += amp;
+    const w = octaveWeight(lam, zEff);
+    if (w > 0.001) sum += amp * w * (valueNoise(U / lam, V / lam, seed + k * 97) - 0.5);
+    amp *= 0.5;
+  }
+  return norm > 0 ? sum / (norm * 0.5) : 0;
+}
+
+// Rock striation: squashed across the fall line, stretched along it, rotated
+// in *world* space by the aspect so the pattern is stable between zooms.
+const STREAK_ACROSS = 350; // ref px (~52 m)
+const STREAK_ALONG = 1900; // ref px (~284 m)
+function rockStreak(U, V, ca, sa, zEff, seed) {
+  const across = U * ca + V * sa;
+  const along = -U * sa + V * ca;
+  let sum = 0;
+  let amp = 1;
+  let norm = 0;
+  for (let k = 0; k < 4; k++) {
+    const lac = STREAK_ACROSS / 2 ** k;
+    const lal = STREAK_ALONG / 2 ** k;
+    norm += amp;
+    const w = octaveWeight(lac, zEff);
+    if (w > 0.001) {
+      sum += amp * w * (valueNoise(across / lac, along / lal, seed + k * 131) - 0.5);
+    }
+    amp *= 0.55;
+  }
+  return 0.5 + (norm > 0 ? sum / (norm * 0.5) : 0);
+}
+
+// --- forest mask (scanline fill; even-odd so holes work) ------------------
 function rasterizeForest(features, bbox, W, H) {
   const [w, s, e, n] = bbox;
   const mask = new Uint8Array(W * H);
@@ -332,160 +550,201 @@ function blurMask(mask, W, H, r) {
   return out;
 }
 
-const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smoothBand = (lo, hi, v) => smoothstep01(clamp01((v - lo) / (hi - lo)));
-const mix = (a, b, t) => a + (b - a) * t;
 
-// --- bake -------------------------------------------------------------------
-async function bake(id, { bbox, size }) {
+// Triangular-PDF dither keyed on world position (~1.2 m cells): deterministic,
+// seam-safe (same value either side of a tile edge), and finer than any output
+// pixel across z10-14, so it reads as film grain, not structure.
+function ditherAt(U, V) {
+  const cu = Math.round(U / 8);
+  const cv = Math.round(V / 8);
+  return (hash2(cu, cv, 24007) + hash2(cu + 1013, cv - 271, 55127) - 1) * 0.5;
+}
+
+// --- per-pixel composition ----------------------------------------------
+// Returns a palette index. `U`,`V` are world reference-pixel coords; `zEff` is
+// the effective zoom of the output being baked (drives band-limiting).
+const GRAIN_SEED = 700;
+const CLUMP_SEED = 3001;
+const ROCK_SEED = 9100;
+
+function composeIndex({ h, slopeDeg, aspect, fm, U, V, zEff, dither = 0 }) {
+  if (!Number.isFinite(h) || h <= 1) return 0; // sea / no-data — shore ramp owns it
+
+  // Open ground: continuous light<->dark grain, no hue. Alpha tracks how far
+  // this pixel departs from the mean, so flat ground stays ~transparent (no
+  // banding where nothing shows) and only textured ground draws.
+  const grainField = worldFbm(U, V, GRAIN_SEED, zEff, 0, 5); // ~38 m .. ~600 m
+  const grainT = clamp01(0.5 + grainField);
+  let mat = 0;
+  let lumT = grainT;
+  let alpha = clamp01(Math.abs(grainField) * 2.6) * GRAIN_ALPHA_MAX;
+
+  // Canopy inside the forest blocks — clumpy, genuinely green (hue is the point
+  // here). Coarse clumps + a mid octave so it isn't piecewise-flat once
+  // posterised; alpha rises monotonically with brightness so there are no
+  // mottled see-through holes mid-tone.
+  let canopyT = 0;
+  if (fm > 0.004) {
+    const clumpField = worldFbm(U, V, CLUMP_SEED, zEff, 2, 6); // ~150 m .. ~1.2 km
+    const midField = worldFbm(U, V, CLUMP_SEED + 17, zEff, 1, 5); // ~76 m .. ~600 m
+    canopyT = clamp01(0.5 + clumpField * 0.95 + midField * 0.4);
+    const canopyA = CANOPY_ALPHA_LO + (CANOPY_ALPHA_HI - CANOPY_ALPHA_LO) * canopyT;
+    if (fm >= 0.5) {
+      mat = 1;
+      lumT = canopyT;
+    }
+    alpha = mixc(alpha, canopyA, fm);
+  }
+
+  // Rock takes over on steep faces and up high, over whatever was there — a
+  // cliff is bare no matter what the landcover says.
+  const rockAmt = clamp01(
+    smoothBand(ROCK_SLOPE_LO, ROCK_SLOPE_HI, slopeDeg) +
+      0.18 * smoothBand(SCREE_ELE, SCREE_ELE + 450, h),
+  );
+  let rockT = 0;
+  if (rockAmt > 0.01) {
+    const ca = Math.cos(aspect);
+    const sa = Math.sin(aspect);
+    const streak = rockStreak(U, V, ca, sa, zEff, ROCK_SEED);
+    const speck = worldFbm(U, V, ROCK_SEED + 41, zEff, 0, 4);
+    rockT = clamp01(streak * 0.75 + (0.5 + speck) * 0.25);
+    const rockA = ROCK_ALPHA_LO + (ROCK_ALPHA_HI - ROCK_ALPHA_LO) * rockT;
+    alpha = mixc(alpha, rockA, rockAmt);
+    if (rockAmt >= 0.5) {
+      mat = 2;
+      lumT = rockT;
+    }
+  }
+
+  alpha = Math.min(alpha, MAX_ALPHA);
+
+  // Genuine canopy<->rock overlap: use a blend spare so the edge doesn't snap
+  // between a green and a brown entry.
+  const canopyW = fm * (1 - rockAmt);
+  if (canopyW > 0.18 && rockAmt > 0.18 && rockAmt < 0.85) {
+    const t = clamp01((canopyT + rockT) / 2);
+    const canopyRgb = mixrgb(CANOPY_DARK, CANOPY_LIGHT, t);
+    const rockRgb = mixrgb(ROCK_DARK, ROCK_LIGHT, t);
+    const rockFrac = clamp01(rockAmt / (rockAmt + canopyW));
+    const [r, g, b] = mixrgb(canopyRgb, rockRgb, rockFrac);
+    return nearestIdx(r, g, b, Math.round(alpha * 255));
+  }
+
+  return quantIdx(mat, lumT, alpha, dither);
+}
+
+// --- single-image bake -------------------------------------------------
+function effectiveZoom(W, mercWidth) {
+  // Zoom at which one output pixel equals one screen pixel of this image.
+  return Math.log2(W / (mercWidth * TILE_SIZE));
+}
+
+async function bakeSingle({ bbox, size }, outPath) {
   const [w, s, e, n] = bbox;
   const W = size;
   const H = Math.round((size * (n - s)) / (e - w));
-  console.log(`\n${id}: ${W}x${H} over [${bbox.join(', ')}]`);
+  const mercWidth = lonToX(e, 0) - lonToX(w, 0);
+  const zEff = effectiveZoom(W, mercWidth);
+  console.log(`  ${W}x${H} over [${bbox.join(', ')}], effective z${zEff.toFixed(2)}`);
 
-  const sample = await buildSampler(bbox);
-
-  // Elevation grid first — slope/aspect need neighbours.
-  const ele = new Float32Array(W * H);
-  for (let y = 0; y < H; y++) {
-    const lat = n - ((y + 0.5) / H) * (n - s);
-    for (let x = 0; x < W; x++) {
-      const lon = w + ((x + 0.5) / W) * (e - w);
-      ele[y * W + x] = sample(lon, lat);
-    }
-  }
-
-  const midLat = (n + s) / 2;
-  const mPerPxX = (((e - w) / W) * 111320 * Math.cos((midLat * Math.PI) / 180));
-  const mPerPxY = ((n - s) / H) * 110540;
+  const dem = await buildDem(bbox);
 
   const forest = JSON.parse(await readFile(FOREST, 'utf8'));
   console.log('  rasterising forest…');
-  const forestMask = blurMask(rasterizeForest(forest.features, bbox, W, H), W, H, 3);
+  // r scaled to this image's resolution for a ~230 m feather.
+  const mPerPx = (mercWidth * 40075016) / W;
+  const blurR = Math.max(1, Math.round(230 / mPerPx));
+  const forestMask = blurMask(rasterizeForest(forest.features, bbox, W, H), W, H, blurR);
 
   console.log('  composing…');
-  const out = Buffer.alloc(W * H * 4);
+  const indices = Buffer.alloc(W * H);
   for (let y = 0; y < H; y++) {
+    const lat = n - ((y + 0.5) / H) * (n - s);
+    const V = latToRefPy(lat);
     for (let x = 0; x < W; x++) {
-      const i = y * W + x;
-      const o = i * 4;
-      const h = ele[i];
-      // Sea and no-data stay untouched — the shore ramp owns them.
-      if (!Number.isFinite(h) || h <= 1) continue;
-
-      // Slope + aspect by central difference.
-      const xl = x > 0 ? x - 1 : x;
-      const xr = x < W - 1 ? x + 1 : x;
-      const yu = y > 0 ? y - 1 : y;
-      const yd = y < H - 1 ? y + 1 : y;
-      const dzdx = (ele[y * W + xr] - ele[y * W + xl]) / (2 * mPerPxX);
-      const dzdy = (ele[yd * W + x] - ele[yu * W + x]) / (2 * mPerPxY);
-      const slopeDeg = (Math.atan(Math.hypot(dzdx, dzdy)) * 180) / Math.PI;
-      const aspect = Math.atan2(dzdy, dzdx);
-
-      // Striation: noise squashed across the fall line and stretched along it,
-      // so detail runs downhill the way real erosion does.
-      const ca = Math.cos(aspect);
-      const sa = Math.sin(aspect);
-      const u = (x * ca + y * sa) / 5.5;
-      const v = (-x * sa + y * ca) / 30;
-      const streak = fbm(u, v, 11, 3);
-
-      const clump = fbm(x / 30, y / 30, 3, 4); // canopy clumps
-      const mid = fbm(x / 16, y / 16, 5, 3); // mid grain
-      const speck = fbm(x / 6, y / 6, 7, 2); // fine grain
-
-      let r;
-      let g;
-      let b;
-      let a;
-
-      // Open ground: pure light/dark grain, no hue. Centred on zero so half the
-      // pixels darken and half lighten — net effect is texture, not a wash.
-      const grain = clamp01(mid * 0.72 + speck * 0.28) - 0.5;
-      const lighten = grain >= 0;
-      r = lighten ? GRAIN_LIGHT[0] : GRAIN_DARK[0];
-      g = lighten ? GRAIN_LIGHT[1] : GRAIN_DARK[1];
-      b = lighten ? GRAIN_LIGHT[2] : GRAIN_DARK[2];
-      a = Math.abs(grain) * 2 * 0.15;
-
-      // Canopy inside the forest blocks — clumpy, and genuinely green because
-      // here a hue shift is the point.
-      const fm = forestMask[i] / 255;
-      if (fm > 0.01) {
-        const t = clamp01(clump * 0.6 + mid * 0.25 + speck * 0.15);
-        const cr = mix(CANOPY_DARK[0], CANOPY_LIGHT[0], t);
-        const cg = mix(CANOPY_DARK[1], CANOPY_LIGHT[1], t);
-        const cb = mix(CANOPY_DARK[2], CANOPY_LIGHT[2], t);
-        const ca = 0.36 + 0.24 * Math.abs(t - 0.5) * 2;
-        r = mix(r, cr, fm);
-        g = mix(g, cg, fm);
-        b = mix(b, cb, fm);
-        a = mix(a, ca, fm);
-      }
-
-      // Rock takes over on steep faces and up high, over whatever was there —
-      // a cliff is bare no matter what the landcover says.
-      const rockAmt = clamp01(
-        smoothBand(ROCK_SLOPE_LO, ROCK_SLOPE_HI, slopeDeg) +
-          0.18 * smoothBand(SCREE_ELE, SCREE_ELE + 450, h),
-      );
-      if (rockAmt > 0.01) {
-        const t = clamp01(streak * 0.7 + speck * 0.3);
-        const rr = mix(ROCK_DARK[0], ROCK_LIGHT[0], t);
-        const rg = mix(ROCK_DARK[1], ROCK_LIGHT[1], t);
-        const rb = mix(ROCK_DARK[2], ROCK_LIGHT[2], t);
-        const ra = 0.14 + 0.26 * t;
-        r = mix(r, rr, rockAmt);
-        g = mix(g, rg, rockAmt);
-        b = mix(b, rb, rockAmt);
-        a = mix(a, ra, rockAmt);
-      }
-
-      out[o] = r;
-      out[o + 1] = g;
-      out[o + 2] = b;
-      out[o + 3] = Math.round(Math.min(a, MAX_ALPHA) * 255);
+      const lon = w + ((x + 0.5) / W) * (e - w);
+      const U = lonToRefPx(lon);
+      const h = dem.height(lon, lat);
+      const { slopeDeg, aspect } = dem.slopeAspect(lon, lat);
+      indices[y * W + x] = composeIndex({
+        h,
+        slopeDeg,
+        aspect,
+        fm: forestMask[y * W + x] / 255,
+        U,
+        V,
+        zEff,
+        dither: ditherAt(U, V),
+      });
     }
   }
 
-  await mkdir(OUT_DIR, { recursive: true });
-  const png = encodePng({ width: W, height: H, data: out });
-  await writeFile(path.join(OUT_DIR, `${id}.png`), png);
-  console.log(`  wrote public/textures/${id}.png (${(png.length / 1e6).toFixed(1)} MB)`);
-
-  return {
-    id,
-    image: `textures/${id}.png`,
-    // MapLibre `image` source order: TL, TR, BR, BL.
-    coordinates: [
-      [w, n],
-      [e, n],
-      [e, s],
-      [w, s],
-    ],
-  };
+  await mkdir(path.dirname(outPath), { recursive: true });
+  const png = encodeIndexedPng({ width: W, height: H, indices, palette: PALETTE });
+  await writeFile(outPath, png);
+  console.log(`  wrote ${path.relative(path.join(HERE, '..'), outPath)} (${(png.length / 1e6).toFixed(2)} MB)`);
+  return { W, H, corners: [[w, n], [e, n], [e, s], [w, s]] };
 }
 
-const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
-const ids = wanted.length ? wanted : ['knuckles'];
-const regions = [];
-for (const id of ids) {
-  if (!REGIONS[id]) throw new Error(`Unknown region "${id}". Have: ${Object.keys(REGIONS).join(', ')}`);
-  regions.push(await bake(id, REGIONS[id]));
+// --- CLI --------------------------------------------------------------
+function parseArgs(argv) {
+  const opts = { flags: new Set(), pos: [] };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--single' || a === '--tiles') opts.flags.add(a.slice(2));
+    else if (a === '--bbox') opts.bbox = argv[++i].split(',').map(Number);
+    else if (a === '--size') opts.size = Number(argv[++i]);
+    else if (a === '--out') opts.out = argv[++i];
+    else if (!a.startsWith('-')) opts.pos.push(a);
+  }
+  return opts;
 }
 
-// Merge into the manifest so re-baking one region doesn't drop the others.
-let existing = { regions: [] };
-try {
-  existing = JSON.parse(await readFile(MANIFEST, 'utf8'));
-} catch {
-  /* first run */
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+
+  // Explicit single window: node generate-texture.mjs --single --bbox a,b,c,d --size N
+  if (opts.flags.has('single') || opts.bbox) {
+    const bbox = opts.bbox ?? REGIONS.knuckles.bbox;
+    const size = opts.size ?? 2048;
+    const out = opts.out
+      ? path.resolve(opts.out)
+      : path.join(OUT_DIR, '_single.png'); // gitignored scratch — no manifest
+    console.log(`\nsingle: baking one image`);
+    await bakeSingle({ bbox, size }, out);
+    return;
+  }
+
+  // Named region(s): writes public/textures/<id>.png + merges the manifest,
+  // matching the historical interface the `image` source in buildStyle.ts
+  // still reads. Phase 6 step 6 removes this path with the prototype.
+  const ids = opts.pos.length ? opts.pos : ['knuckles'];
+  const baked = [];
+  for (const id of ids) {
+    if (!REGIONS[id]) {
+      throw new Error(`Unknown region "${id}". Have: ${Object.keys(REGIONS).join(', ')}`);
+    }
+    console.log(`\n${id}:`);
+    const outPath = path.join(OUT_DIR, `${id}.png`);
+    const { corners } = await bakeSingle(REGIONS[id], outPath);
+    baked.push({ id, image: `textures/${id}.png`, coordinates: corners });
+  }
+
+  let existing = { regions: [] };
+  try {
+    existing = JSON.parse(await readFile(MANIFEST, 'utf8'));
+  } catch {
+    /* first run */
+  }
+  const byId = new Map((existing.regions ?? []).map((r) => [r.id, r]));
+  for (const r of baked) byId.set(r.id, r);
+  await writeFile(MANIFEST, JSON.stringify({ regions: [...byId.values()] }, null, 2) + '\n');
+  console.log(`\nmanifest: src/data/textures.json (${byId.size} region(s))`);
 }
-const byId = new Map((existing.regions ?? []).map((r) => [r.id, r]));
-for (const r of regions) byId.set(r.id, r);
-await writeFile(
-  MANIFEST,
-  JSON.stringify({ regions: [...byId.values()] }, null, 2) + '\n',
-);
-console.log(`\nmanifest: src/data/textures.json (${byId.size} region(s))`);
+
+main().catch((err) => {
+  console.error('generate-texture failed:', err);
+  process.exitCode = 1;
+});
