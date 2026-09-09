@@ -522,6 +522,62 @@
 
 /* ---------- summit view ---------- */
 
+.compass {
+  position: absolute;
+  top: var(--s2);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 24px));
+  height: 30px;
+  z-index: 6;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--panel-bg);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-float);
+}
+
+.compass__needle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--route);
+}
+
+.compass__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.compass__pip {
+  width: 1px;
+  height: 6px;
+  background: var(--panel-fg-dim);
+}
+.compass__tick--card .compass__pip {
+  height: 9px;
+  background: var(--panel-fg);
+}
+
+.compass__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--panel-fg);
+  line-height: 1;
+  margin-top: 1px;
+}
+
 .skyline {
   position: absolute;
   inset: 0;
@@ -612,7 +668,7 @@
 
 .summit-bar {
   position: absolute;
-  top: var(--s3);
+  top: calc(var(--s2) + 40px); /* clear of the compass strip */
   left: var(--s3);
   right: var(--s3);
   z-index: 5;

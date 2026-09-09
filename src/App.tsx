@@ -12,6 +12,7 @@ import FilterChips from './components/FilterChips';
 import GestureHint from './components/GestureHint';
 import SummitBar from './components/SummitBar';
 import SummitLabels from './components/SummitLabels';
+import CompassStrip from './components/CompassStrip';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
 import { slstNowMinutes } from './map/sunPosition';
 import { setPeakElevationFloor } from './map/peaksLayer';
@@ -110,6 +111,7 @@ export default function App() {
 
       {inSummit ? (
         <>
+          <CompassStrip map={map} />
           <SummitBar peak={viewpoint} onExit={() => setViewpoint(null)} />
           <SummitLabels
             map={map}
