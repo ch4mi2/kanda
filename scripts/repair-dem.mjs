@@ -4,13 +4,15 @@
 // Two independent operations, both off by default unless their flag is given
 // (running with no flags does nothing but scan and report):
 //
-//   --repair   Replace radar-void spikes — pixels whose decoded height is
-//              outside a plausible range for Sri Lanka — with the median of
-//              their valid 8-neighbours. This is the SRTM void over the
-//              Mahaweli/Victoria reservoirs documented in the Phase 4 plan:
-//              ~8 pixels out of 97 million, one 7,331 m spike at z12 among
-//              them. Because we self-host the tiles we can just fix them;
-//              streaming from AWS we could not.
+//   --repair   Replace radar-void spikes AND pits — any pixel that sits more
+//              than ~200 m above or below every one of its 8 neighbours, plus
+//              anything physically impossible — with the median of its
+//              non-flagged neighbours, iterating so small void blobs erode
+//              from the edges. Catches the SRTM voids over the Victoria
+//              reservoir (scattered +800..+2,100 m spikes and -1,000..-7,000 m
+//              pits in a real ~470 m plateau) and coastline speckle. Because
+//              we self-host the tiles we can just fix them; streaming from
+//              AWS we could not.
 //
 //   --smooth   Light 3x3 Gaussian low-pass over LAND pixels only (sea and
 //              sub-sea pixels are left untouched and are excluded from every
@@ -44,20 +46,29 @@ const TILE_DIR = path.resolve(
   '../public/tiles/terrain',
 );
 
-// Sri Lanka's true summit is Pidurutalagala at 2,524 m. Any pixel decoding
-// above 2,600 m is a radar-void spike — there is nothing that tall anywhere
-// near the island. We only flag on the HIGH side: the tiles carry genuine
-// bathymetry, so the deep ocean around Sri Lanka really is far below sea
-// level (-3,000 m and lower) and must not be "repaired". The documented
-// voids are all high spikes: 7 px at z11 (2,684-6,193 m) in tile 1483/982
-// and a single 7,331 m pixel at z12 in 2966/1965.
-const MAX_PLAUSIBLE_M = 2600;
+// A pixel is a spike (or pit) when it sits more than SPIKE_MARGIN_M above (or
+// below) EVERY one of its 8 neighbours. Real terrain at 30 m/px never does
+// this: even the steepest escarpment crest matches its along-crest neighbours,
+// so `value - max(neighbours)` stays near zero. An isolated radar-void
+// artefact — the Victoria-reservoir voids, coastline speckle — fails against
+// all 8. This test is scale-free (works the same at sea level and at 2,000 m),
+// which is why the earlier ">2,600 m" version was wrong: it sailed straight
+// past a -7,375 m pit sitting next to 470 m terrain.
+const SPIKE_MARGIN_M = 200;
+// Re-detect and re-fill until the tile is stable. A median-fill can expose a
+// neighbour that only now reads as an extremum (or two artefacts hiding each
+// other), so one flag-then-fill pass is not enough; ~12 rounds converges even
+// the messy Victoria-reservoir tiles.
+const REPAIR_ROUNDS = 16;
 
-// Only z9+ tiles are touched. Below that a single tile spans far past Sri
-// Lanka — the Western Ghats, the deep Bay of Bengal — and the plan's
-// full-pyramid scan already confirmed z9 and z10 are clean. The unused z0-8
-// world tiles on disk are left exactly as fetched.
-const MIN_OP_ZOOM = 9;
+// Unconditional backstop for values no terrain or ocean on Earth reaches.
+const IMPLAUSIBLE_HIGH_M = 3000;
+const IMPLAUSIBLE_LOW_M = -12000;
+
+// z7+ tiles are checked. That includes a strip of southern India at z7-8, but
+// the spike test is relative so real Western-Ghats terrain is safe; below z7
+// the app never renders and a tile spans continents.
+const MIN_OP_ZOOM = 7;
 
 // --- CLI ---------------------------------------------------------------------
 const args = process.argv.slice(2);
@@ -222,49 +233,91 @@ function writeHeightField(img, h, mask) {
   }
 }
 
-const isBad = (v) => v > MAX_PLAUSIBLE_M;
-
-/** Replace void pixels with the median of their in-range neighbours. Returns
- *  a list of {x,y,from,to} repairs for the audit log. */
-function repairVoids(h, width, height) {
-  const repairs = [];
-  const bad = [];
-  for (let i = 0; i < h.length; i++) if (isBad(h[i])) bad.push(i);
-  if (bad.length === 0) return repairs;
-
-  // A few passes so clustered voids (z11 had 7 in one blob) can lean on
-  // pixels repaired in an earlier pass.
-  for (let pass = 0; pass < 4 && bad.length; pass++) {
-    const still = [];
-    for (const i of bad) {
-      const x = i % width;
-      const y = (i / width) | 0;
-      const vals = [];
-      for (let r = 1; r <= 3 && vals.length === 0; r++) {
-        for (let dy = -r; dy <= r; dy++) {
-          for (let dx = -r; dx <= r; dx++) {
-            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-            const nx = x + dx;
-            const ny = y + dy;
-            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-            const nv = h[ny * width + nx];
-            if (!isBad(nv)) vals.push(nv);
-          }
-        }
-      }
-      if (vals.length === 0) {
-        still.push(i);
-        continue;
-      }
-      vals.sort((a, b) => a - b);
-      const med = vals[vals.length >> 1];
-      repairs.push({ x, y, from: Math.round(h[i] * 100) / 100, to: Math.round(med * 100) / 100 });
-      h[i] = med;
+/** 3x3 neighbour values around pixel (x,y), skipping the centre and any that
+ *  fall outside the tile or are flagged bad. */
+function neighbours(h, width, height, x, y, bad) {
+  const out = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+      const j = ny * width + nx;
+      if (bad && bad[j]) continue;
+      out.push(h[j]);
     }
-    bad.length = 0;
-    bad.push(...still);
+  }
+  return out;
+}
+
+/** Is pixel i a strict local extremum — above (or below) every valid
+ *  neighbour by SPIKE_MARGIN_M — or just physically impossible? */
+function isSpike(h, width, height, i, bad) {
+  const v = h[i];
+  if (v > IMPLAUSIBLE_HIGH_M || v < IMPLAUSIBLE_LOW_M) return true;
+  const x = i % width;
+  const y = (i / width) | 0;
+  const ns = neighbours(h, width, height, x, y, bad);
+  if (ns.length < 3) return false; // not enough context to judge
+  let mn = Infinity;
+  let mx = -Infinity;
+  for (const nv of ns) {
+    if (nv < mn) mn = nv;
+    if (nv > mx) mx = nv;
+  }
+  return v - mx > SPIKE_MARGIN_M || mn - v > SPIKE_MARGIN_M;
+}
+
+/** Repair every spike/pit in the tile, re-detecting between rounds so a fill
+ *  that exposes a fresh extremum is caught in the same run. Returns the audit
+ *  list of {x,y,from,to}. */
+function repairSpikes(h, width, height) {
+  const repairs = [];
+  for (let round = 0; round < REPAIR_ROUNDS; round++) {
+    const bad = new Uint8Array(width * height);
+    let any = false;
+    for (let i = 0; i < h.length; i++) {
+      if (isSpike(h, width, height, i, null)) {
+        bad[i] = 1;
+        any = true;
+      }
+    }
+    if (!any) break;
+
+    // Erode the flagged set from its edges: fill each bad pixel from the
+    // median of its currently non-flagged neighbours, over a few sub-passes.
+    for (let sub = 0; sub < 6; sub++) {
+      let fixed = 0;
+      for (let i = 0; i < h.length; i++) {
+        if (!bad[i]) continue;
+        const x = i % width;
+        const y = (i / width) | 0;
+        const ns = neighbours(h, width, height, x, y, bad);
+        if (ns.length === 0) continue;
+        ns.sort((a, b) => a - b);
+        const med = ns[ns.length >> 1];
+        repairs.push({
+          x,
+          y,
+          from: Math.round(h[i] * 100) / 100,
+          to: Math.round(med * 100) / 100,
+        });
+        h[i] = med;
+        bad[i] = 0;
+        fixed++;
+      }
+      if (fixed === 0) break;
+    }
   }
   return repairs;
+}
+
+/** Count spikes without modifying anything (scan-only mode). */
+function countSpikes(h, width, height) {
+  let n = 0;
+  for (let i = 0; i < h.length; i++) if (isSpike(h, width, height, i, null)) n++;
+  return n;
 }
 
 const GAUSS = [1, 2, 1, 2, 4, 2, 1, 2, 1];
@@ -364,18 +417,15 @@ async function main() {
     const h = toHeightField(img);
     let dirty = false;
 
-    // Always scan for voids and report them, even in scan-only mode.
-    const voidCount = h.reduce((n, v) => n + (isBad(v) ? 1 : 0), 0);
-    if (voidCount) {
-      scannedVoids += voidCount;
-      const peak = h.reduce((m, v) => (isBad(v) && v > m ? v : m), -Infinity);
-      console.log(
-        `  ${t.z}/${t.x}/${t.y}: ${voidCount} void pixel(s), max ${Math.round(peak)} m`,
-      );
+    // Always scan and report, even in scan-only mode.
+    const spikeCount = countSpikes(h, img.width, img.height);
+    if (spikeCount) {
+      scannedVoids += spikeCount;
+      console.log(`  ${t.z}/${t.x}/${t.y}: ${spikeCount} spike/pit pixel(s)`);
     }
 
     if (doRepair) {
-      const repairs = repairVoids(h, img.width, img.height);
+      const repairs = repairSpikes(h, img.width, img.height);
       if (repairs.length) {
         repairedTiles++;
         repairedPixels += repairs.length;
@@ -406,7 +456,7 @@ async function main() {
 
   console.log('\nDone.');
   console.log(`  z0-${MIN_OP_ZOOM - 1} tiles skipped:   ${skippedLowZoom}`);
-  console.log(`  void pixels found:     ${scannedVoids}`);
+  console.log(`  spike/pit pixels found: ${scannedVoids}`);
   if (doRepair) {
     console.log(`  pixels repaired:       ${repairedPixels} across ${repairedTiles} tile(s)`);
   }
