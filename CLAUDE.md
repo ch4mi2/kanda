@@ -85,6 +85,9 @@ scripts/
   repair-dem.mjs          Repair DEM spikes/pits + one light smooth pass
   generate-contours.mjs   local DEM → src/data/contours.geojson (highlands)
   generate-trees.mjs      forest.geojson → src/data/trees.geojson (tree scatter)
+  generate-texture.mjs    DEM + forest → public/textures/<region>.png +
+                          src/data/textures.json (diffuse detail drape).
+                          PROTOTYPE — Knuckles window only, see gotcha #14.
   fetch-glyphs.mjs        demotiles → public/fonts/ (Noto Sans PBF ranges)
   pack-pmtiles.mjs        public/tiles/terrain/ → public/tiles/terrain.pmtiles
 design/               Exported Claude Design source. Tokens live in the
@@ -218,6 +221,22 @@ broken-slow. This was a real bug, not a hypothetical.
    is dark, which would break the monotonic-L\* rule (lstar.test.ts). Keep
    `background` matched to the deepest `shore` stop or the edge of DEM
    coverage seams against open ocean.
+14. **Terrain texture drape — prototype, resolution-bound.** `color-relief`
+   paints one flat colour per elevation band; reference terrain renders get
+   their richness from a diffuse texture map, which for them is satellite
+   imagery. `scripts/generate-texture.mjs` bakes an equivalent from the DEM
+   (slope/aspect/elevation) + `forest.geojson` + value-noise fbm, and the map
+   drapes it as an `image` source + `raster` layer between `color-relief` and
+   the hillshade passes. It is an RGBA **overlay**: open ground gets neutral
+   light/dark grain only, so the Skin keeps owning the palette.
+   **The bottleneck is resolution, not the technique.** One 2048 px image over
+   the 44 km Knuckles window is ~21 m/px — barely finer than the 38 m DEM, so
+   it only reads past ~z12 and costs 3.8 MB. Metre-scale texture needs proper
+   raster *tiles* → PMTiles (reuse `pack-pmtiles.mjs`), and at that point the
+   artifact must be gitignored like `public/tiles/`. Two tuning traps already
+   paid for: rock below ~25° slope paints the whole (uniformly steep)
+   highlands brown, and a hard light/dark noise flip finer than ~5 px reads as
+   television static once composited.
 11. **Summit view fights MapLibre 6.8 (Phase 5B, `src/map/summitView.ts`).**
    All verified in the maplibre source, all easy to get wrong:
    - **No free-camera API.** `get/setFreeCameraOptions` are Mapbox-only.
