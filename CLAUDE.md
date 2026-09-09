@@ -33,8 +33,9 @@ src/
   map/
     buildStyle.ts     MapLibre style plumbing: takes a Skin + a sun position,
                       wires sources + layers + sky. hillshadeLightForSun() and
-                      skyForSun() are re-applied live by MapView. Self-hosted
-                      glyphs (public/fonts/).
+                      skyForSun() are re-applied live by MapView. Hydronym
+                      labels (water tiers by `ha`, rivers on line placement)
+                      live here. Self-hosted glyphs (public/fonts/).
     sunPosition.ts    NOAA solar position (no dep) + SLST helpers — drives the
                       hillshade light direction/altitude and the fog tint.
     summitView.ts     Phase 5B — the "stand on the peak and spin" camera mode.
