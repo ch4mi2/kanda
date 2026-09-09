@@ -52,6 +52,12 @@ src/
     treesLayer.ts     Billboard tree sprites over the forest blocks (canvas
                       icon, colours from Skin.foliage). Hidden below z10.3;
                       summit view lowers that. src/data/trees.geojson.
+                      Kept small — billboards are constant SCREEN size, so a
+                      tree big enough to read up close is huge on a far ridge.
+    layerToggles.ts   Groups the optional furniture (contours / trees / water
+                      names) so the dock chips can switch it. Contours ship
+                      OFF — closed 200 m rings read as a wireframe grid at an
+                      oblique angle.
     nearbyPeaks.ts    Haversine, initial-bearing, destinationPoint maths for
                       the nearby list and summit view.
   components/         PeakCard ("Stand here" → summit view), NearbyPeaks,
@@ -187,6 +193,31 @@ broken-slow. This was a real bug, not a hypothetical.
    (not `'igor'` — too matte, Chamithu called it "just mist"), exaggeration
    ~0.9, illumination altitude **clamped 10–62°** so equatorial-noon sun still
    casts. Keep relief strong; don't trade it back for haze.
+12. **There are THREE hillshade layers, and that's deliberate.** MapLibre has no
+   cast-shadow or ambient-occlusion renderer — a hillshade is a per-pixel
+   normal-vs-light dot product, it never throws a ridge's shadow into the next
+   valley — and `hillshade-exaggeration` caps at 1.0. Stacking is the only way
+   past that ceiling:
+   - `hillshade` — the sun-driven main pass (`combined`).
+   - `hillshade-detail` — `multidirectional` with **four lights on a ring**
+     around the sun. Lit from all sides, only *concavities* stay dark, which
+     approximates AO. This is what supplies the "black shadow" and the
+     high-frequency surface texture.
+   - `hillshade-rock` — slope-only, lit from 88° so flat ground takes nothing
+     and steep faces take a stony grey. `color-relief` can only see height,
+     so this is the only way to say "that's a cliff".
+   All three come from `Skin.hillshade` (`.detail`, `.rock`); a skin can set
+   either to `null`. Three full-screen raster passes on one DEM — fine today,
+   but it's the first thing to look at if terrain rendering ever gets slow.
+13. **The sea uses real bathymetry (reversing a Phase 4 call).** Phase 4
+   clamped every depth to one flat cyan for a "clean game-map sea". Measured
+   against reference art that turned out to be most of why the coastline read
+   as a cut-out, so `Skin.shore` now ramps open blue → shelf → turquoise
+   shallows → surf, plus a sand strand held 0–8 m. The strand lives in
+   `shore`, **not** in `elevationBands` — it's bright and the first land band
+   is dark, which would break the monotonic-L\* rule (lstar.test.ts). Keep
+   `background` matched to the deepest `shore` stop or the edge of DEM
+   coverage seams against open ocean.
 11. **Summit view fights MapLibre 6.8 (Phase 5B, `src/map/summitView.ts`).**
    All verified in the maplibre source, all easy to get wrong:
    - **No free-camera API.** `get/setFreeCameraOptions` are Mapbox-only.
