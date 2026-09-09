@@ -9,6 +9,26 @@ import waterUrl from '../data/water.geojson?url';
 import riversUrl from '../data/rivers.geojson?url';
 import forestUrl from '../data/forest.geojson?url';
 import contoursUrl from '../data/contours.geojson?url';
+// Baked diffuse-detail textures (npm run generate:texture). Manifest is
+// generated alongside the PNGs so the bbox can't drift from the image.
+import textureManifest from '../data/textures.json';
+
+type TextureCorners = [
+  [number, number],
+  [number, number],
+  [number, number],
+  [number, number],
+];
+
+const TEXTURE_REGIONS = textureManifest.regions as Array<{
+  id: string;
+  image: string;
+  coordinates: number[][];
+}>;
+
+export const textureSourceId = (id: string) => `texture-${id}`;
+export const textureLayerId = (id: string) => `terrain-texture-${id}`;
+export const TEXTURE_LAYER_IDS = TEXTURE_REGIONS.map((r) => textureLayerId(r.id));
 
 // buildStyle owns MapLibre style plumbing only — sources, layer wiring, sky.
 // Every colour and the shape of the hypsometric ramp come from the Skin (see
@@ -185,6 +205,16 @@ export function buildStyle(
       rivers: { type: 'geojson', data: riversUrl },
       forest: { type: 'geojson', data: forestUrl },
       contours: { type: 'geojson', data: contoursUrl },
+      ...Object.fromEntries(
+        TEXTURE_REGIONS.map((r) => [
+          textureSourceId(r.id),
+          {
+            type: 'image' as const,
+            url: `${import.meta.env.BASE_URL}${r.image}`,
+            coordinates: r.coordinates as TextureCorners,
+          },
+        ]),
+      ),
     },
     layers: [
       {
@@ -213,6 +243,21 @@ export function buildStyle(
         source: 'forest',
         paint: { 'fill-color': skin.forest },
       },
+      // Baked diffuse detail — canopy mottle, rock striation, ground grain.
+      // Above the flat elevation ramp so it adds surface, below the hillshade
+      // passes so the shading lights it rather than being covered by it.
+      // `color-relief` can only paint one colour per elevation; this is the
+      // only way to get per-pixel texture without shipping satellite imagery.
+      ...TEXTURE_REGIONS.map((r) => ({
+        id: textureLayerId(r.id),
+        type: 'raster' as const,
+        source: textureSourceId(r.id),
+        paint: {
+          'raster-opacity': 1,
+          'raster-fade-duration': 0,
+          'raster-resampling': 'linear' as const,
+        },
+      })),
       {
         id: HILLSHADE_LAYER_ID,
         type: 'hillshade',
