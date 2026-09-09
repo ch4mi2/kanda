@@ -39,13 +39,18 @@ function ensurePeakIcon(map: MLMap) {
 // Sri Lanka's highlands are dense with named summits; without an elevation
 // floor at low zoom the map would be an unreadable pile of labels for peaks
 // nobody's heard of sitting next to Adam's Peak.
+// `size` is the text size at the tier's "home" zoom; the layout ramp grows it
+// ~±2 px across the zoom range so a peak's label swells as you close in and
+// recedes as you pull back — distance is *felt* even though the label text
+// (name + height) never changes (§5A.4). `dim` is how far the label fades at
+// the wide/"far" end of the zoom range.
 const PEAK_TIERS = [
-  { id: 'peaks-major', minzoom: 0, minEle: 1500 },
-  { id: 'peaks-mid', minzoom: 9, minEle: 1000 },
+  { id: 'peaks-major', minzoom: 0, minEle: 1500, size: 13, dim: 0.82 },
+  { id: 'peaks-mid', minzoom: 9, minEle: 1000, size: 12, dim: 0.66 },
   // Below 1000m, including peaks with no OSM `ele` tag at all — in practice
   // the well-known summits were the ones contributors bothered to tag, so
   // untagged peaks are treated as minor and held back until closer zoom.
-  { id: 'peaks-minor', minzoom: 11, minEle: 0 },
+  { id: 'peaks-minor', minzoom: 11, minEle: 0, size: 11, dim: 0.6 },
 ] as const;
 
 export function addPeaksLayer(map: MLMap) {
@@ -74,12 +79,24 @@ export function addPeaksLayer(map: MLMap) {
           ['get', 'name'],
         ],
         'text-font': ['Noto Sans Regular'],
-        'text-size': 12,
+        // Grow the label as the camera closes in, shrink it as you pull back —
+        // the "nearer peaks read louder" cue. Centred on the tier's home size.
+        'text-size': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          7,
+          tier.size - 2,
+          11,
+          tier.size,
+          13.5,
+          tier.size + 2,
+        ],
         'text-anchor': 'top',
         'text-offset': [0, 0.6],
         'text-optional': true,
         'icon-image': PEAK_ICON_ID,
-        'icon-size': 0.9,
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 7, 0.78, 13.5, 1],
         'icon-allow-overlap': false,
         'text-allow-overlap': false,
         // Tallest peaks win label collisions within and across tiers.
@@ -90,6 +107,30 @@ export function addPeaksLayer(map: MLMap) {
         'text-halo-color': 'rgba(255,255,255,0.85)',
         'text-halo-width': 1.4,
         'icon-color': '#7a2e1d',
+        // Recede at the wide "far" end of the zoom range, solid once you're in
+        // close. Minor peaks fade further so distant clutter drops back.
+        'text-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          7,
+          tier.dim,
+          10.5,
+          0.96,
+          12,
+          1,
+        ],
+        'icon-opacity': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          7,
+          tier.dim,
+          10.5,
+          0.96,
+          12,
+          1,
+        ],
       },
     });
   }
