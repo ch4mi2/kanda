@@ -73,9 +73,12 @@ export function hillshadeLightForSun(skin: Skin, sun: SunPosition) {
     'hillshade-illumination-direction': lights.map(([az]) =>
       clamp(Math.round(mod360(az)), 0, 359),
     ),
-    // Floor at 2° so a below-horizon sun still yields readable form, not a slab.
+    // Clamp the light elevation to 10°–62°: a grazing sun degenerates the
+    // shading, and a near-overhead sun (equatorial noon) flattens it to "mist"
+    // — cap it so ridges always cast. The colour ramps still read the *true*
+    // altitude, so dawn/dusk stays warm and night stays blue.
     'hillshade-illumination-altitude': lights.map(([, alt]) =>
-      clamp(Math.round(alt), 2, 90),
+      clamp(Math.round(alt), 10, 62),
     ),
     'hillshade-shadow-color': lights.map(([, alt]) =>
       sampleColorRamp(hs.shadowByAltitude, alt),

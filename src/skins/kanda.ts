@@ -54,34 +54,33 @@ export const KANDA_SKIN: Skin = {
   // Knuckles, Peak Wilderness...) without hiding the relief under them.
   forest: 'rgba(44, 92, 66, 0.5)',
   hillshade: {
-    // 'igor' reads landform far better than the Lambertian 'standard' default,
-    // which was crushing every band to mud. Direction + altitude are driven by
-    // the real sun at runtime (buildStyle's hillshadeLightForSun), so shading
-    // tells a time-of-day story instead of a fixed NW keylight.
-    method: 'igor',
-    exaggeration: 0.55,
+    // 'combined' blends a slope term with the directional term, so ridges and
+    // valleys stay legible even when the sun is high (near the equator it's
+    // overhead at noon and a pure directional shade goes flat — "just mist").
+    // 'igor' was too matte for that. Direction + altitude still track the real
+    // sun (buildStyle's hillshadeLightForSun) for the time-of-day story.
+    method: 'combined',
+    exaggeration: 0.9,
     illuminationAnchor: 'map',
     accentColor: 'rgba(0, 0, 0, 0)',
-    // 'igor' is single-light; multidirectional Swiss fill is a future skin.
     fillLights: [],
-    // Cool blue-violet shadow that deepens and warms slightly at golden hour,
-    // and a night-blue floor so a below-horizon sun still gives readable form
-    // rather than a black slab.
+    // Deep cool shadow — this is what makes it read as cast shadow rather than
+    // haze. Warms toward violet at golden hour; a dim blue floor for night.
     shadowByAltitude: [
-      [-12, 'rgba(36, 48, 86, 0.36)'],
-      [2, 'rgba(84, 64, 96, 0.33)'],
-      [12, 'rgba(70, 66, 104, 0.31)'],
-      [45, 'rgba(58, 70, 104, 0.30)'],
-      [90, 'rgba(58, 70, 104, 0.28)'],
+      [-12, 'rgba(28, 38, 74, 0.5)'],
+      [3, 'rgba(74, 52, 84, 0.5)'],
+      [15, 'rgba(52, 52, 92, 0.48)'],
+      [45, 'rgba(44, 56, 96, 0.46)'],
+      [90, 'rgba(44, 56, 96, 0.42)'],
     ],
     // Sunlit faces: cool and faint at night, warm amber at low sun, easing to
     // a neutral warm-white overhead.
     highlightByAltitude: [
-      [-12, 'rgba(72, 98, 150, 0.20)'],
-      [2, 'rgba(255, 212, 156, 0.36)'],
-      [12, 'rgba(255, 234, 202, 0.32)'],
-      [45, 'rgba(255, 247, 231, 0.29)'],
-      [90, 'rgba(255, 250, 240, 0.27)'],
+      [-12, 'rgba(72, 98, 150, 0.22)'],
+      [3, 'rgba(255, 208, 150, 0.42)'],
+      [15, 'rgba(255, 232, 198, 0.36)'],
+      [45, 'rgba(255, 246, 230, 0.32)'],
+      [90, 'rgba(255, 250, 240, 0.3)'],
     ],
   },
   sky: {
@@ -93,15 +92,15 @@ export const KANDA_SKIN: Skin = {
     // night — so a distant ridge reads as distant. Only visible at pitch
     // >~60° (why DEFAULT_PITCH is now 68).
     fogColorByAltitude: [
-      [-10, '#41506a'],
-      [3, '#ecca9f'],
-      [12, '#e7d6c0'],
-      [35, '#dce9ef'],
-      [90, '#e0eef2'],
+      [-10, '#3c4a63'],
+      [3, '#efce9f'],
+      [12, '#ecdcc4'],
+      [35, '#c9e3ee'],
+      [90, '#cfe8f0'],
     ],
-    // Lower than MapLibre's 0.5 default: the haze starts nearer in view depth,
-    // so mid-distance ranges already separate from the ones behind them.
-    fogGroundBlend: 0.38,
+    // 0.55 — haze holds off until the far distance so mid-ground terrain stays
+    // crisp. (Was 0.38, which greyed the whole view — "just mist".)
+    fogGroundBlend: 0.55,
   },
   contour: {
     line: '#4a3626', // dark cocoa — enough contrast on the green AND terracotta

@@ -65,9 +65,10 @@ const clamp = (n: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, n));
 const DEG = Math.PI / 180;
 
-// Look-around sensitivity. Signs match MapLibre's own MouseRotate/MousePitch
-// handlers (bearing += dx, pitch -= dy) so it turns the same way as every
-// other rotate gesture in Kanda (CLAUDE.md gotcha #1).
+// Look-around is "grab the world" — drag the scene the way your finger goes,
+// like PeakFinder / Street View (the summit-legibility reference in CLAUDE.md).
+// That's the opposite sign to MapLibre's own rotate handlers, which is fine:
+// this is first-person look, not the overhead map's rotate gesture.
 const YAW_PER_PX = 0.16;
 const PITCH_PER_PX = 0.1;
 
@@ -131,8 +132,9 @@ export function createSummitView(map: MLMap, deps: SummitDeps): SummitView {
     const dy = e.clientY - lastY;
     lastX = e.clientX;
     lastY = e.clientY;
-    bearing += dx * YAW_PER_PX;
-    pitch = clamp(pitch - dy * PITCH_PER_PX, SUMMIT_PITCH_MIN, SUMMIT_PITCH_MAX);
+    // Grab-the-world: the point under the cursor tracks the cursor.
+    bearing -= dx * YAW_PER_PX;
+    pitch = clamp(pitch + dy * PITCH_PER_PX, SUMMIT_PITCH_MIN, SUMMIT_PITCH_MAX);
     jumpLook();
   };
   const onPointerUp = (e: PointerEvent) => {
