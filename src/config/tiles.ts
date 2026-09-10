@@ -60,6 +60,61 @@ export function terrainSourceSpec() {
   return { ...common, tiles: [terrainTileUrl()] };
 }
 
+// Central highlands window covered by the z13-14 texture tiles. Contains 68 of
+// the 70 peaks above 1,000 m, the Adam's Peak approach and the western
+// escarpment. KEEP IN SYNC with TEXTURE_HIGHLANDS_BBOX in
+// scripts/lib/texture-core.mjs (the bake can't import this file).
+export const TEXTURE_HIGHLANDS_BBOX = [80.05, 6.1, 81.45, 7.75] as const;
+
+export type TextureMode = 'off' | 'local' | 'pmtiles';
+
+// Baked procedural diffuse-detail texture draped over the terrain (npm run
+// generate:texture -> pack:texture). Two zoom bands: island-wide z10-12, and
+// the highlands window z13-14 (4x DEM overzoom — high-res texture on a low-res
+// mesh, exactly what the reference terrain renders do). VITE_TEXTURE_MODE:
+//   off     - no texture layer (default; a fresh clone renders without the archive)
+//   local   - loose PNG pyramid in public/tiles/texture/ (npm run generate:texture)
+//   pmtiles - single packed archive public/tiles/texture.pmtiles (npm run pack:texture)
+export const TEXTURE = {
+  mode: (import.meta.env.VITE_TEXTURE_MODE ?? 'off') as TextureMode,
+  local: '/tiles/texture/{z}/{x}/{y}.png',
+  pmtiles: 'pmtiles:///tiles/texture.pmtiles',
+  tileSize: 256,
+  base: { minzoom: 10, maxzoom: 12, bounds: SRI_LANKA_BBOX },
+  highlands: { minzoom: 13, maxzoom: 14, bounds: TEXTURE_HIGHLANDS_BBOX },
+  attribution:
+    'Surface texture: procedurally baked from the elevation data + OpenStreetMap landcover (ODbL)',
+};
+
+/**
+ * Raster source specs for the texture, keyed by source id. **Two** sources, not
+ * one: a single source with `maxzoom: 14` makes MapLibre stop overzooming at 14
+ * and request z13/z14 tiles *everywhere*, so outside the highlands (where none
+ * exist) the texture goes blank above z12. Two sources with different max zooms
+ * by region is the fix — `buildStyle` crossfades their layers 12.5->13.5.
+ * Returns `{}` when the texture is off.
+ */
+export function textureSourceSpecs() {
+  if (TEXTURE.mode === 'off') return {};
+  const src = (band: { minzoom: number; maxzoom: number; bounds: readonly number[] }) => {
+    const common = {
+      type: 'raster' as const,
+      tileSize: TEXTURE.tileSize,
+      minzoom: band.minzoom,
+      maxzoom: band.maxzoom,
+      bounds: [...band.bounds] as [number, number, number, number],
+      attribution: TEXTURE.attribution,
+    };
+    return TEXTURE.mode === 'pmtiles'
+      ? { ...common, url: TEXTURE.pmtiles }
+      : { ...common, tiles: [TEXTURE.local] };
+  };
+  return {
+    'texture-base': src(TEXTURE.base),
+    'texture-highlands': src(TEXTURE.highlands),
+  };
+}
+
 // Generous draggable area around the island. Deliberately loose: a tight
 // maxBounds fights the camera during rotation because MapLibre's internal
 // _constrain() assumes an unrotated viewport, and a pitched + rotated

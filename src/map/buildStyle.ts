@@ -1,5 +1,5 @@
 import type { StyleSpecification } from 'maplibre-gl';
-import { DEFAULT_CENTER, terrainSourceSpec } from '../config/tiles';
+import { DEFAULT_CENTER, terrainSourceSpec, textureSourceSpecs } from '../config/tiles';
 import { DEFAULT_SKIN, type Skin } from '../skins';
 import { sampleColorRamp } from '../skins/color';
 import { sunPosition, type SunPosition } from './sunPosition';
@@ -9,26 +9,42 @@ import waterUrl from '../data/water.geojson?url';
 import riversUrl from '../data/rivers.geojson?url';
 import forestUrl from '../data/forest.geojson?url';
 import contoursUrl from '../data/contours.geojson?url';
-// Baked diffuse-detail textures (npm run generate:texture). Manifest is
-// generated alongside the PNGs so the bbox can't drift from the image.
-import textureManifest from '../data/textures.json';
 
-type TextureCorners = [
-  [number, number],
-  [number, number],
-  [number, number],
-  [number, number],
-];
+// Baked procedural diffuse-detail texture, draped between `forest` and the
+// hillshade passes (npm run generate:texture -> pack:texture). Two sources
+// with different max zooms by region — see textureSourceSpecs() for why one
+// won't do — crossfaded here so the z12->z13 handover never double-composites
+// alpha. LOAD-BEARING: collapsing these into one source blanks the texture
+// above z12 across most of the island.
+const TEXTURE_BASE_LAYER_ID = 'terrain-texture-base';
+const TEXTURE_HIGHLANDS_LAYER_ID = 'terrain-texture-highlands';
+export const TEXTURE_LAYER_IDS = [TEXTURE_BASE_LAYER_ID, TEXTURE_HIGHLANDS_LAYER_ID];
 
-const TEXTURE_REGIONS = textureManifest.regions as Array<{
-  id: string;
-  image: string;
-  coordinates: number[][];
-}>;
-
-export const textureSourceId = (id: string) => `texture-${id}`;
-export const textureLayerId = (id: string) => `terrain-texture-${id}`;
-export const TEXTURE_LAYER_IDS = TEXTURE_REGIONS.map((r) => textureLayerId(r.id));
+function textureLayers(): StyleSpecification['layers'] {
+  if (Object.keys(textureSourceSpecs()).length === 0) return [];
+  return [
+    {
+      id: TEXTURE_BASE_LAYER_ID,
+      type: 'raster',
+      source: 'texture-base',
+      paint: {
+        'raster-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 1, 13.5, 0],
+        'raster-fade-duration': 200,
+        'raster-resampling': 'linear',
+      },
+    },
+    {
+      id: TEXTURE_HIGHLANDS_LAYER_ID,
+      type: 'raster',
+      source: 'texture-highlands',
+      paint: {
+        'raster-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 0, 13.5, 1],
+        'raster-fade-duration': 200,
+        'raster-resampling': 'linear',
+      },
+    },
+  ];
+}
 
 // buildStyle owns MapLibre style plumbing only — sources, layer wiring, sky.
 // Every colour and the shape of the hypsometric ramp come from the Skin (see
@@ -205,16 +221,7 @@ export function buildStyle(
       rivers: { type: 'geojson', data: riversUrl },
       forest: { type: 'geojson', data: forestUrl },
       contours: { type: 'geojson', data: contoursUrl },
-      ...Object.fromEntries(
-        TEXTURE_REGIONS.map((r) => [
-          textureSourceId(r.id),
-          {
-            type: 'image' as const,
-            url: `${import.meta.env.BASE_URL}${r.image}`,
-            coordinates: r.coordinates as TextureCorners,
-          },
-        ]),
-      ),
+      ...(textureSourceSpecs() as StyleSpecification['sources']),
     },
     layers: [
       {
@@ -248,16 +255,7 @@ export function buildStyle(
       // passes so the shading lights it rather than being covered by it.
       // `color-relief` can only paint one colour per elevation; this is the
       // only way to get per-pixel texture without shipping satellite imagery.
-      ...TEXTURE_REGIONS.map((r) => ({
-        id: textureLayerId(r.id),
-        type: 'raster' as const,
-        source: textureSourceId(r.id),
-        paint: {
-          'raster-opacity': 1,
-          'raster-fade-duration': 0,
-          'raster-resampling': 'linear' as const,
-        },
-      })),
+      ...textureLayers(),
       {
         id: HILLSHADE_LAYER_ID,
         type: 'hillshade',

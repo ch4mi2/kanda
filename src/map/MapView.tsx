@@ -34,7 +34,6 @@ import {
   MIN_ZOOM,
   PITCH_MAX,
   PITCH_MIN,
-  TERRAIN,
   exaggerationForZoom,
 } from '../config/tiles';
 import { sunDateFromSlstMinutes, sunPosition } from './sunPosition';
@@ -100,11 +99,12 @@ function applySun(map: MapLibreMap, slstMinutes: number) {
 // CLAUDE.md gotcha #4). `?worker&url` sidesteps both.
 setWorkerUrl(maplibreWorkerUrl);
 
-// The pmtiles:// protocol only needs registering once per page load. Safe to
-// call unconditionally — it's a cheap map insert keyed by scheme.
-if (TERRAIN.mode === 'pmtiles') {
-  addProtocol('pmtiles', new PMTilesProtocol().tile);
-}
+// The pmtiles:// protocol only needs registering once per page load, and the
+// registration is global + multi-archive (terrain and texture can both use
+// pmtiles independently), so register it unconditionally — guarding on
+// TERRAIN.mode was a latent bug the moment VITE_TILE_MODE=local met
+// VITE_TEXTURE_MODE=pmtiles.
+addProtocol('pmtiles', new PMTilesProtocol().tile);
 
 interface MapViewProps {
   exaggeration: number;
