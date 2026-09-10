@@ -209,6 +209,8 @@ export function buildStyle(
   skin: Skin = DEFAULT_SKIN,
   sun: SunPosition = currentSun(),
 ): StyleSpecification {
+  // Shallowest sea colour — reused as the inland-water shallows rim.
+  const shallowWater = skin.shore.byDepth.at(-1)?.[1] ?? skin.lake;
   return {
     version: 8,
     // Self-hosted glyph PBFs (public/fonts/, npm run fetch:glyphs). Same
@@ -303,6 +305,23 @@ export function buildStyle(
         paint: {
           'fill-color': skin.lake,
           'fill-outline-color': skin.river,
+        },
+      },
+      // Soft shallows rim on inland water — the same turquoise the sea's surf
+      // line uses. A flat `lake` fill read as a plastic cut-out next to the
+      // textured land (same critique that drove the sea's depth ramp, gotcha
+      // #13); a blurred edge band gives reservoirs a little depth without a
+      // spatial gradient (which fills can't do).
+      {
+        id: 'water-shallows',
+        type: 'line',
+        source: 'water',
+        minzoom: 8,
+        paint: {
+          'line-color': shallowWater,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 12, 3.5, 14, 8],
+          'line-blur': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 12, 3, 14, 7],
+          'line-opacity': 0.5,
         },
       },
       // Highland contours (src/data/contours.geojson, 800-2400 m). Only worth
