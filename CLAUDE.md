@@ -35,7 +35,10 @@ src/
                       wires sources + layers + sky. hillshadeLightForSun() and
                       skyForSun() are re-applied live by MapView. Hydronym
                       labels (water tiers by `ha`, rivers on line placement)
-                      live here. Self-hosted glyphs (public/fonts/).
+                      live here. Self-hosted glyphs (public/fonts/). Texture:
+                      two raster sources (textureSourceSpecs() in tiles.ts) as
+                      two crossfaded layers between forest and hillshade — see
+                      gotcha #14.
     sunPosition.ts    NOAA solar position (no dep) + SLST helpers — drives the
                       hillshade light direction/altitude and the fog tint.
     summitView.ts     Phase 5B — the "stand on the peak and spin" camera mode.
@@ -85,11 +88,21 @@ scripts/
   repair-dem.mjs          Repair DEM spikes/pits + one light smooth pass
   generate-contours.mjs   local DEM → src/data/contours.geojson (highlands)
   generate-trees.mjs      forest.geojson → src/data/trees.geojson (tree scatter)
-  generate-texture.mjs    DEM + forest → public/textures/<region>.png +
-                          src/data/textures.json (diffuse detail drape).
-                          PROTOTYPE — Knuckles window only, see gotcha #14.
+  generate-texture.mjs    DEM + forest → public/tiles/texture/{z}/{x}/{y}.png
+                          (procedural diffuse detail drape). --tiles bakes
+                          z10-12 island-wide + z13-14 over the highlands via a
+                          worker pool; pure core in lib/texture-core.mjs, one
+                          worker per batch is scripts/texture-worker.mjs.
+                          --single writes one gitignored PNG for palette
+                          eyeballing. See gotcha #14.
+  texture-worker.mjs      per-batch bake worker for generate-texture --tiles
+  lib/tilemath.mjs        shared Web-Mercator / XYZ tile maths + REF_Z world-px
+  lib/texture-core.mjs    pure texture bake core (noise, palette, compositor,
+                          indexed PNG, DEM/forest sampling)
   fetch-glyphs.mjs        demotiles → public/fonts/ (Noto Sans PBF ranges)
-  pack-pmtiles.mjs        public/tiles/terrain/ → public/tiles/terrain.pmtiles
+  pack-pmtiles.mjs        loose pyramid → .pmtiles. packPmtiles({dir,out,…}) +
+                          argv main(); leaf directories when the root dir would
+                          top 12 KB (texture needs them, terrain doesn't)
 design/               Exported Claude Design source. Tokens live in the
                       "1D Handoff sheet" section of Kanda Trails UI.dc.html.
 ```
@@ -101,9 +114,11 @@ UI panels, not in the map instance.
 ## Data — why there are no API keys
 
 - **Elevation:** Terrarium-encoded SRTM/GMTED2010 from AWS Open Data. Public
-  domain, credit requested. **z12 is the ceiling** — a z12 tile is ~38 m/px,
-  which is SRTM's native resolution. z13+ is pure upscaling, 4× the bytes for
-  zero new information.
+  domain, credit requested. **The DEM ceiling is z12** — a z12 tile is ~38 m/px,
+  SRTM's native resolution; z13+ is pure upscaling of the *elevation*, 4× the
+  bytes for zero new height information. Don't fetch or pack DEM tiles past z12.
+  (The *camera* ceiling is z14 — see gotcha #14. That's high-res texture on a
+  4×-overzoomed mesh, the reference-render trade, not more elevation detail.)
 - **Peaks:** OpenStreetMap via Overpass, ODbL, fetched once into a committed
   GeoJSON.
 - **No satellite imagery, deliberately.** It's licensed, non-redistributable and
@@ -133,6 +148,12 @@ The low-zoom pyramid on disk is sparse, so a few of those logs still appear.
 development.** Without it the app silently runs in remote mode and feels
 broken-slow. This was a real bug, not a hypothetical.
 
+`TEXTURE.mode` reads `VITE_TEXTURE_MODE` the same way: `off` (default — a fresh
+clone with no archive still renders), `local` (`public/tiles/texture/`), or
+`pmtiles` (`public/tiles/texture.pmtiles`). `textureSourceSpecs()` returns `{}`
+when off. `pmtiles`+`pmtiles` and `local`+`pmtiles` (terrain+texture) both work —
+the `pmtiles://` protocol is registered unconditionally and is multi-archive.
+
 ## Gotchas that have already cost time
 
 1. **`maxBounds` vs rotation.** Tight `MAP_BOUNDS` + high pitch means the
@@ -145,7 +166,8 @@ broken-slow. This was a real bug, not a hypothetical.
    for — with the sign matched to MapLibre's own `MouseRotateHandler`. Pitch is
    clamped 12°–80° via `minPitch`/`maxPitch` (`PITCH_MAX` lifted from 72 in
    Phase 5A so the resting view is inside the terrain-fog band — see gotcha #9).
-   Camera zoom is capped at `MAX_ZOOM` (13) so it can't push past the z12 DEM.
+   Camera zoom is capped at `MAX_ZOOM` (14, Phase 6). The DEM is still z12; z13-14
+   ride the highlands texture tiles over a 4×-overzoomed mesh (gotcha #14).
 2. **`style.load`, not `load`.** The `load` event can hang indefinitely waiting
    on every visible tile across a wide oblique view. Do setup on `style.load`.
 3. **`demotiles.maplibre.org` glyphs — done (Phase 4D).** Glyph PBFs are
@@ -221,22 +243,45 @@ broken-slow. This was a real bug, not a hypothetical.
    is dark, which would break the monotonic-L\* rule (lstar.test.ts). Keep
    `background` matched to the deepest `shore` stop or the edge of DEM
    coverage seams against open ocean.
-14. **Terrain texture drape — prototype, resolution-bound.** `color-relief`
+14. **Terrain texture drape — shipped as tiles (Phase 6).** `color-relief`
    paints one flat colour per elevation band; reference terrain renders get
-   their richness from a diffuse texture map, which for them is satellite
-   imagery. `scripts/generate-texture.mjs` bakes an equivalent from the DEM
-   (slope/aspect/elevation) + `forest.geojson` + value-noise fbm, and the map
-   drapes it as an `image` source + `raster` layer between `color-relief` and
-   the hillshade passes. It is an RGBA **overlay**: open ground gets neutral
-   light/dark grain only, so the Skin keeps owning the palette.
-   **The bottleneck is resolution, not the technique.** One 2048 px image over
-   the 44 km Knuckles window is ~21 m/px — barely finer than the 38 m DEM, so
-   it only reads past ~z12 and costs 3.8 MB. Metre-scale texture needs proper
-   raster *tiles* → PMTiles (reuse `pack-pmtiles.mjs`), and at that point the
-   artifact must be gitignored like `public/tiles/`. Two tuning traps already
-   paid for: rock below ~25° slope paints the whole (uniformly steep)
-   highlands brown, and a hard light/dark noise flip finer than ~5 px reads as
-   television static once composited.
+   their richness from a diffuse texture map (satellite imagery, for them).
+   `npm run generate:texture` bakes an equivalent from the DEM
+   (slope/aspect/elevation) + `forest.geojson` + value-noise fbm, into an
+   **indexed-PNG tile pyramid**: z10–12 island-wide, z13–14 over the highlands
+   window (`TEXTURE_HIGHLANDS_BBOX`). `pack:texture` → `texture.pmtiles`
+   (~89 MB, **gitignored** like all of `public/tiles/`). It's an alpha
+   **overlay** between `forest` and the hillshade passes — open ground gets
+   neutral light/dark grain only, so the Skin keeps owning the palette.
+   - **The noise is a pure function of REF_Z=20 world-mercator pixels**, not
+     tile-pixel coords, with octaves band-limited by absolute wavelength. So a
+     low-zoom tile is literally the low-pass of the high-zoom field and tiles
+     **cannot seam**. Break this (go back to per-tile pixel coords) and you get
+     a visible grid at every tile boundary. `scripts/lib/texture-core.mjs` is
+     the pure core; `scripts/lib/tilemath.mjs` the shared projection.
+   - **Slope/aspect are central-differenced at a fixed ~38 m DEM-texel metric
+     offset**, resampling the DEM directly — not from adjacent output pixels.
+     Diff adjacent output pixels at z14 and the 38 m DEM grid prints through the
+     rock mask as blocky patches.
+   - **Two raster sources, crossfaded**, not one. A single source with
+     `maxzoom: 14` makes MapLibre request z13/z14 *everywhere* and the texture
+     goes blank above z12 across most of the island. `texture-base` (z10–12,
+     island) and `texture-highlands` (z13–14) with `raster-opacity` swapping
+     12.5→13.5 so the overlap sums to ~1. Outside the highlands the texture
+     fades out above z13.5 — accepted: you're on 4×-overzoomed z12 DEM there and
+     every peak the app is about is inside the window. `textureSourceSpecs()` in
+     `tiles.ts` carries a load-bearing comment; don't "simplify" it to one.
+   - **Dither** (ordered Bayer, world-space) is scaled by how band-limited the
+     fine octaves are: full at z10–11 where 8-level posterised grain would band,
+     zero by z13 where the octaves break the bands themselves — which is also
+     what keeps z13/z14 tiles compressible (white-noise dither there blew the
+     budget past 135 MB).
+   - The bake is a **pure function of world position + fixed seeds**: worker
+     count must not change a byte (asserted against the single-threaded tree).
+   Two tuning traps still live: rock below ~25° slope paints the whole
+   (uniformly steep) highlands brown, and a hard light/dark noise flip finer
+   than ~5 px reads as television static (the continuous posterised mix + dither
+   is the fix).
 11. **Summit view fights MapLibre 6.8 (Phase 5B, `src/map/summitView.ts`).**
    All verified in the maplibre source, all easy to get wrong:
    - **No free-camera API.** `get/setFreeCameraOptions` are Mapbox-only.
@@ -317,15 +362,16 @@ npm run repair:dem      # repair DEM spikes/pits + one smooth pass (in place)
 npm run fetch:glyphs    # download the self-hosted glyph PBFs
 npm run generate:contours  # local DEM -> contours.geojson (after repair:dem)
 npm run generate:trees  # forest.geojson -> trees.geojson (deterministic)
-npm run pack:pmtiles    # re-pack the loose pyramid into terrain.pmtiles
+npm run generate:texture # DEM+forest -> public/tiles/texture/ pyramid (worker pool, ~10 min)
+npm run pack:pmtiles    # re-pack the loose DEM pyramid into terrain.pmtiles
+npm run pack:texture    # pack public/tiles/texture/ into texture.pmtiles (leaf dirs)
 ```
 
-After a fresh clone: `fetch:terrain` → `repair:dem` → `pack:pmtiles`, then set
-`VITE_TILE_MODE` in `.env.local`. `public/tiles/` is gitignored; everything in
-`src/data/` and `public/fonts/` is committed.
-
-`public/tiles/` is gitignored; after a fresh clone run `fetch:terrain` then
-`repair:dem` then `pack:pmtiles`. `public/fonts/` **is** committed.
+After a fresh clone (all of `public/tiles/` is gitignored):
+`fetch:terrain` → `repair:dem` → `generate:texture` → `pack:texture` →
+`pack:pmtiles`, then set `VITE_TILE_MODE` (and optionally `VITE_TEXTURE_MODE`)
+in `.env.local`. Everything in `src/data/` and `public/fonts/` **is** committed;
+the texture pyramid and both `.pmtiles` archives are not.
 
 ## Verifying map work
 
@@ -340,6 +386,14 @@ Screenshots lie less than assumptions here. Always:
   island can take 20-40 s to fully paint on first load. Wait it out before
   judging a screenshot; a blank blue map right after navigate is loading, not
   broken.
+- **Texture:** it only draws z10+ (nothing at island view — correct). Zoom into
+  the Knuckles to ~z13-14 and the surface picks up canopy mottle / rock
+  striation / grain; toggle the "Texture" chip to A/B. Watch the z12→z13
+  handover while wheeling *slowly* — the two-source crossfade should sum to ~1
+  with no double-darkening or pop. Seams: pan across tile boundaries at a fixed
+  zoom; any visible grid means the world-coordinate noise derivation broke.
+  For a fast palette check without a 10-min bake, `generate-texture.mjs --single
+  --bbox … --out …` writes one PNG.
 - **Summit view is the acceptance test for the user story.** Stand on Gombaniya
   (search it → "Stand here"): the camera sits at the summit, dragging pivots in
   place (not an orbit), the compass strip tracks your heading, and Knuckles /
