@@ -4,6 +4,14 @@
 
 export type TileMode = 'remote' | 'local' | 'pmtiles';
 
+// Origin the packed PMTiles archives are served from. Empty in local dev — the
+// archives sit at the site root (`/tiles/*.pmtiles`). In production it's the
+// Cloudflare R2 public origin, injected as VITE_TILE_BASE_URL at build time.
+// The `pmtiles` library strips the `pmtiles://` prefix and fetches whatever
+// remains, so an empty base yields `/tiles/...` and a full URL yields the R2
+// origin. Set with no trailing slash.
+const TILE_BASE_URL = import.meta.env.VITE_TILE_BASE_URL ?? '';
+
 export const TERRAIN = {
   // VITE_TILE_MODE switches the terrain source:
   //   remote  - AWS Open Data S3 (default; re-fetches ~2,024 tiles per session)
@@ -15,8 +23,8 @@ export const TERRAIN = {
   remote: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
   local: '/tiles/terrain/{z}/{x}/{y}.png',
   // The `pmtiles://` prefix is the protocol registered by the `pmtiles`
-  // package in MapView.tsx. Path is relative to the deployed site root.
-  pmtiles: 'pmtiles:///tiles/terrain.pmtiles',
+  // package in MapView.tsx. Empty TILE_BASE_URL -> site root; R2 origin in prod.
+  pmtiles: `pmtiles://${TILE_BASE_URL}/tiles/terrain.pmtiles`,
 
   encoding: 'terrarium' as const,
   tileSize: 256,
@@ -78,7 +86,7 @@ export type TextureMode = 'off' | 'local' | 'pmtiles';
 export const TEXTURE = {
   mode: (import.meta.env.VITE_TEXTURE_MODE ?? 'off') as TextureMode,
   local: '/tiles/texture/{z}/{x}/{y}.png',
-  pmtiles: 'pmtiles:///tiles/texture.pmtiles',
+  pmtiles: `pmtiles://${TILE_BASE_URL}/tiles/texture.pmtiles`,
   tileSize: 256,
   base: { minzoom: 10, maxzoom: 12, bounds: SRI_LANKA_BBOX },
   highlands: { minzoom: 13, maxzoom: 14, bounds: TEXTURE_HIGHLANDS_BBOX },

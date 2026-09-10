@@ -385,6 +385,32 @@ After a fresh clone (all of `public/tiles/` is gitignored):
 in `.env.local`. Everything in `src/data/` and `public/fonts/` **is** committed;
 the texture pyramid and both `.pmtiles` archives are not.
 
+## Deployment
+
+Public since the open-source launch. `github.com/ch4mi2/kanda`, MIT.
+
+**Branch strategy.** `main` is the default and is protected (PR + passing CI +
+1 approval, no force pushes). `master` still exists as the original local branch;
+day-to-day work branches off `main` as `feature/*` / `bugfix/*` / `docs/*`.
+
+**CI/CD** (`.github/workflows/`):
+- `ci.yml` — every PR and push to `main`/`master`: `npm ci` → lint → `tsc -b` →
+  `npm test` → `npm run build`. No tile data needed.
+- `deploy.yml` — push to `main` only: builds with `VITE_TILE_MODE=pmtiles`,
+  `VITE_TEXTURE_MODE=pmtiles`, `VITE_TILE_BASE_URL` from the `TILE_BASE_URL`
+  secret, then `wrangler pages deploy dist --project-name=kanda` to Cloudflare
+  Pages (`kanda.pages.dev`). Repo secrets: `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID`, `TILE_BASE_URL`.
+
+**Tiles in production.** The `.pmtiles` archives are too big for git, so they
+live in a public Cloudflare R2 bucket (`kanda-tiles`), uploaded by hand after a
+`pack:pmtiles` / `pack:texture` run. `src/config/tiles.ts` prepends
+`VITE_TILE_BASE_URL` (the R2 public origin, no trailing slash) to the
+`pmtiles://` URLs — empty in dev (site root), the R2 origin in the deployed
+build. R2 CORS must allow `kanda.pages.dev` and expose `Range` +
+`Content-Range` (PMTiles is range requests). Re-uploading the archives is the
+whole "deploy new terrain data" step — Pages doesn't see them.
+
 ## Verifying map work
 
 Screenshots lie less than assumptions here. Always:

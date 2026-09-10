@@ -19,6 +19,9 @@ public/tiles/
 # Local env overrides (e.g. VITE_TILE_MODE=local)
 .env.local
 
+# Wrangler / Cloudflare local state
+.wrangler/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,98 +1,103 @@
-# Sri Lanka in 3D
+# Kanda &nbsp;කන්ද
 
-An interactive 3D terrain map of Sri Lanka for hiking enthusiasts — pinch, drag,
-and tilt to explore the central highlands, with every named peak from
-OpenStreetMap labelled and clickable.
+**Stand on a summit, look around, and the map names what you're seeing.**
 
-Built with [MapLibre GL JS](https://maplibre.org/), styled entirely from
-elevation data (no satellite imagery), and designed to run **fully offline**
-once the terrain tiles are downloaded once.
+Kanda (Sinhala for "mountain") is a peak-identification and orientation tool for
+Sri Lanka. You climb Gombaniya, wonder what the surrounding mountains are — and
+Kanda tells you: Lakegala there, the Five Peaks that way, Thunhisgala across the
+valley. Rotating the camera is the whole point.
+
+[![CI](https://github.com/ch4mi2/kanda/actions/workflows/ci.yml/badge.svg)](https://github.com/ch4mi2/kanda/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-ffdd00.svg)](https://www.buymeacoffee.com/chamithu)
+
+**Live:** https://kanda.pages.dev
+
+## Features
+
+- **3D terrain** — the whole island as an explorable relief model, coloured
+  straight from the elevation data
+- **198 named peaks** from OpenStreetMap, in three zoom tiers, filterable by an
+  elevation floor
+- **Summit view** — stand on any peak at eye level and spin; nearby summits
+  appear as skyline labels, ridge-hidden ones ghosted
+- **Sun-driven lighting** — hillshade and haze follow the real solar position
+  for any time of day
+- **Offline-capable** — no satellite imagery, no API keys, no runtime network
+  calls once the tiles are local
+- **Zero API keys** — the entire look is derived from public-domain elevation
+  data
 
 ## Quick start
 
 ```bash
+git clone https://github.com/ch4mi2/kanda.git
+cd kanda
 npm install
 npm run dev
 ```
 
-Opens against the live [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/)
-bucket by default — no API key needed.
+Opens at `localhost:5173`, streaming elevation tiles live from the
+[AWS Open Data](https://registry.opendata.aws/terrain-tiles/) bucket — no key
+needed. It re-downloads ~2,000 tiles per session this way, so it's slow; for
+real work, set up local tiles below.
 
-## Why no satellite imagery?
+## Full tile pipeline
 
-Elevation data for Sri Lanka is small, static, and effectively public domain
-(SRTM/GMTED2010, credit requested). Satellite imagery is none of those things
-— it's licensed, not redistributable, and multiple GB at usable resolution.
-
-So this app skips imagery entirely. MapLibre's `color-relief` layer (6.2+)
-paints the map straight from the elevation data already loaded for the 3D
-terrain — a hypsometric tint tuned to Sri Lanka's 0–2,524 m range — plus a
-`hillshade` layer for ridge texture. One dataset, no licensing questions, and
-arguably a better look for hiking than a green satellite blur.
-
-## Going fully offline
-
-The entire z0–12 elevation pyramid for Sri Lanka is ~2,000 tiles / ~80 MB —
-z12 is the native resolution of the underlying SRTM data, so nothing higher
-is useful. Download it once:
+Everything under `public/tiles/` is gitignored — the scripts are the
+reproducible artifact, not the binaries. After a fresh clone:
 
 ```bash
-npm run fetch:terrain
-```
+npm run fetch:terrain      # ~54 MB elevation pyramid
+npm run repair:dem         # repair DEM spikes/pits + one smooth pass
+npm run generate:texture   # DEM + forest -> procedural surface texture (~10 min)
+npm run pack:texture       # -> public/tiles/texture.pmtiles
+npm run pack:pmtiles       # -> public/tiles/terrain.pmtiles
+npm run fetch:glyphs       # self-hosted map-label glyphs
 
-This writes to `public/tiles/terrain/` (gitignored — the script is the
-reproducible artifact, not the binaries). Then:
-
-```bash
-cp .env.local.example .env.local
+cp .env.local.example .env.local   # sets VITE_TILE_MODE=local
 npm run dev
 ```
 
-With `VITE_TILE_MODE=local` set, the app never touches the network again.
+With `VITE_TILE_MODE=local` (or `pmtiles`) the app never touches the network.
 
-## Regenerating peak data
+## Tech
 
-`src/data/peaks.geojson` is committed and the app never calls the Overpass
-API itself. To refresh it against current OpenStreetMap data:
+Vite + React + [MapLibre GL JS](https://maplibre.org/), used imperatively.
+MapLibre's `color-relief` layer paints the map from the elevation data already
+loaded for the 3D terrain — one dataset, no licensing questions, and a better
+look for orientation than a satellite blur. Packed elevation and texture tiles
+ship as [PMTiles](https://protomaps.com/docs/pmtiles) archives served over HTTP
+range requests; in production they come from Cloudflare R2.
 
-```bash
-npm run fetch:peaks
-```
-
-## Project structure
-
-```
-src/
-  config/tiles.ts     Every tile URL and map default — the one place to
-                       change providers, bbox, or camera defaults.
-  skins/              The map's look as data: a Skin type + the "Kanda" pack.
-  map/
-    buildStyle.ts      MapLibre style plumbing — takes a Skin, wires layers.
-    MapView.tsx         Imperative MapLibre lifecycle in a React wrapper.
-    peaksLayer.ts        Peak markers, label tiers, click handling.
-    middleDragRotate.ts  Middle-button drag → rotate + tilt.
-  components/          Search, filter chips, peak card, nearby peaks, legend,
-                       relief slider, gesture hint, attribution.
-  index.css           Design tokens (palette, grid, radii, type scale).
-  data/peaks.geojson   Committed OSM peak data (198 named summits).
-public/fonts/         Self-hosted MapLibre glyph PBFs (committed).
-scripts/
-  fetch-peaks.mjs       Regenerates peaks.geojson from Overpass.
-  fetch-terrain.mjs     Downloads the offline terrain tile pyramid.
-  repair-dem.mjs        Repairs DEM void spikes in the local pyramid.
-  fetch-glyphs.mjs      Downloads the self-hosted glyph PBFs.
-  pack-pmtiles.mjs      Packs the loose pyramid into one .pmtiles archive.
-```
+Architecture, design decisions, and the traps that have already cost time are
+documented in [`CLAUDE.md`](CLAUDE.md).
 
 ## Data sources & attribution
 
-- Elevation: SRTM (NASA/USGS) & GMTED2010 (USGS) via [Tilezen](https://github.com/tilezen/joerd) / AWS Open Data
-- Peaks: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL)
-- Rendering: [MapLibre GL JS](https://maplibre.org/)
+- **Elevation:** SRTM (NASA/USGS) & GMTED2010 (USGS) via
+  [Tilezen](https://github.com/tilezen/joerd) / AWS Open Data — public domain,
+  credit requested
+- **Peaks, rivers, water, forest, landcover:** © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+  contributors, ODbL
+- **Rendering:** [MapLibre GL JS](https://maplibre.org/), BSD-3-Clause
 
-## Scope
+Attribution is shown in-app and is not optional — see
+`src/components/Attribution.tsx`.
 
-This is v1: 3D terrain + named peaks. Hiking trails, route drawing, elevation
-profiles, and GPX import/export are intentionally out of scope for now. The
-config module and layer structure are built so trails slot in later as an
-additional source without rework.
+## Contributing
+
+Issues and PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup,
+branch naming, and the checks CI runs. This project follows the
+[Contributor Covenant](CODE_OF_CONDUCT.md).
+
+## Support
+
+Kanda is a free hobby project. Hosting the terrain tiles costs a little each
+month — if it's useful to you, you can help cover that:
+[**Buy Me a Coffee**](https://www.buymeacoffee.com/chamithu).
+
+## License
+
+[MIT](LICENSE) © 2024–2026 Chamithu Thamara. Map data carries its own licenses,
+noted above.
