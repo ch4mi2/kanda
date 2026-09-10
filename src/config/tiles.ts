@@ -136,10 +136,14 @@ export const DEFAULT_ZOOM = 8.3;
 export const DEFAULT_PITCH = 68;
 export const DEFAULT_BEARING = -20;
 
-// The DEM tops out at z12 (~38 m/px). Past ~z13 the camera is just staring
-// at upscaled texels, so cap it rather than let users zoom into blur.
+// The DEM tops out at z12 (~38 m/px) — that ceiling is unchanged. The *camera*
+// now reaches z14 because the highlands texture tiles carry real detail to
+// ~9.5 m/px there (high-res texture drape on a low-res mesh, the classic
+// reference-render trade). Outside the highlands window z13-14 is 4x-overzoomed
+// DEM with the texture fading out — acceptable, and every peak the app is about
+// is inside the window.
 export const MIN_ZOOM = 6.5;
-export const MAX_ZOOM = 13;
+export const MAX_ZOOM = 14;
 
 // Camera rotate/tilt limits. Yaw is free (±180°). Pitch clamps 12°-80°:
 // the design specced 72°, but the terrain-fog band is 60°-70°+, so the top of
@@ -166,6 +170,7 @@ const EXAGGERATION_STOPS: Array<[number, number]> = [
   [6.5, 2.5], // whole-island view
   [9, 1.8], // regional
   [12, 1.4], // zoomed to a massif
+  [14, 1.3], // standing among the peaks — keep the last levels easing, not a step
 ];
 
 /** Adaptive terrain exaggeration for a given zoom, scaled by the user's
