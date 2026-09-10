@@ -26,6 +26,12 @@ import {
 const ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
 export const TILE_DIR = path.join(ROOT, 'public/tiles/terrain');
 export const FOREST = path.join(ROOT, 'src/data/forest.geojson');
+// Reservoirs and tanks — masked OUT of the bake. Their surface sits at ~440 m
+// (SRTM captured the drowned valley / water surface as land), so the h<=1 sea
+// guard misses them and the compositor would paint grain + canopy across the
+// whole reservoir footprint. The `water` fill layer hides most of it in the
+// app, but its simplified geometry leaks texture at every shoreline.
+export const WATER = path.join(ROOT, 'src/data/water.geojson');
 export const TILE_OUT_DIR = path.join(ROOT, 'public/tiles/texture');
 
 export const SAMPLE_Z = 12; // DEM ceiling — see CLAUDE.md
@@ -429,9 +435,10 @@ function rockStreak(U, V, ca, sa, zEff, seed) {
   return 0.5 + (norm > 0 ? sum / (norm * 0.5) : 0);
 }
 
-// --- forest mask (scanline fill; even-odd so holes work) --------------
+// --- polygon rasteriser (scanline fill; even-odd so holes work) -------
 // `toPx(lon)` / `toPy(lat)` project a coordinate into raster pixel space.
-export function rasterizeForest(features, W, H, toPx, toPy) {
+// Used for both the forest (canopy) and water (mask-out) landcover rasters.
+export function rasterizePolygons(features, W, H, toPx, toPy) {
   const mask = new Uint8Array(W * H);
   for (const f of features) {
     const polys =
@@ -557,8 +564,12 @@ const ROCK_SEED = 9100;
 /** Composite one pixel to a palette index. `U`,`V` are world reference-pixel
  *  coords; `zEff` drives band-limiting; `dither` is the (already scaled)
  *  ordered-dither offset. */
-export function composeIndex({ h, slopeDeg, aspect, fm, U, V, zEff, dither = 0 }) {
+export function composeIndex({ h, slopeDeg, aspect, fm, wm = 0, U, V, zEff, dither = 0 }) {
   if (!Number.isFinite(h) || h <= 1) return 0; // sea / no-data — shore ramp owns it
+  // Under a mapped reservoir/tank: the `water` fill layer owns those pixels.
+  // `wm` feathers ~90 m at the shore so the texture doesn't stop on a hard edge.
+  if (wm > 0.8) return 0;
+  const wFade = clamp01(1 - wm / 0.8);
 
   const grainField = worldFbm(U, V, GRAIN_SEED, zEff, 0, 5); // ~38 m .. ~600 m
   let mat = 0;
@@ -597,7 +608,7 @@ export function composeIndex({ h, slopeDeg, aspect, fm, U, V, zEff, dither = 0 }
     }
   }
 
-  alpha = Math.min(alpha, MAX_ALPHA);
+  alpha = Math.min(alpha, MAX_ALPHA) * wFade;
 
   const canopyW = fm * (1 - rockAmt);
   if (canopyW > 0.18 && rockAmt > 0.18 && rockAmt < 0.85) {
@@ -612,11 +623,21 @@ export function composeIndex({ h, slopeDeg, aspect, fm, U, V, zEff, dither = 0 }
   return quantIdx(mat, lumT, alpha, dither);
 }
 
-// --- global forest raster --------------------------------------------
-/** Build the shared z11 forest raster over SRI_LANKA_BBOX. Returns `{ W, H,
- *  data }`; pass `sabData` (a SharedArrayBuffer-backed Uint8Array of W*H) to
- *  have the blur write straight into shared memory for the worker pool. */
-export async function buildForestRaster(sabData) {
+// --- global landcover rasters ---------------------------------------
+// Both the forest (canopy) and water (mask-out) rasters are one 8-bit z11
+// raster over SRI_LANKA_BBOX, blurred for a soft edge, handed to the workers
+// in a SharedArrayBuffer and sampled bilinearly (mercator-linear).
+export function rasterDims() {
+  const [w, s, e, n] = SRI_LANKA_BBOX;
+  const W = Math.round((lonToX(e, FOREST_RASTER_Z) - lonToX(w, FOREST_RASTER_Z)) * TILE_SIZE);
+  const H = Math.round((latToY(s, FOREST_RASTER_Z) - latToY(n, FOREST_RASTER_Z)) * TILE_SIZE);
+  return { W, H };
+}
+
+/** Rasterise a GeoJSON polygon file into the shared z11 raster. `blurR` sets
+ *  the edge feather (forest ~230 m, water ~90 m). Pass `sabData` (a
+ *  SharedArrayBuffer view of W*H) to blur straight into shared memory. */
+export async function buildLandcoverRaster(geojsonPath, blurR, sabData) {
   const [w, s, e, n] = SRI_LANKA_BBOX;
   const mx0 = lonToX(w, FOREST_RASTER_Z);
   const mx1 = lonToX(e, FOREST_RASTER_Z);
@@ -627,27 +648,23 @@ export async function buildForestRaster(sabData) {
   const toPx = (lon) => ((lonToX(lon, FOREST_RASTER_Z) - mx0) / (mx1 - mx0)) * W;
   const toPy = (lat) => ((latToY(lat, FOREST_RASTER_Z) - my0) / (my1 - my0)) * H;
 
-  const forest = JSON.parse(await readFile(FOREST, 'utf8'));
+  const gj = JSON.parse(await readFile(geojsonPath, 'utf8'));
   const data = blurMask(
-    rasterizeForest(forest.features, W, H, toPx, toPy),
+    rasterizePolygons(gj.features, W, H, toPx, toPy),
     W,
     H,
-    3,
+    blurR,
     sabData && sabData.length === W * H ? sabData : undefined,
   );
   return { W, H, data };
 }
 
-export function forestRasterDims() {
-  const [w, s, e, n] = SRI_LANKA_BBOX;
-  const W = Math.round((lonToX(e, FOREST_RASTER_Z) - lonToX(w, FOREST_RASTER_Z)) * TILE_SIZE);
-  const H = Math.round((latToY(s, FOREST_RASTER_Z) - latToY(n, FOREST_RASTER_Z)) * TILE_SIZE);
-  return { W, H };
-}
+export const buildForestRaster = (sabData) => buildLandcoverRaster(FOREST, 3, sabData);
+export const buildWaterRaster = (sabData) => buildLandcoverRaster(WATER, 2, sabData);
 
-/** Bilinear sampler over a forest raster (`{ W, H, data }`), mercator-linear
- *  like the raster itself. Returns 0..1. */
-export function forestSamplerFrom({ W, H, data }) {
+/** Bilinear sampler over a `{ W, H, data }` z11 landcover raster,
+ *  mercator-linear like the raster itself. Returns 0..1. */
+export function rasterSamplerFrom({ W, H, data }) {
   const [w, s, e, n] = SRI_LANKA_BBOX;
   const mx0 = lonToX(w, FOREST_RASTER_Z);
   const mx1 = lonToX(e, FOREST_RASTER_Z);
@@ -698,7 +715,7 @@ export function emptyTilePng() {
  * (the caller writes the canonical empty tile). No apron: every input is a
  * pure function of world position, so adjacent tiles agree along their edge.
  */
-export function bakeTile({ z, x, y }, dem, forestSample) {
+export function bakeTile({ z, x, y }, dem, forestSample, waterSample) {
   const indices = Buffer.alloc(TILE_SIZE * TILE_SIZE);
   const dScale = ditherScaleFor(z);
   let allEmpty = true;
@@ -710,12 +727,15 @@ export function bakeTile({ z, x, y }, dem, forestSample) {
       const U = refPxX(x, px, z);
       const h = dem.height(lon, lat);
       if (!Number.isFinite(h) || h <= 1) continue;
+      const wm = waterSample(lon, lat);
+      if (wm > 0.8) continue; // under a reservoir/tank — stays index 0
       const { slopeDeg, aspect } = dem.slopeAspect(lon, lat);
       const idx = composeIndex({
         h,
         slopeDeg,
         aspect,
         fm: forestSample(lon, lat),
+        wm,
         U,
         V,
         zEff: z,
@@ -744,21 +764,23 @@ export async function bakeSingle({ bbox, size }, outPath, { writeFile, mkdir }) 
 
   const dem = await buildDem(bbox);
 
-  const forest = JSON.parse(await readFile(FOREST, 'utf8'));
-  console.log('  rasterising forest…');
   const mPerPx = (mercWidth * 40075016) / W;
-  const blurR = Math.max(1, Math.round(230 / mPerPx));
+  const toPx = (lon) => ((lon - w) / (e - w)) * W;
+  const toPy = (lat) => ((n - lat) / (n - s)) * H;
+  console.log('  rasterising forest + water…');
+  const forest = JSON.parse(await readFile(FOREST, 'utf8'));
+  const water = JSON.parse(await readFile(WATER, 'utf8'));
   const forestMask = blurMask(
-    rasterizeForest(
-      forest.features,
-      W,
-      H,
-      (lon) => ((lon - w) / (e - w)) * W,
-      (lat) => ((n - lat) / (n - s)) * H,
-    ),
+    rasterizePolygons(forest.features, W, H, toPx, toPy),
     W,
     H,
-    blurR,
+    Math.max(1, Math.round(230 / mPerPx)),
+  );
+  const waterMask = blurMask(
+    rasterizePolygons(water.features, W, H, toPx, toPy),
+    W,
+    H,
+    Math.max(1, Math.round(90 / mPerPx)),
   );
 
   console.log('  composing…');
@@ -777,6 +799,7 @@ export async function bakeSingle({ bbox, size }, outPath, { writeFile, mkdir }) 
         slopeDeg,
         aspect,
         fm: forestMask[y * W + x] / 255,
+        wm: waterMask[y * W + x] / 255,
         U,
         V,
         zEff,

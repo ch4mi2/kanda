@@ -263,6 +263,12 @@ the `pmtiles://` protocol is registered unconditionally and is multi-archive.
      offset**, resampling the DEM directly — not from adjacent output pixels.
      Diff adjacent output pixels at z14 and the 38 m DEM grid prints through the
      rock mask as blocky patches.
+   - **`water.geojson` is rasterised into the bake and masked out** (like the
+     forest raster, but subtracting). Reservoirs sit at ~440 m so the `h<=1`
+     sea guard misses them; without this the compositor paints grain + canopy
+     across the whole reservoir footprint and it leaks past the `water` fill's
+     simplified geometry at every shoreline. Rivers (lines, not polygons) are
+     not masked — thin and covered by the `rivers` layer.
    - **Two raster sources, crossfaded**, not one. A single source with
      `maxzoom: 14` makes MapLibre request z13/z14 *everywhere* and the texture
      goes blank above z12 across most of the island. `texture-base` (z10–12,

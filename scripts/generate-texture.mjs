@@ -39,8 +39,9 @@ import {
   TILE_OUT_DIR,
   bakeSingle,
   buildForestRaster,
+  buildWaterRaster,
   emptyTilePng,
-  forestRasterDims,
+  rasterDims,
 } from './lib/texture-core.mjs';
 
 const HERE = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
@@ -155,11 +156,15 @@ async function bakeTilesParallel(opts) {
   const start = Date.now();
   const nWorkers = opts.workers ?? Math.max(1, availableParallelism() - 1);
 
-  // Shared forest raster: build once, hand the workers a SharedArrayBuffer view.
-  const { W: fW, H: fH } = forestRasterDims();
-  const forestSab = new SharedArrayBuffer(fW * fH);
-  console.log(`forest raster ${fW}x${fH} (SharedArrayBuffer ${(fW * fH / 1e6).toFixed(1)} MB), rasterising…`);
-  await buildForestRaster(new Uint8Array(forestSab));
+  // Shared forest + water rasters: build once, hand the workers SAB views.
+  const { W: rW, H: rH } = rasterDims();
+  const forestSab = new SharedArrayBuffer(rW * rH);
+  const waterSab = new SharedArrayBuffer(rW * rH);
+  console.log(`landcover rasters ${rW}x${rH} x2 (${(2 * rW * rH / 1e6).toFixed(1)} MB shared), rasterising…`);
+  await Promise.all([
+    buildForestRaster(new Uint8Array(forestSab)),
+    buildWaterRaster(new Uint8Array(waterSab)),
+  ]);
 
   const batches = planBatches(opts);
   const totalTiles = batches.reduce((a, b) => a + b.tiles.length, 0);
@@ -199,7 +204,13 @@ async function bakeTilesParallel(opts) {
     }
   }
 
-  await runWorkerPool(batches, WORKER, { forestSab, forestW: fW, forestH: fH }, nWorkers, onResult);
+  await runWorkerPool(
+    batches,
+    WORKER,
+    { forestSab, waterSab, rasterW: rW, rasterH: rH },
+    nWorkers,
+    onResult,
+  );
 
   const secs = ((Date.now() - start) / 1000).toFixed(1);
   console.log(`\n${written} tiles in ${secs}s — ${(bytes / 1e6).toFixed(1)} MB, ${empty} empty`);
