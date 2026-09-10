@@ -123,16 +123,6 @@ export interface ShoreSkin {
   sandTopM: number;
 }
 
-/** Billboard-tree sprite colours (src/data/trees.geojson, pre-generated).
- *  The icon is a flat cartoon tree drawn on a canvas once at load. */
-export interface FoliageSkin {
-  trunk: string;
-  /** Canopy base (the bulk of the blob). */
-  canopy: string;
-  /** Lighter canopy highlight for a hint of form. */
-  canopyLight: string;
-}
-
 /** Water-body and river name-label colours (src/data/water|rivers.geojson —
  *  both carry `name`). */
 export interface HydroLabelSkin {
@@ -176,8 +166,6 @@ export interface Skin {
   /** Forest-block tint (src/data/forest.geojson). Use an rgba with alpha < 1
    *  so the elevation ramp and hillshade still read through it as texture. */
   forest: string;
-  /** Billboard-tree sprite colours (src/data/trees.geojson). */
-  foliage: FoliageSkin;
   /** Lake / river name-label colours. */
   hydroLabel: HydroLabelSkin;
   hillshade: HillshadeSkin;

@@ -67,13 +67,6 @@ export const KANDA_SKIN: Skin = {
   // Deep blue-green, half-transparent — darkens the forested blocks (Sinharaja,
   // Knuckles, Peak Wilderness...) without hiding the relief under them.
   forest: 'rgba(44, 92, 66, 0.5)',
-  // Cartoon broadleaf tree, deliberately a couple of shades off the forest
-  // tint so a scatter of them over a wooded hillside reads as canopy, not noise.
-  foliage: {
-    trunk: '#6b4a2f',
-    canopy: '#2c6b43',
-    canopyLight: '#43935e',
-  },
   // Deep teal on the water names, a lighter blue on the rivers — both cool
   // enough to sit apart from the warm peak/contour labels, with a paper halo.
   hydroLabel: {

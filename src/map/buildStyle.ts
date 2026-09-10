@@ -25,7 +25,6 @@ import waterDepthUrl from '../data/water-depth.png';
 // above z12 across most of the island.
 const TEXTURE_BASE_LAYER_ID = 'terrain-texture-base';
 const TEXTURE_HIGHLANDS_LAYER_ID = 'terrain-texture-highlands';
-export const TEXTURE_LAYER_IDS = [TEXTURE_BASE_LAYER_ID, TEXTURE_HIGHLANDS_LAYER_ID];
 
 function textureLayers(): StyleSpecification['layers'] {
   if (Object.keys(textureSourceSpecs()).length === 0) return [];

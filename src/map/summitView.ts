@@ -11,7 +11,6 @@ import {
   SUMMIT_PITCH_MIN,
 } from '../config/tiles';
 import { destinationPoint } from './nearbyPeaks';
-import { setTreesMinZoom, TREE_MIN_ZOOM } from './treesLayer';
 
 // Summit view — the thing Phase 5B exists for. Put the camera *on* a peak at
 // eye level and let the user spin 360°. Every hard part is a MapLibre 6.8
@@ -195,9 +194,6 @@ export function createSummitView(map: MLMap, deps: SummitDeps): SummitView {
       map.setMaxPitch(SUMMIT_MAX_PITCH);
       map.setCenterClampedToGround(false);
       map.setTransformCameraUpdate(hold as never);
-      // Summit camera sits at a low mercator zoom; show forest anyway so the
-      // foreground has some life.
-      setTreesMinZoom(map, 0);
 
       applyExaggeration();
       isActive = true;
@@ -213,7 +209,6 @@ export function createSummitView(map: MLMap, deps: SummitDeps): SummitView {
       map.setCenterClampedToGround(true);
       map.setMaxPitch(PITCH_MAX);
       map.setMaxBounds(MAP_BOUNDS);
-      setTreesMinZoom(map, TREE_MIN_ZOOM);
       desired = null;
       // Resume the adaptive-exaggeration curve before the camera move so the
       // fly-back doesn't briefly show 1.2x terrain.

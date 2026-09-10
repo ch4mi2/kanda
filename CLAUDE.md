@@ -52,15 +52,11 @@ src/
                       icon; setPeakElevationFloor() for the filter chips. Label
                       size/opacity ramp with zoom so distance is felt (5A.4).
                       setPeaksVisible() — summit view hides the tiers.
-    treesLayer.ts     Billboard tree sprites over the forest blocks (canvas
-                      icon, colours from Skin.foliage). Hidden below z10.3;
-                      summit view lowers that. src/data/trees.geojson.
-                      Kept small — billboards are constant SCREEN size, so a
-                      tree big enough to read up close is huge on a far ridge.
-    layerToggles.ts   Groups the optional furniture (contours / trees / water
-                      names) so the dock chips can switch it. Contours ship
-                      OFF — closed 200 m rings read as a wireframe grid at an
-                      oblique angle.
+    layerToggles.ts   Groups the optional furniture (contours / water names)
+                      so the dock chips can switch it. Contours ship OFF —
+                      closed 200 m rings read as a wireframe grid at an oblique
+                      angle. The terrain texture isn't a toggle: it's part of
+                      the base map, on whenever VITE_TEXTURE_MODE is set.
     nearbyPeaks.ts    Haversine, initial-bearing, destinationPoint maths for
                       the nearby list and summit view.
   components/         PeakCard ("Stand here" → summit view), NearbyPeaks,
@@ -77,8 +73,6 @@ src/
                       -> deep blue). npm run generate:water-depth. See gotcha #13.
   data/rivers.geojson ~450 named rivers, simplified.
   data/forest.geojson ~270 forest blocks >700 ha (OSM, ODbL).
-  data/trees.geojson  ~5k point "trees" scattered inside forest.geojson,
-                      pre-generated. npm run generate:trees (deterministic).
   data/contours.geojson  highland contour lines 800-2400 m, pre-generated
                       from the DEM (public domain). npm run generate:contours
                       — run it AFTER repair:dem.
@@ -90,7 +84,7 @@ scripts/
   fetch-terrain.mjs       AWS → public/tiles/terrain/ (~2,024 tiles, 54 MB)
   repair-dem.mjs          Repair DEM spikes/pits + one light smooth pass
   generate-contours.mjs   local DEM → src/data/contours.geojson (highlands)
-  generate-trees.mjs      forest.geojson → src/data/trees.geojson (tree scatter)
+  generate-water-depth.mjs  water.geojson → src/data/water-depth.png
   generate-texture.mjs    DEM + forest → public/tiles/texture/{z}/{x}/{y}.png
                           (procedural diffuse detail drape). --tiles bakes
                           z10-12 island-wide + z13-14 over the highlands via a
@@ -379,7 +373,6 @@ npm run fetch:terrain   # download the 54 MB tile pyramid (resumable)
 npm run repair:dem      # repair DEM spikes/pits + one smooth pass (in place)
 npm run fetch:glyphs    # download the self-hosted glyph PBFs
 npm run generate:contours  # local DEM -> contours.geojson (after repair:dem)
-npm run generate:trees  # forest.geojson -> trees.geojson (deterministic)
 npm run generate:water-depth  # water.geojson -> src/data/water-depth.png (committed)
 npm run generate:texture # DEM+forest -> public/tiles/texture/ pyramid (worker pool, ~10 min)
 npm run pack:pmtiles    # re-pack the loose DEM pyramid into terrain.pmtiles
@@ -407,8 +400,9 @@ Screenshots lie less than assumptions here. Always:
   broken.
 - **Texture:** it only draws z10+ (nothing at island view — correct). Zoom into
   the Knuckles to ~z13-14 and the surface picks up canopy mottle / rock
-  striation / grain; toggle the "Texture" chip to A/B. Watch the z12→z13
-  handover while wheeling *slowly* — the two-source crossfade should sum to ~1
+  striation / grain; `VITE_TEXTURE_MODE=off` to A/B against the flat ramp.
+  Watch the z12→z13 handover while wheeling *slowly* — the crossfade should
+  sum to ~1
   with no double-darkening or pop. Seams: pan across tile boundaries at a fixed
   zoom; any visible grid means the world-coordinate noise derivation broke.
   For a fast palette check without a 10-min bake, `generate-texture.mjs --single

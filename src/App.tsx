@@ -65,7 +65,7 @@ export default function App() {
     setPeakElevationFloor(map, elevationFloor);
   }, [map, elevationFloor]);
 
-  // Optional map furniture (contours, trees, hydronyms).
+  // Optional map furniture (contours, hydronyms).
   useEffect(() => {
     if (!map || !map.isStyleLoaded()) return;
     applyLayerVisibility(map, layerVis);

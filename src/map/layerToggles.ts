@@ -1,9 +1,9 @@
 import type { Map as MLMap } from 'maplibre-gl';
-import { TREES_LAYER_ID } from './treesLayer';
-import { TEXTURE_LAYER_IDS } from './buildStyle';
 
 // Optional map furniture the user can switch off. Peaks aren't here — they're
-// the point of the app and have their own elevation-floor chips.
+// the point of the app and have their own elevation-floor chips. The terrain
+// texture isn't here either: it's part of the base map now, on whenever
+// VITE_TEXTURE_MODE is set (no per-session toggle).
 //
 // Contours default OFF: at an oblique camera angle a few hundred closed
 // 200 m rings read as a wireframe grid over the terrain, not as elevation.
@@ -11,28 +11,20 @@ import { TEXTURE_LAYER_IDS } from './buildStyle';
 // available rather than being deleted.
 export const LAYER_GROUPS: Record<string, readonly string[]> = {
   contours: ['contours', 'contour-labels'],
-  // Prototype — currently only covers the Knuckles window, so it's worth
-  // being able to A/B it against the plain ramp.
-  texture: TEXTURE_LAYER_IDS,
-  trees: [TREES_LAYER_ID],
   hydronyms: ['water-labels-major', 'water-labels-minor', 'river-labels'],
 };
 
-export type LayerGroup = 'contours' | 'texture' | 'trees' | 'hydronyms';
+export type LayerGroup = 'contours' | 'hydronyms';
 
 export type LayerVisibility = Record<LayerGroup, boolean>;
 
 export const DEFAULT_LAYER_VISIBILITY: LayerVisibility = {
   contours: false,
-  texture: true,
-  trees: true,
   hydronyms: true,
 };
 
 export const LAYER_GROUP_LABELS: Record<LayerGroup, string> = {
   contours: 'Contours',
-  texture: 'Texture',
-  trees: 'Trees',
   hydronyms: 'Water names',
 };
 
