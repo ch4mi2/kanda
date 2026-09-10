@@ -16,8 +16,9 @@
     "repair:dem": "node scripts/repair-dem.mjs --repair --smooth",
     "generate:contours": "node scripts/generate-contours.mjs",
     "generate:trees": "node scripts/generate-trees.mjs",
-    "generate:texture": "node scripts/generate-texture.mjs",
-    "pack:pmtiles": "node scripts/pack-pmtiles.mjs"
+    "generate:texture": "node scripts/generate-texture.mjs --tiles",
+    "pack:pmtiles": "node scripts/pack-pmtiles.mjs",
+    "pack:texture": "node scripts/pack-pmtiles.mjs --dir public/tiles/texture --out public/tiles/texture.pmtiles --name kanda-texture --desc \"Procedural diffuse detail texture for Sri Lanka's highlands\" --center-zoom 11"
   },
   "dependencies": {
     "@fontsource/bricolage-grotesque": "^5.3.0",
