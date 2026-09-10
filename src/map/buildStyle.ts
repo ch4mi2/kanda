@@ -1,5 +1,10 @@
 import type { StyleSpecification } from 'maplibre-gl';
-import { DEFAULT_CENTER, terrainSourceSpec, textureSourceSpecs } from '../config/tiles';
+import {
+  DEFAULT_CENTER,
+  WATER_DEPTH,
+  terrainSourceSpec,
+  textureSourceSpecs,
+} from '../config/tiles';
 import { DEFAULT_SKIN, type Skin } from '../skins';
 import { sampleColorRamp } from '../skins/color';
 import { sunPosition, type SunPosition } from './sunPosition';
@@ -9,6 +14,8 @@ import waterUrl from '../data/water.geojson?url';
 import riversUrl from '../data/rivers.geojson?url';
 import forestUrl from '../data/forest.geojson?url';
 import contoursUrl from '../data/contours.geojson?url';
+// Depth-shaded inland-water surface (npm run generate:water-depth).
+import waterDepthUrl from '../data/water-depth.png';
 
 // Baked procedural diffuse-detail texture, draped between `forest` and the
 // hillshade passes (npm run generate:texture -> pack:texture). Two sources
@@ -209,8 +216,6 @@ export function buildStyle(
   skin: Skin = DEFAULT_SKIN,
   sun: SunPosition = currentSun(),
 ): StyleSpecification {
-  // Shallowest sea colour — reused as the inland-water shallows rim.
-  const shallowWater = skin.shore.byDepth.at(-1)?.[1] ?? skin.lake;
   return {
     version: 8,
     // Self-hosted glyph PBFs (public/fonts/, npm run fetch:glyphs). Same
@@ -224,6 +229,15 @@ export function buildStyle(
       forest: { type: 'geojson', data: forestUrl },
       contours: { type: 'geojson', data: contoursUrl },
       ...(textureSourceSpecs() as StyleSpecification['sources']),
+      ...(WATER_DEPTH.mode === 'on'
+        ? {
+            'water-depth': {
+              type: 'image' as const,
+              url: waterDepthUrl,
+              coordinates: WATER_DEPTH.corners,
+            },
+          }
+        : {}),
     },
     layers: [
       {
@@ -307,23 +321,25 @@ export function buildStyle(
           'fill-outline-color': skin.river,
         },
       },
-      // Soft shallows rim on inland water — the same turquoise the sea's surf
-      // line uses. A flat `lake` fill read as a plastic cut-out next to the
-      // textured land (same critique that drove the sea's depth ramp, gotcha
-      // #13); a blurred edge band gives reservoirs a little depth without a
-      // spatial gradient (which fills can't do).
-      {
-        id: 'water-shallows',
-        type: 'line',
-        source: 'water',
-        minzoom: 8,
-        paint: {
-          'line-color': shallowWater,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 12, 3.5, 14, 8],
-          'line-blur': ['interpolate', ['linear'], ['zoom'], 8, 0.5, 12, 3, 14, 7],
-          'line-opacity': 0.5,
-        },
-      },
+      // Depth-shaded surface over the flat `lake` fill: turquoise shallows at
+      // the shore grading to a deeper blue in open water, from a pre-baked
+      // image (maplibre-gl 6 has no `raster-color` to ramp it live). Same
+      // critique that drove the sea's bathymetric ramp — a flat reservoir
+      // reads as a cut-out next to the textured land (gotcha #13/#14).
+      ...(WATER_DEPTH.mode === 'on'
+        ? ([
+            {
+              id: 'water-depth',
+              type: 'raster',
+              source: 'water-depth',
+              paint: {
+                'raster-opacity': ['interpolate', ['linear'], ['zoom'], 7, 0.7, 10, 0.92],
+                'raster-resampling': 'linear',
+                'raster-fade-duration': 0,
+              },
+            },
+          ] as StyleSpecification['layers'])
+        : []),
       // Highland contours (src/data/contours.geojson, 800-2400 m). Only worth
       // drawing once you're looking at a massif — noise at island view.
       {

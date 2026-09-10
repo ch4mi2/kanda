@@ -72,6 +72,9 @@ src/
   data/peaks.geojson  198 named OSM peaks. Committed — the app never calls
                       Overpass at runtime.
   data/water.geojson  ~740 water bodies (reservoirs, tanks) 50-60,000 ha.
+  data/water-depth.png  Depth-shaded inland-water surface, one committed RGBA
+                      image draped over the flat `lake` fill (shore turquoise
+                      -> deep blue). npm run generate:water-depth. See gotcha #13.
   data/rivers.geojson ~450 named rivers, simplified.
   data/forest.geojson ~270 forest blocks >700 ha (OSM, ODbL).
   data/trees.geojson  ~5k point "trees" scattered inside forest.geojson,
@@ -243,6 +246,15 @@ the `pmtiles://` protocol is registered unconditionally and is multi-archive.
    is dark, which would break the monotonic-L\* rule (lstar.test.ts). Keep
    `background` matched to the deepest `shore` stop or the edge of DEM
    coverage seams against open ocean.
+   **Inland water** got the same treatment after Phase 6 — a flat `lake` fill
+   read as a cut-out next to the textured land. maplibre-gl 6 has no
+   `raster-color`, so the shore→deep ramp is *pre-baked* into
+   `src/data/water-depth.png` (`generate:water-depth`: rasterise water.geojson,
+   iterate a box blur for a distance-from-shore proxy — SRTM saw the full
+   reservoirs so there's no real bathymetry — then apply the ramp + a coarse
+   mottle) and draped as one `image` source over the fill. One committed z10
+   image (~210 KB); it goes soft past ~z13 but the `water` fill under it keeps
+   the shoreline crisp.
 14. **Terrain texture drape — shipped as tiles (Phase 6).** `color-relief`
    paints one flat colour per elevation band; reference terrain renders get
    their richness from a diffuse texture map (satellite imagery, for them).
@@ -368,6 +380,7 @@ npm run repair:dem      # repair DEM spikes/pits + one smooth pass (in place)
 npm run fetch:glyphs    # download the self-hosted glyph PBFs
 npm run generate:contours  # local DEM -> contours.geojson (after repair:dem)
 npm run generate:trees  # forest.geojson -> trees.geojson (deterministic)
+npm run generate:water-depth  # water.geojson -> src/data/water-depth.png (committed)
 npm run generate:texture # DEM+forest -> public/tiles/texture/ pyramid (worker pool, ~10 min)
 npm run pack:pmtiles    # re-pack the loose DEM pyramid into terrain.pmtiles
 npm run pack:texture    # pack public/tiles/texture/ into texture.pmtiles (leaf dirs)

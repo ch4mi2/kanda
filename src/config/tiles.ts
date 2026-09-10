@@ -86,6 +86,22 @@ export const TEXTURE = {
     'Surface texture: procedurally baked from the elevation data + OpenStreetMap landcover (ODbL)',
 };
 
+// Pre-rendered depth-shaded surface for inland water (reservoirs, tanks) —
+// npm run generate:water-depth bakes src/data/water-depth.png. maplibre-gl 6
+// has no `raster-color`, so the shore->deep ramp is baked into the pixels and
+// draped as one `image` source over the flat `lake` fill. Corners are the
+// island bbox in the order MapLibre wants (TL, TR, BR, BL).
+export type WaterDepthMode = 'on' | 'off';
+export const WATER_DEPTH = {
+  mode: (import.meta.env.VITE_WATER_DEPTH ?? 'on') as WaterDepthMode,
+  corners: [
+    [SRI_LANKA_BBOX[0], SRI_LANKA_BBOX[3]],
+    [SRI_LANKA_BBOX[2], SRI_LANKA_BBOX[3]],
+    [SRI_LANKA_BBOX[2], SRI_LANKA_BBOX[1]],
+    [SRI_LANKA_BBOX[0], SRI_LANKA_BBOX[1]],
+  ] as [[number, number], [number, number], [number, number], [number, number]],
+};
+
 /**
  * Raster source specs for the texture, keyed by source id. **Two** sources, not
  * one: a single source with `maxzoom: 14` makes MapLibre stop overzooming at 14
