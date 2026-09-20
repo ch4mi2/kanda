@@ -320,6 +320,25 @@ the `pmtiles://` protocol is registered unconditionally and is multi-archive.
      View. That's the *opposite* sign to the overhead map's rotate gestures
      (gotcha #1) and it's deliberate; Chamithu called the other way "inverted".
      Arrow keys stay direct-look.
+15. **`public/` is copied into `dist/` by Vite regardless of tile mode.**
+   `VITE_TILE_MODE`/`VITE_TEXTURE_MODE` only control which URLs the *app code*
+   requests at runtime — they don't gate what Vite bundles. If you've ever run
+   the local tile pipeline, `public/tiles/terrain.pmtiles` +
+   `texture.pmtiles` physically exist on disk and get copied into every build
+   from then on, `remote`/`off` env vars or not. This is harmless for `npm run
+   dev`/`preview`, but bit a Workers deploy: `wrangler deploy` rejects any
+   asset over 25 MiB, and `terrain.pmtiles` is ~48 MB. A fresh CI checkout
+   never has `public/tiles/` (gitignored) so `deploy.yml` is unaffected — this
+   only bites a *local* `wrangler deploy` test on a machine that has the local
+   tile pipeline set up. Move `public/tiles/` aside before test-deploying
+   locally, or just trust CI.
+16. **`wrangler-action`'s default Wrangler is v3, not v4.** An assets-only
+   Worker (no `main` field, just `assets.directory`) needs Wrangler 4 —
+   deploying from a v3 fallback fails with `Missing entry-point` even though
+   the config is correct. `deploy.yml` pins `wranglerVersion: "4"` in the
+   `cloudflare/wrangler-action@v3` step (the `@v3` there is the GitHub Action's
+   own version, unrelated to the Wrangler CLI version it installs — easy to
+   conflate the two).
 
 ## Tests
 
@@ -387,7 +406,8 @@ the texture pyramid and both `.pmtiles` archives are not.
 
 ## Deployment
 
-Public since the open-source launch. `github.com/ch4mi2/kanda`, MIT.
+Public since the open-source launch. `github.com/ch4mi2/kanda`, MIT. Live at
+https://kanda.ch4mi2.workers.dev.
 
 **Branch strategy.** `main` is the default and is protected (PR + passing CI +
 1 approval, no force pushes). `master` still exists as the original local branch;
@@ -399,12 +419,15 @@ day-to-day work branches off `main` as `feature/*` / `bugfix/*` / `docs/*`.
 - `deploy.yml` — push to `main` only: builds with no `VITE_TILE_MODE`/
   `VITE_TEXTURE_MODE` set, so it falls back to their defaults (`remote` terrain
   from AWS Open Data, texture `off`) — no object storage needed for this to
-  work. Then `wrangler deploy` ships `dist/` as static assets on a Cloudflare
-  Worker named `kanda` (`kanda.<account-subdomain>.workers.dev`) — see
-  `wrangler.jsonc`. Not Cloudflare Pages: Workers + static assets is
-  Cloudflare's current direction and there's no Worker code needed since the
-  whole app is a static build (no `main` entry in `wrangler.jsonc`). Repo
-  secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+  work. Then `wrangler deploy` ships `dist/` as static assets on the
+  Cloudflare Worker named `kanda` (`kanda.ch4mi2.workers.dev` — `ch4mi2` is
+  the account's shared `workers.dev` subdomain, also used by the unrelated
+  `labflow` Worker on the same account). See `wrangler.jsonc`, and gotchas
+  #15-16 for the two traps already hit setting this up. Not Cloudflare Pages:
+  Workers + static assets is Cloudflare's current direction and there's no
+  Worker code needed since the whole app is a static build (no `main` entry
+  in `wrangler.jsonc`). Repo secrets: `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID`.
 
 **Tiles in production — not yet set up (deliberate).** The site currently
 serves the slower `remote`/`off` defaults rather than local pmtiles, to avoid
