@@ -22,13 +22,13 @@ jobs:
 
       - run: npm ci
 
+      # No VITE_TILE_MODE/VITE_TEXTURE_MODE set: build uses their defaults
+      # (remote terrain tiles from AWS Open Data, texture off) so this deploy
+      # needs no object storage. Switch to pmtiles once terrain.pmtiles +
+      # texture.pmtiles are hosted somewhere with HTTP range support (R2 etc.)
+      # — see CLAUDE.md "Tiles in production".
       - name: Build
         run: npm run build
-        env:
-          VITE_TILE_MODE: pmtiles
-          VITE_TEXTURE_MODE: pmtiles
-          # Public Cloudflare R2 origin holding terrain.pmtiles + texture.pmtiles.
-          VITE_TILE_BASE_URL: ${{ secrets.TILE_BASE_URL }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

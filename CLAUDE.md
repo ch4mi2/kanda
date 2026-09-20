@@ -15,9 +15,9 @@ You're on a summit, you look around, the app names what you're seeing. Every
 design call follows from that — most importantly, **rotating the camera is the
 primary interaction**, not an incidental one.
 
-`Kanda` (කන්ද) is Sinhala for "mountain". Hobby project; donations first,
-monetization possibly later. The folder is still named `SriLankaMountains` —
-that's deliberate, nothing depends on it, rename it later if you want.
+`Kanda` (කන්ද) is Sinhala for "mountain". Hobby project, not monetized. The
+folder is still named `SriLankaMountains` — that's deliberate, nothing depends
+on it, rename it later if you want.
 
 ## Architecture
 
@@ -396,20 +396,26 @@ day-to-day work branches off `main` as `feature/*` / `bugfix/*` / `docs/*`.
 **CI/CD** (`.github/workflows/`):
 - `ci.yml` — every PR and push to `main`/`master`: `npm ci` → lint → `tsc -b` →
   `npm test` → `npm run build`. No tile data needed.
-- `deploy.yml` — push to `main` only: builds with `VITE_TILE_MODE=pmtiles`,
-  `VITE_TEXTURE_MODE=pmtiles`, `VITE_TILE_BASE_URL` from the `TILE_BASE_URL`
-  secret, then `wrangler pages deploy dist --project-name=kanda` to Cloudflare
+- `deploy.yml` — push to `main` only: builds with no `VITE_TILE_MODE`/
+  `VITE_TEXTURE_MODE` set, so it falls back to their defaults (`remote` terrain
+  from AWS Open Data, texture `off`) — no object storage needed for this to
+  work. Then `wrangler pages deploy dist --project-name=kanda` to Cloudflare
   Pages (`kanda.pages.dev`). Repo secrets: `CLOUDFLARE_API_TOKEN`,
-  `CLOUDFLARE_ACCOUNT_ID`, `TILE_BASE_URL`.
+  `CLOUDFLARE_ACCOUNT_ID`.
 
-**Tiles in production.** The `.pmtiles` archives are too big for git, so they
-live in a public Cloudflare R2 bucket (`kanda-tiles`), uploaded by hand after a
-`pack:pmtiles` / `pack:texture` run. `src/config/tiles.ts` prepends
-`VITE_TILE_BASE_URL` (the R2 public origin, no trailing slash) to the
-`pmtiles://` URLs — empty in dev (site root), the R2 origin in the deployed
-build. R2 CORS must allow `kanda.pages.dev` and expose `Range` +
-`Content-Range` (PMTiles is range requests). Re-uploading the archives is the
-whole "deploy new terrain data" step — Pages doesn't see them.
+**Tiles in production — not yet set up (deliberate).** The site currently
+serves the slower `remote`/`off` defaults rather than local pmtiles, to avoid
+requiring a Cloudflare R2 subscription (needs a card on file even on the free
+tier) before the project had any users. To switch it over later: put a card on
+Cloudflare, enable R2, create a public bucket (e.g. `kanda-tiles`) with CORS
+allowing `kanda.pages.dev` and exposing `Range`/`Content-Range` (PMTiles is
+range requests), run `pack:pmtiles` / `pack:texture` and upload the two
+archives, add a `TILE_BASE_URL` repo secret pointing at the bucket's public
+origin, and set `VITE_TILE_MODE`/`VITE_TEXTURE_MODE` to `pmtiles` in
+`deploy.yml`'s build step. `src/config/tiles.ts` already prepends
+`VITE_TILE_BASE_URL` to the `pmtiles://` URLs — empty string in dev (site
+root), the R2 origin in that build — so no app code changes needed, only the
+workflow env and the three pieces of infra above.
 
 ## Verifying map work
 
