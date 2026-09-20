@@ -9,7 +9,6 @@ valley. Rotating the camera is the whole point.
 
 [![CI](https://github.com/ch4mi2/kanda/actions/workflows/ci.yml/badge.svg)](https://github.com/ch4mi2/kanda/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-ffdd00.svg)](https://www.buymeacoffee.com/chamithu)
 
 **Live:** https://kanda.pages.dev
 
@@ -66,9 +65,10 @@ With `VITE_TILE_MODE=local` (or `pmtiles`) the app never touches the network.
 Vite + React + [MapLibre GL JS](https://maplibre.org/), used imperatively.
 MapLibre's `color-relief` layer paints the map from the elevation data already
 loaded for the 3D terrain — one dataset, no licensing questions, and a better
-look for orientation than a satellite blur. Packed elevation and texture tiles
-ship as [PMTiles](https://protomaps.com/docs/pmtiles) archives served over HTTP
-range requests; in production they come from Cloudflare R2.
+look for orientation than a satellite blur. Locally, packed elevation and
+texture tiles can ship as [PMTiles](https://protomaps.com/docs/pmtiles)
+archives served over HTTP range requests; the live deploy currently streams
+terrain straight from AWS Open Data instead (see `CLAUDE.md` for why).
 
 Architecture, design decisions, and the traps that have already cost time are
 documented in [`CLAUDE.md`](CLAUDE.md).
@@ -90,12 +90,6 @@ Attribution is shown in-app and is not optional — see
 Issues and PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup,
 branch naming, and the checks CI runs. This project follows the
 [Contributor Covenant](CODE_OF_CONDUCT.md).
-
-## Support
-
-Kanda is a free hobby project. Hosting the terrain tiles costs a little each
-month — if it's useful to you, you can help cover that:
-[**Buy Me a Coffee**](https://www.buymeacoffee.com/chamithu).
 
 ## License
 
