@@ -10,7 +10,7 @@ valley. Rotating the camera is the whole point.
 [![CI](https://github.com/ch4mi2/kanda/actions/workflows/ci.yml/badge.svg)](https://github.com/ch4mi2/kanda/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Live:** https://kanda.pages.dev
+**Live:** https://kanda.chamithu4.workers.dev
 
 ## Features
 

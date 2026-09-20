@@ -399,16 +399,19 @@ day-to-day work branches off `main` as `feature/*` / `bugfix/*` / `docs/*`.
 - `deploy.yml` — push to `main` only: builds with no `VITE_TILE_MODE`/
   `VITE_TEXTURE_MODE` set, so it falls back to their defaults (`remote` terrain
   from AWS Open Data, texture `off`) — no object storage needed for this to
-  work. Then `wrangler pages deploy dist --project-name=kanda` to Cloudflare
-  Pages (`kanda.pages.dev`). Repo secrets: `CLOUDFLARE_API_TOKEN`,
-  `CLOUDFLARE_ACCOUNT_ID`.
+  work. Then `wrangler deploy` ships `dist/` as static assets on a Cloudflare
+  Worker named `kanda` (`kanda.<account-subdomain>.workers.dev`) — see
+  `wrangler.jsonc`. Not Cloudflare Pages: Workers + static assets is
+  Cloudflare's current direction and there's no Worker code needed since the
+  whole app is a static build (no `main` entry in `wrangler.jsonc`). Repo
+  secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 
 **Tiles in production — not yet set up (deliberate).** The site currently
 serves the slower `remote`/`off` defaults rather than local pmtiles, to avoid
 requiring a Cloudflare R2 subscription (needs a card on file even on the free
 tier) before the project had any users. To switch it over later: put a card on
 Cloudflare, enable R2, create a public bucket (e.g. `kanda-tiles`) with CORS
-allowing `kanda.pages.dev` and exposing `Range`/`Content-Range` (PMTiles is
+allowing the deployed origin and exposing `Range`/`Content-Range` (PMTiles is
 range requests), run `pack:pmtiles` / `pack:texture` and upload the two
 archives, add a `TILE_BASE_URL` repo secret pointing at the bucket's public
 origin, and set `VITE_TILE_MODE`/`VITE_TEXTURE_MODE` to `pmtiles` in
