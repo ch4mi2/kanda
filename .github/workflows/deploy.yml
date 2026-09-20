@@ -35,4 +35,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler-action's default fallback (3.x) doesn't support an
+          # assets-only Worker with no `main` field; that landed in Wrangler 4.
+          wranglerVersion: "4"
           command: deploy
