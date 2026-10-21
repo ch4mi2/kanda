@@ -17,6 +17,9 @@ import GestureHint from './components/GestureHint';
 import SummitBar from './components/SummitBar';
 import CompassStrip from './components/CompassStrip';
 import NavCluster from './components/NavCluster';
+import SkinPicker from './components/SkinPicker';
+import SkinFab from './components/SkinFab';
+import { SKINS, loadSavedSkin, saveSkin, type Skin } from './engine/skins';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
 import { slstNowMinutes } from './map/sunPosition';
 import { initialBearingDeg, type NearbyPeak, type PeakFeature } from './map/nearbyPeaks';
@@ -53,6 +56,7 @@ export default function AppThree() {
   const [engine, setEngine] = useState<Engine | null>(null);
   const [elevationFloor, setElevationFloor] = useState(0);
   const [bearing, setBearing] = useState(0);
+  const [skin, setSkin] = useState<Skin>(loadSavedSkin);
   const peaks = usePeaks();
   const labelsRef = useRef<PeakLabels | null>(null);
   const selectRef = useRef<(f: PeakFeature) => void>(() => {});
@@ -129,6 +133,11 @@ export default function AppThree() {
     [engine, viewpoint],
   );
 
+  const chooseSkin = (s: Skin) => {
+    setSkin(s);
+    saveSkin(s);
+  };
+
   const stand = (peak: SelectedPeak) => {
     setViewpoint(peak);
     setSelectedPeak(null);
@@ -138,7 +147,7 @@ export default function AppThree() {
 
   return (
     <div className="app">
-      <ThreeView exaggeration={exaggeration} sunMinutes={sunMinutes} onEngineReady={setEngine} />
+      <ThreeView exaggeration={exaggeration} sunMinutes={sunMinutes} skin={skin} onEngineReady={setEngine} />
 
       {viewpoint ? (
         <>
@@ -169,9 +178,16 @@ export default function AppThree() {
           </div>
 
           <div className="dock">
+            <SkinPicker
+              skins={SKINS}
+              value={skin}
+              onChange={chooseSkin}
+            />
             <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
             <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
           </div>
+
+          <SkinFab skins={SKINS} value={skin} onChange={chooseSkin} />
 
           <NavCluster
             bearing={bearing}

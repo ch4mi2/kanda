@@ -5,6 +5,26 @@
 export type GeometryMode = 'smooth' | 'clay' | 'terrace';
 export type WaterMode = 0 | 1 | 2 | 3; // glints | diamonds | squiggles | clay
 
+export type TreeShape = 'cone' | 'pine' | 'ball' | 'lolly';
+
+export interface TreeStyle {
+  shape: TreeShape;
+  crown: string;
+  crownAlt: string;
+  trunk: string;
+  /** Planting probability per candidate cell inside forest. */
+  density: number;
+  /** Tree size multiplier (trees are drawn chunky on purpose). */
+  scale: number;
+}
+
+export interface CloudStyle {
+  lit: string;
+  shaded: string;
+  /** Hard two-tone (toon) instead of soft shading. */
+  cel: boolean;
+}
+
 export interface Skin {
   id: string;
   name: string;
@@ -21,6 +41,8 @@ export interface Skin {
   /** Fog density per km and the distance (km) where it starts. */
   fogDensity: number;
   fogStart: number;
+  /** > 0 posterises the fog into this many depth layers (paper-cut ridges). */
+  fogBands: number;
 
   // light
   sunColor: string;
@@ -61,6 +83,10 @@ export interface Skin {
   contrast: number;
   vignette: number;
   tiltShift: number;
+
+  // props
+  trees: TreeStyle | null;
+  clouds: CloudStyle | null;
 
   // peak labels
   labelColor: string;

@@ -109,3 +109,62 @@
     display: flex;
   }
 }
+
+.skin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skin-chip__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  flex: none;
+}
+
+/* Phone-only skin switcher (the dock that holds the picker is desktop-only). */
+.skin-fab {
+  position: absolute;
+  right: var(--s3);
+  bottom: calc(var(--s3) + 132px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+
+.app:has(.sheet) .skin-fab {
+  display: none;
+}
+
+.skin-fab__panel {
+  max-width: calc(100vw - 2 * var(--s3));
+}
+
+.skin-fab__btn {
+  appearance: none;
+  border: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  background: var(--paper-90);
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+}
+
+.skin-fab__swatch {
+  width: 22px;
+  height: 22px;
+  border-color: rgba(13, 37, 27, 0.35);
+}
+
+@media (min-width: 721px) {
+  .skin-fab {
+    display: none;
+  }
+}
