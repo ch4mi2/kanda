@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Engine } from './Engine';
-import type { Skin } from './skins';
+import type { Skin } from '../skins';
 
 interface ThreeViewProps {
   /** UI relief multiplier on top of the skin's own exaggeration. */
@@ -14,13 +14,20 @@ interface ThreeViewProps {
 /** Thin React shell around the imperative three.js Engine. */
 export default function ThreeView({ exaggeration, sunMinutes, skin, onEngineReady }: ThreeViewProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
   const engineRef = useRef<Engine | null>(null);
   const latest = useRef({ exaggeration, sunMinutes, skin });
   latest.current = { exaggeration, sunMinutes, skin };
 
   useEffect(() => {
     if (!hostRef.current) return;
-    const engine = new Engine(hostRef.current, latest.current.skin);
+    let engine: Engine;
+    try {
+      engine = new Engine(hostRef.current, latest.current.skin);
+    } catch {
+      setFailed(true); // no WebGL2 (or it is blocked)
+      return;
+    }
     engineRef.current = engine;
     engine.setExaggeration(latest.current.exaggeration);
     engine.setSunMinutes(latest.current.sunMinutes);
@@ -41,5 +48,14 @@ export default function ThreeView({ exaggeration, sunMinutes, skin, onEngineRead
     if (e && e.currentSkin.id !== skin.id) e.applySkin(skin);
   }, [skin]);
 
-  return <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />;
+  return (
+    <div ref={hostRef} style={{ position: 'absolute', inset: 0 }}>
+      {failed && (
+        <p className="engine-error">
+          Kanda draws the map with WebGL 2, which this browser or device could not start. Try another
+          browser, or turn on hardware acceleration.
+        </p>
+      )}
+    </div>
+  );
 }

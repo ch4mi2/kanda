@@ -2,7 +2,7 @@
 // peaks. Cel or soft shading per skin; fogged like everything else.
 
 import * as THREE from 'three';
-import type { CloudStyle } from '../skins';
+import type { CloudStyle } from '../../skins';
 import type { TerrainUniforms } from '../shading/terrain';
 import { COMMON_GLSL } from '../shading/terrain';
 

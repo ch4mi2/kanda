@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { tileFootprint } from '../geo';
 import type { Masks } from '../masks';
-import type { TreeStyle } from '../skins';
+import type { TreeStyle } from '../../skins';
 import { MAX_Z, sampleHeights, type Entry } from '../tiles/TerrainTiles';
 import type { TerrainUniforms } from '../shading/terrain';
 import { COMMON_GLSL, TERRACE_GLSL } from '../shading/terrain';

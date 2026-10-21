@@ -1,178 +1,177 @@
-import { useState, useCallback, useEffect } from 'react';
-import { initialBearingDeg } from './map/nearbyPeaks';
-import type { Map as MLMap } from 'maplibre-gl';
-import MapView from './map/MapView';
+// The three.js app shell (Phase 7). Same chrome as App.tsx - brand, search,
+// chips, sliders, peak sheet, summit bar - driven by the three.js Engine
+// instead of MapLibre. Becomes App.tsx at the 7D cutover.
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ThreeView from './engine/ThreeView';
+import type { Engine } from './engine/Engine';
+import { PeakLabels } from './engine/labels';
 import PeakCard from './components/PeakCard';
 import NearbyPeaks from './components/NearbyPeaks';
 import ExaggerationSlider from './components/ExaggerationSlider';
 import TimeOfDaySlider from './components/TimeOfDaySlider';
-import LayerToggles from './components/LayerToggles';
-import Legend from './components/Legend';
 import Attribution from './components/Attribution';
 import SearchField from './components/SearchField';
 import FilterChips from './components/FilterChips';
 import GestureHint from './components/GestureHint';
 import SummitBar from './components/SummitBar';
-import SummitLabels from './components/SummitLabels';
 import CompassStrip from './components/CompassStrip';
+import NavCluster from './components/NavCluster';
+import SkinPicker from './components/SkinPicker';
+import SkinFab from './components/SkinFab';
+import { SKINS, loadSavedSkin, saveSkin, type Skin } from './skins';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
 import { slstNowMinutes } from './map/sunPosition';
-import { setPeakElevationFloor } from './map/peaksLayer';
-import {
-  applyLayerVisibility,
-  DEFAULT_LAYER_VISIBILITY,
-  type LayerVisibility,
-} from './map/layerToggles';
+import { initialBearingDeg, type NearbyPeak, type PeakFeature } from './map/nearbyPeaks';
 import { usePeaks } from './data/usePeaks';
-import type { NearbyPeak, PeakFeature } from './map/nearbyPeaks';
 import type { SelectedPeak } from './types';
+// Skin label fonts (self-hosted, no CDN). Fredoka is used by the 7C skins.
+import '@fontsource/luckiest-guy/latin-400.css';
+import '@fontsource/fredoka/latin-600.css';
 import './App.css';
+import './engine/engine.css';
 
-/** Build a SelectedPeak from a raw GeoJSON feature, sampling the DEM for
- *  elevation when OSM has no `ele` tag. */
-function toSelected(f: PeakFeature, map: MLMap | null): SelectedPeak {
-  const [lng, lat] = f.geometry.coordinates;
-  const p = f.properties;
-  const sampled =
-    p.ele == null && map ? map.queryTerrainElevation([lng, lat]) : null;
+/** The sun starts where it really is - but opening the app at night should not
+ *  give a black map, so outside daylight it starts at golden-hour 16:00. */
+function initialSunMinutes(): number {
+  const now = slstNowMinutes();
+  return now >= 6.5 * 60 && now <= 17.5 * 60 ? now : 16 * 60;
+}
+
+function selectedFrom(
+  peak: SelectedPeak | PeakFeature['properties'],
+  lng: number,
+  lat: number,
+  engine: Engine | null,
+): SelectedPeak {
+  const sampled = peak.ele == null && engine ? engine.heightAt(lng, lat) : null;
+  const terrain = sampled != null && sampled > 0 ? Math.round(sampled) : null;
   return {
-    ...p,
+    ...peak,
     lng,
     lat,
-    displayEle: p.ele ?? (sampled != null ? Math.round(sampled) : null),
-    eleSource: p.ele != null ? 'osm' : sampled != null ? 'terrain' : 'unknown',
+    displayEle: peak.ele ?? terrain,
+    eleSource: peak.ele != null ? 'osm' : terrain != null ? 'terrain' : 'unknown',
   };
 }
 
-/** Live camera bearing of a MapLibre map (for the compass strip). */
-function useMapBearing(map: MLMap | null): number {
-  const [bearing, setBearing] = useState(0);
-  useEffect(() => {
-    if (!map) return;
-    const update = () => setBearing(map.getBearing());
-    update();
-    map.on('rotate', update);
-    map.on('move', update);
-    return () => {
-      map.off('rotate', update);
-      map.off('move', update);
-    };
-  }, [map]);
-  return bearing;
-}
-
-export default function App() {
+export default function AppThree() {
   const [exaggeration, setExaggeration] = useState(DEFAULT_EXAGGERATION);
-  const [sunMinutes, setSunMinutes] = useState(slstNowMinutes);
+  const [sunMinutes, setSunMinutes] = useState(initialSunMinutes);
   const [selectedPeak, setSelectedPeak] = useState<SelectedPeak | null>(null);
-  // Non-null while standing on a summit (5B). Drives MapView's summit mode and
-  // swaps the overhead chrome for the summit bar.
   const [viewpoint, setViewpoint] = useState<SelectedPeak | null>(null);
-  const [map, setMap] = useState<MLMap | null>(null);
+  const [engine, setEngine] = useState<Engine | null>(null);
   const [elevationFloor, setElevationFloor] = useState(0);
-  const [layerVis, setLayerVis] = useState<LayerVisibility>(
-    DEFAULT_LAYER_VISIBILITY,
-  );
+  const [bearing, setBearing] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [skin, setSkin] = useState<Skin>(loadSavedSkin);
   const peaks = usePeaks();
-  const bearing = useMapBearing(map);
+  const labelsRef = useRef<PeakLabels | null>(null);
+  const selectRef = useRef<(f: PeakFeature) => void>(() => {});
+  selectRef.current = (f) =>
+    setSelectedPeak(selectedFrom(f.properties, f.geometry.coordinates[0], f.geometry.coordinates[1], engine));
 
-  const handleMapReady = useCallback((m: MLMap) => setMap(m), []);
-
-  // Filter-chip floor drives the map's peak layers as well as the panels.
+  // Peak labels: one DOM layer owned by the engine's frame loop.
   useEffect(() => {
-    if (!map || !map.getLayer('peaks-major')) return;
-    setPeakElevationFloor(map, elevationFloor);
-  }, [map, elevationFloor]);
+    if (!engine || peaks.length === 0) return;
+    const labels = new PeakLabels(engine, peaks, (f) => selectRef.current(f));
+    labelsRef.current = labels;
+    labels.setFloor(elevationFloor);
+    return () => {
+      labels.dispose();
+      labelsRef.current = null;
+    };
+    // The layer is rebuilt only when the engine or peak list changes; floor and
+    // selection are pushed by the effects below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine, peaks]);
 
-  // Optional map furniture (contours, hydronyms).
   useEffect(() => {
-    if (!map || !map.isStyleLoaded()) return;
-    applyLayerVisibility(map, layerVis);
-  }, [map, layerVis]);
+    labelsRef.current?.setFloor(elevationFloor);
+  }, [elevationFloor, engine, peaks]);
+  useEffect(() => {
+    labelsRef.current?.setSelected(selectedPeak?.id ?? null);
+  }, [selectedPeak, engine, peaks]);
 
-  const flyToPeak = useCallback(
-    (lng: number, lat: number) => {
-      map?.flyTo({
-        center: [lng, lat],
-        zoom: Math.max(map.getZoom(), 11.5),
-        pitch: 68,
-        bearing: map.getBearing(),
-        duration: 1400,
-        curve: 1.4,
-      });
-    },
-    [map],
-  );
+  // Compass: only re-render when the heading moves by a visible amount.
+  useEffect(() => {
+    if (!engine) return;
+    let last: number | null = null;
+    let announced = false;
+    return engine.onFrame(() => {
+      if (!announced && engine.ready) {
+        announced = true;
+        setReady(true);
+      }
+      const b = engine.getBearing();
+      if (last !== null && Math.abs(b - last) < 0.4) return;
+      last = b;
+      setBearing(b);
+    });
+  }, [engine]);
+
+  // Stand on / leave a summit.
+  useEffect(() => {
+    if (!engine) return;
+    if (viewpoint) {
+      engine.enterSummit({ lng: viewpoint.lng, lat: viewpoint.lat, ele: viewpoint.displayEle });
+      labelsRef.current?.setOrigin({ lng: viewpoint.lng, lat: viewpoint.lat, id: viewpoint.id });
+    } else if (engine.currentMode === 'summit') {
+      engine.exitSummit();
+      labelsRef.current?.setOrigin(null);
+    }
+  }, [engine, viewpoint, peaks]);
 
   const pickFromSearch = useCallback(
     (f: PeakFeature) => {
-      setSelectedPeak(toSelected(f, map));
-      flyToPeak(f.geometry.coordinates[0], f.geometry.coordinates[1]);
+      const [lng, lat] = f.geometry.coordinates;
+      setSelectedPeak(selectedFrom(f.properties, lng, lat, engine));
+      engine?.flyTo({ lng, lat, distanceKm: 26, pitch: 66 }, 1800);
     },
-    [map, flyToPeak],
+    [engine],
   );
 
   const pickNearby = useCallback(
-    (np: NearbyPeak) => {
-      const sampled =
-        np.peak.ele == null && map
-          ? map.queryTerrainElevation([np.lng, np.lat])
-          : null;
-      setSelectedPeak({
-        ...np.peak,
-        lng: np.lng,
-        lat: np.lat,
-        displayEle:
-          np.peak.ele ?? (sampled != null ? Math.round(sampled) : null),
-        eleSource:
-          np.peak.ele != null ? 'osm' : sampled != null ? 'terrain' : 'unknown',
-      });
-    },
-    [map],
+    (np: NearbyPeak) => setSelectedPeak(selectedFrom(np.peak, np.lng, np.lat, engine)),
+    [engine],
   );
 
-  const inSummit = viewpoint != null;
+  const lookAtPeak = useCallback(
+    (np: NearbyPeak) => {
+      if (!engine) return;
+      const v = engine.getView();
+      const from: [number, number] = viewpoint ? [viewpoint.lng, viewpoint.lat] : [v.lng, v.lat];
+      engine.lookToward(initialBearingDeg(from, [np.lng, np.lat]));
+    },
+    [engine, viewpoint],
+  );
+
+  const chooseSkin = (s: Skin) => {
+    setSkin(s);
+    saveSkin(s);
+  };
+
+  const stand = (peak: SelectedPeak) => {
+    setViewpoint(peak);
+    setSelectedPeak(null);
+  };
+  const flyHere = (peak: SelectedPeak) =>
+    engine?.flyTo({ lng: peak.lng, lat: peak.lat, distanceKm: 14, pitch: 72 }, 1800);
 
   return (
     <div className="app">
-      <MapView
-        exaggeration={exaggeration}
-        sunMinutes={sunMinutes}
-        viewpoint={viewpoint}
-        onPeakSelect={setSelectedPeak}
-        onMapReady={handleMapReady}
-      />
+      <ThreeView exaggeration={exaggeration} sunMinutes={sunMinutes} skin={skin} onEngineReady={setEngine} />
 
-      {inSummit ? (
+      {viewpoint ? (
         <>
           <CompassStrip bearing={bearing} />
           <SummitBar peak={viewpoint} onExit={() => setViewpoint(null)} />
-          <SummitLabels
-            map={map}
-            origin={viewpoint}
-            peaks={peaks}
-            reliefMultiplier={exaggeration}
-            onPick={(f) => setSelectedPeak(toSelected(f, map))}
-          />
           {selectedPeak && selectedPeak.id !== viewpoint.id && (
             <div className="sheet sheet--summit">
               <PeakCard
                 peak={selectedPeak}
-                onFly={() =>
-                  map?.flyTo({
-                    center: [selectedPeak.lng, selectedPeak.lat],
-                    zoom: 13,
-                    pitch: 72,
-                    bearing: map.getBearing(),
-                    duration: 1800,
-                    curve: 1.4,
-                  })
-                }
                 onClose={() => setSelectedPeak(null)}
-                onStand={() => {
-                  setViewpoint(selectedPeak);
-                  setSelectedPeak(null);
-                }}
+                onStand={() => stand(selectedPeak)}
               />
             </div>
           )}
@@ -187,54 +186,42 @@ export default function App() {
                 <span className="brand__tag">Peaks of Sri Lanka</span>
               </span>
             </div>
-            <SearchField
-              peaks={peaks}
-              elevationFloor={elevationFloor}
-              onPick={pickFromSearch}
-            />
+            <SearchField peaks={peaks} elevationFloor={elevationFloor} onPick={pickFromSearch} />
             <FilterChips value={elevationFloor} onChange={setElevationFloor} />
           </div>
 
           <div className="dock">
-            <LayerToggles value={layerVis} onChange={setLayerVis} />
+            <SkinPicker
+              skins={SKINS}
+              value={skin}
+              onChange={chooseSkin}
+            />
             <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
             <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
           </div>
 
-          <Legend />
+          <SkinFab skins={SKINS} value={skin} onChange={chooseSkin} />
+
+          <NavCluster
+            bearing={bearing}
+            onZoomIn={() => engine?.zoomBy(0.6)}
+            onZoomOut={() => engine?.zoomBy(1 / 0.6)}
+            onResetNorth={() => engine?.resetNorth()}
+          />
 
           {selectedPeak && (
             <div className="sheet">
               <PeakCard
                 peak={selectedPeak}
-                onFly={() =>
-                  map?.flyTo({
-                    center: [selectedPeak.lng, selectedPeak.lat],
-                    zoom: 13,
-                    pitch: 72,
-                    bearing: map.getBearing(),
-                    duration: 1800,
-                    curve: 1.4,
-                  })
-                }
+                onFly={() => flyHere(selectedPeak)}
                 onClose={() => setSelectedPeak(null)}
-                onStand={() => {
-                  setViewpoint(selectedPeak);
-                  setSelectedPeak(null);
-                }}
+                onStand={() => stand(selectedPeak)}
               />
               <NearbyPeaks
                 origin={selectedPeak}
                 peaks={peaks}
                 elevationFloor={elevationFloor}
-                onLook={(np) => {
-                  if (!map) return;
-                  const c = map.getCenter();
-                  map.easeTo({
-                    bearing: initialBearingDeg([c.lng, c.lat], [np.lng, np.lat]),
-                    duration: 700,
-                  });
-                }}
+                onLook={lookAtPeak}
                 onPick={pickNearby}
               />
             </div>
@@ -243,6 +230,8 @@ export default function App() {
           {!selectedPeak && <GestureHint />}
         </>
       )}
+
+      {!ready && <div className="loading-pill" role="status">Loading terrain…</div>}
 
       <Attribution />
     </div>

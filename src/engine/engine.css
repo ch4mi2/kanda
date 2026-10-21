@@ -61,10 +61,11 @@
   text-underline-offset: 3px;
 }
 
+/* Bottom-right sits above the Data sources toggle. */
 .nav-cluster {
   position: absolute;
   right: var(--s3);
-  bottom: var(--s3);
+  bottom: 46px;
   z-index: 3;
   display: flex;
   flex-direction: column;
@@ -105,6 +106,10 @@
 }
 
 @media (min-width: 721px) {
+  .nav-cluster {
+    right: var(--s4);
+    bottom: 52px;
+  }
   .app:has(.sheet) .nav-cluster {
     display: flex;
   }
@@ -128,7 +133,7 @@
 .skin-fab {
   position: absolute;
   right: var(--s3);
-  bottom: calc(var(--s3) + 132px);
+  bottom: calc(46px + 132px);
   z-index: 4;
   display: flex;
   flex-direction: column;
@@ -167,4 +172,30 @@
   .skin-fab {
     display: none;
   }
+}
+
+.loading-pill {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-pill);
+  background: var(--panel-bg);
+  color: var(--panel-fg);
+  font: 600 13px/1 var(--font-ui);
+  pointer-events: none;
+}
+
+.engine-error {
+  position: absolute;
+  inset: 40% var(--s5) auto;
+  margin: 0;
+  padding: var(--s4);
+  border-radius: var(--r-lg);
+  background: var(--paper-90);
+  color: var(--ink);
+  text-align: center;
+  font: 600 14px/1.4 var(--font-ui);
 }

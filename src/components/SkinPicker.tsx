@@ -1,4 +1,4 @@
-import type { Skin } from '../engine/skins';
+import type { Skin } from '../skins';
 
 interface SkinPickerProps {
   skins: Skin[];
