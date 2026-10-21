@@ -36,7 +36,7 @@ npm install
 npm run dev
 ```
 
-Opens at `localhost:5173`, streaming elevation tiles live from the
+Opens at `localhost:5273`, streaming elevation tiles live from the
 [AWS Open Data](https://registry.opendata.aws/terrain-tiles/) bucket — no key
 needed. It re-downloads tiles every session this way, so it's slow; for real work,
 set up local tiles below.
