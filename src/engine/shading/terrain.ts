@@ -57,17 +57,18 @@ ${NOISE}
 ${LIGHT}
 
 float shadowAt(vec3 p, float ndl) {
-  if (uShadowOn < .5) return 1.;
+  // No early returns: texture reads must stay in uniform control flow.
   vec4 sp = uShadowMat * vec4(p, 1.);
   vec3 c = sp.xyz * .5 + .5;
-  if (c.x < .002 || c.x > .998 || c.y < .002 || c.y > .998 || c.z > 1.) return 1.;
+  float inside = step(.5, uShadowOn) * step(.002, c.x) * step(c.x, .998) * step(.002, c.y) * step(c.y, .998) * step(c.z, 1.);
+  c.xy = clamp(c.xy, .002, .998);
   float bias = uShadowBias * (1. + 2.5 * (1. - clamp(ndl, 0., 1.)));
   float s = 0.;
   for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
     float d = texture2D(tShadow, c.xy + vec2(float(i), float(j)) * uShadowTexel).r;
     s += (c.z - bias <= d) ? 1. : 0.;
   }
-  return s / 9.;
+  return mix(1., s / 9., inside);
 }
 
 void main() {
@@ -92,10 +93,16 @@ void main() {
     col = shadeCol(col, .85);
   } else {
     vec3 N = normalize(vec3(-vGrad.x * uExag, 1., -vGrad.y * uExag));
+    // Near-field detail: the 38 m DEM is a smooth blob at eye level, so within a few
+    // km roughen the normal and speckle the colour. Far terrain stays clean.
+    float near = 1. - smoothstep(.2, 5., length(cameraPosition - vW));
+    vec2 nz = vec2(vnoise(vW.xz * 38.), vnoise(vW.xz * 38. + 31.4)) - .5;
+    N = normalize(N + vec3(nz.x, 0., nz.y) * .45 * near);
     float n = fbm(vW.xz * .28), n2 = vnoise(vW.xz * 1.4);
     float e = smoothstep(250., 1850., vH);
     vec3 base = mix(uGrassLo, uGrassHi, clamp(e + (n - .5) * uPatch * 2., 0., 1.));
     base = mix(base, uForest, smoothstep(.3, .7, mk.r) * .7);
+    base *= 1. + (vnoise(vW.xz * 90.) - .5) * .3 * near;
     float slope = 1. - N.y;
     base = mix(base, uRock, smoothstep(uRockSlope, uRockSlope + .12, slope + (n2 - .5) * .08));
     float snow = smoothstep(uSnowLine - 50., uSnowLine + 50., vH + (n - .5) * 260.) * (1. - smoothstep(.5, .7, slope));

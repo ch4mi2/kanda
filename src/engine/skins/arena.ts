@@ -17,7 +17,7 @@ export const ARENA: Skin = {
   fogStart: 20,
 
   sunColor: '#fff8e6',
-  shade: '#5d4fae',
+  shade: '#8c82d2',
   cel: true,
   celBands: 3,
   celSoftness: 0.22,

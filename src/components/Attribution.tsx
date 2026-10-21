@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { PEAKS_ATTRIBUTION, TERRAIN, TEXTURE } from '../config/tiles';
 
-export default function Attribution() {
+interface AttributionProps {
+  renderer?: 'maplibre' | 'three';
+}
+
+export default function Attribution({ renderer = 'maplibre' }: AttributionProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -22,9 +26,15 @@ export default function Attribution() {
           )}
           <p>
             Rendered with{' '}
-            <a href="https://maplibre.org/" target="_blank" rel="noopener noreferrer">
-              MapLibre GL JS
-            </a>
+            {renderer === 'three' ? (
+              <a href="https://threejs.org/" target="_blank" rel="noopener noreferrer">
+                three.js
+              </a>
+            ) : (
+              <a href="https://maplibre.org/" target="_blank" rel="noopener noreferrer">
+                MapLibre GL JS
+              </a>
+            )}
             .
           </p>
         </div>

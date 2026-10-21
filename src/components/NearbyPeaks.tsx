@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
-import type { Map as MLMap } from 'maplibre-gl';
 import {
-  initialBearingDeg,
   nearbyPeaks,
   type NearbyPeak,
   type PeakFeature,
@@ -13,7 +11,8 @@ interface NearbyPeaksProps {
   peaks: PeakFeature[];
   /** Active filter-chip floor — hide summits below it from the list too. */
   elevationFloor: number;
-  map: MLMap | null;
+  /** Turn the camera toward a tapped peak (it is also made the new origin). */
+  onLook?: (peak: NearbyPeak) => void;
   /** Make the tapped peak the new origin (its own nearby list, etc.). */
   onPick: (peak: NearbyPeak) => void;
 }
@@ -22,7 +21,7 @@ export default function NearbyPeaks({
   origin,
   peaks,
   elevationFloor,
-  map,
+  onLook,
   onPick,
 }: NearbyPeaksProps) {
   const list = useMemo(
@@ -36,14 +35,7 @@ export default function NearbyPeaks({
   if (peaks.length === 0) return null;
 
   const handleClick = (np: NearbyPeak) => {
-    if (map) {
-      // Turn the camera to look from the current viewpoint towards the peak.
-      const c = map.getCenter();
-      map.easeTo({
-        bearing: initialBearingDeg([c.lng, c.lat], [np.lng, np.lat]),
-        duration: 700,
-      });
-    }
+    onLook?.(np);
     onPick(np);
   };
 
