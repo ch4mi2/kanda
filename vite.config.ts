@@ -8,6 +8,8 @@ export default defineConfig({
   // 'module' })`), so the bundled worker from `?worker&url` must be ESM too —
   // the default in dev but not in the production build.
   worker: { format: 'es' },
+  // Off Vite's default 5173 so it doesn't collide with other projects' dev servers.
+  server: { port: 5273, strictPort: true },
   optimizeDeps: {
     // maplibre-gl ships a separate worker bundle (maplibre-gl-worker.mjs)
     // that Vite's dependency pre-bundler mishandles, leaving the terrain

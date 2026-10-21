@@ -382,7 +382,7 @@ with genuinely different hues per band.
 ## Commands
 
 ```bash
-npm run dev             # localhost:5173
+npm run dev             # localhost:5273 (strictPort)
 npm run build           # tsc + vite build
 npm run lint            # oxlint
 npm test                # vitest — ramp monotonicity + sun position

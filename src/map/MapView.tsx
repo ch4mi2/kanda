@@ -236,6 +236,12 @@ export default function MapView({
 
     // Bottom-right compass + zoom cluster, per the design. Top-right would
     // collide with the search field on a phone.
+    // The compass calls map.resetNorthPitch(), which flattens to the minimum
+    // pitch — a near-overhead view that's hard to tilt back out of on a phone
+    // and sits below the fog band (gotcha #9). Re-aim it at north + the resting
+    // 3D pitch instead. Overridden on the instance: the control has no hook.
+    map.resetNorthPitch = (options, eventData) =>
+      map.easeTo({ ...options, bearing: 0, pitch: DEFAULT_PITCH }, eventData);
     map.addControl(new NavigationControl({ visualizePitch: true }), 'bottom-right');
     map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
 
