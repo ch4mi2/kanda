@@ -13,6 +13,7 @@ import { sceneToTileXY, tileFootprint } from '../geo';
 import { TILE_PX, TileSource } from './TileSource';
 
 export const GRID = 128;
+export const CLAY_GRID = 32;
 export const ROOT_Z = 7;
 export const MAX_Z = 12;
 const MAX_ELEV_M = 2600;
@@ -24,7 +25,7 @@ const MAX_MESHES = 240;
 
 type State = 'idle' | 'loading' | 'ready';
 
-interface Entry {
+export interface Entry {
   key: string;
   z: number;
   x: number;
@@ -36,40 +37,49 @@ interface Entry {
   box: THREE.Box3;
 }
 
-// ---- shared index buffer: (GRID+1)^2 grid + a skirt ring ----
-const V = GRID + 1;
-const GRID_VERTS = V * V;
-const RING = 4 * GRID;
-const INDEX = (() => {
+// ---- shared index buffers, one per grid size: (n+1)^2 grid + a skirt ring ----
+interface Layout {
+  n: number;
+  gridVerts: number;
+  ring: number[];
+  index: THREE.BufferAttribute;
+}
+const LAYOUTS = new Map<number, Layout>();
+function layoutFor(n: number): Layout {
+  let l = LAYOUTS.get(n);
+  if (l) return l;
+  const v = n + 1;
+  const gridVerts = v * v;
   const idx: number[] = [];
-  for (let j = 0; j < GRID; j++) {
-    for (let i = 0; i < GRID; i++) {
-      const a = j * V + i;
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < n; i++) {
+      const a = j * v + i;
       const b = a + 1;
-      const c = a + V;
+      const c = a + v;
       const d = c + 1;
       idx.push(a, c, b, b, c, d);
     }
   }
   const ring: number[] = [];
-  for (let i = 0; i < GRID; i++) ring.push(i);
-  for (let j = 0; j < GRID; j++) ring.push(j * V + GRID);
-  for (let i = GRID; i > 0; i--) ring.push(GRID * V + i);
-  for (let j = GRID; j > 0; j--) ring.push(j * V);
-  for (let k = 0; k < RING; k++) {
+  for (let i = 0; i < n; i++) ring.push(i);
+  for (let j = 0; j < n; j++) ring.push(j * v + n);
+  for (let i = n; i > 0; i--) ring.push(n * v + i);
+  for (let j = n; j > 0; j--) ring.push(j * v);
+  const r = ring.length;
+  for (let k = 0; k < r; k++) {
     const p0 = ring[k];
-    const p1 = ring[(k + 1) % RING];
-    const s0 = GRID_VERTS + k;
-    const s1 = GRID_VERTS + ((k + 1) % RING);
-    idx.push(p0, s0, p1, p1, s0, s1);
+    const p1 = ring[(k + 1) % r];
+    idx.push(p0, gridVerts + k, p1, p1, gridVerts + k, gridVerts + ((k + 1) % r));
   }
-  return { index: new THREE.BufferAttribute(new Uint16Array(idx), 1), ring };
-})();
+  l = { n, gridVerts, ring, index: new THREE.BufferAttribute(new Uint16Array(idx), 1) };
+  LAYOUTS.set(n, l);
+  return l;
+}
 
 const ZERO = new Int16Array(TILE_PX * TILE_PX);
 
 /** Bilinear height (m) at tile-local u,v in [0,1]. */
-function sample(h: Int16Array, u: number, v: number): number {
+export function sampleHeights(h: Int16Array, u: number, v: number): number {
   const fx = Math.min(TILE_PX - 1.001, Math.max(0, u * (TILE_PX - 1)));
   const fy = Math.min(TILE_PX - 1.001, Math.max(0, v * (TILE_PX - 1)));
   const i = Math.floor(fx);
@@ -83,29 +93,55 @@ function sample(h: Int16Array, u: number, v: number): number {
   );
 }
 
-function buildGeometry(heights: Int16Array | null, size: number): THREE.BufferGeometry {
+/** Deterministic 0..1 pair for a global grid vertex: tiles that share an edge agree. */
+function hash2(gx: number, gy: number, z: number): [number, number] {
+  let h = Math.imul(gx | 0, 374761393) + Math.imul(gy | 0, 668265263) + Math.imul(z | 0, 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  const a = ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  h = Math.imul(h ^ (h >>> 15), 2246822519);
+  const b = ((h ^ (h >>> 13)) >>> 0) / 4294967296;
+  return [a, b];
+}
+
+interface GeoOptions {
+  n: number;
+  /** Jitter interior vertices (low-poly clay look), keyed by tile coordinates. */
+  jitter: { z: number; x: number; y: number } | null;
+}
+
+function buildGeometry(heights: Int16Array | null, size: number, opt: GeoOptions): THREE.BufferGeometry {
   const h = heights ?? ZERO;
-  const pos = new Float32Array((GRID_VERTS + RING) * 3);
-  const grad = new Float32Array((GRID_VERTS + RING) * 2);
-  const drop = new Float32Array(GRID_VERTS + RING);
+  const L = layoutFor(opt.n);
+  const n = opt.n;
+  const V = n + 1;
+  const total = L.gridVerts + L.ring.length;
+  const pos = new Float32Array(total * 3);
+  const grad = new Float32Array(total * 2);
+  const drop = new Float32Array(total);
   const pxMeters = (size * 1000) / (TILE_PX - 1);
   const du = 1 / (TILE_PX - 1);
-  for (let j = 0; j <= GRID; j++) {
-    for (let i = 0; i <= GRID; i++) {
-      const u = i / GRID;
-      const v = j / GRID;
+  for (let j = 0; j <= n; j++) {
+    for (let i = 0; i <= n; i++) {
+      let u = i / n;
+      let v = j / n;
+      if (opt.jitter) {
+        const [a, b] = hash2(opt.jitter.x * n + i, opt.jitter.y * n + j, opt.jitter.z);
+        // Edge vertices only slide along their edge, so neighbouring tiles still meet.
+        if (i > 0 && i < n) u += (a - 0.5) * 0.8 / n;
+        if (j > 0 && j < n) v += (b - 0.5) * 0.8 / n;
+      }
       const k = j * V + i;
       pos[k * 3] = u * size;
-      pos[k * 3 + 1] = sample(h, u, v);
+      pos[k * 3 + 1] = sampleHeights(h, u, v);
       pos[k * 3 + 2] = v * size;
-      grad[k * 2] = (sample(h, u + du, v) - sample(h, u - du, v)) / (2 * pxMeters);
-      grad[k * 2 + 1] = (sample(h, u, v + du) - sample(h, u, v - du)) / (2 * pxMeters);
+      grad[k * 2] = (sampleHeights(h, u + du, v) - sampleHeights(h, u - du, v)) / (2 * pxMeters);
+      grad[k * 2 + 1] = (sampleHeights(h, u, v + du) - sampleHeights(h, u, v - du)) / (2 * pxMeters);
     }
   }
   const skirtDrop = Math.min(800, Math.max(60, size * 30));
-  for (let k = 0; k < RING; k++) {
-    const src = INDEX.ring[k];
-    const dst = GRID_VERTS + k;
+  for (let k = 0; k < L.ring.length; k++) {
+    const src = L.ring[k];
+    const dst = L.gridVerts + k;
     pos[dst * 3] = pos[src * 3];
     pos[dst * 3 + 1] = pos[src * 3 + 1];
     pos[dst * 3 + 2] = pos[src * 3 + 2];
@@ -117,7 +153,7 @@ function buildGeometry(heights: Int16Array | null, size: number): THREE.BufferGe
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('aGrad', new THREE.BufferAttribute(grad, 2));
   g.setAttribute('aDrop', new THREE.BufferAttribute(drop, 1));
-  g.setIndex(INDEX.index);
+  g.setIndex(L.index);
   return g;
 }
 
@@ -142,6 +178,9 @@ export class TerrainTiles {
   rendered: Entry[] = [];
   /** Effective vertical exaggeration - only used to size culling boxes. */
   exaggeration = 2.6;
+  /** Vertices per tile edge: 128 normally, 32 for the faceted clay skin. */
+  grid = GRID;
+  private jitter = false;
 
   private entries = new Map<string, Entry>();
   private frame = 0;
@@ -195,7 +234,13 @@ export class TerrainTiles {
     if (e.state !== 'ready' || this.builds >= MESH_BUILDS_PER_FRAME) return null;
     this.builds++;
     const f = tileFootprint(e.z, e.x, e.y);
-    const m = new THREE.Mesh(buildGeometry(e.heights, f.size), this.material);
+    const m = new THREE.Mesh(
+      buildGeometry(e.heights, f.size, {
+        n: this.grid,
+        jitter: this.jitter ? { z: e.z, x: e.x, y: e.y } : null,
+      }),
+      this.material,
+    );
     m.position.set(f.x0, 0, f.z0);
     m.frustumCulled = false;
     m.visible = false;
@@ -241,7 +286,7 @@ export class TerrainTiles {
     if (e.state !== 'ready') return;
 
     if (e.z < MAX_Z) {
-      const errPx = ((((box.max.x - box.min.x) / GRID) * 0.5) / dist) * focalPx;
+      const errPx = ((((box.max.x - box.min.x) / this.grid) * 0.5) / dist) * focalPx;
       if (errPx > SPLIT_PX) {
         const kids: Entry[] = [];
         for (let dy = 0; dy < 2; dy++) {
@@ -295,7 +340,7 @@ export class TerrainTiles {
       const e = this.entries.get(`${zoom}/${Math.floor(tx)}/${Math.floor(ty)}`);
       if (!e || e.state !== 'ready') continue;
       if (!e.heights) return 0;
-      return sample(e.heights, tx - Math.floor(tx), ty - Math.floor(ty));
+      return sampleHeights(e.heights, tx - Math.floor(tx), ty - Math.floor(ty));
     }
     return null;
   }
@@ -315,6 +360,15 @@ export class TerrainTiles {
         .sort((a, b) => a.lastUsed - b.lastUsed);
       for (const e of old.slice(0, meshes - MAX_MESHES)) this.disposeMesh(e);
     }
+  }
+
+  /** Switch mesh style (smooth / faceted clay). Rebuilds every mesh; heights stay cached. */
+  setFaceted(faceted: boolean) {
+    if (this.jitter === faceted) return;
+    this.jitter = faceted;
+    this.grid = faceted ? CLAY_GRID : GRID;
+    for (const e of this.entries.values()) this.disposeMesh(e);
+    this.rendered = [];
   }
 
   private disposeMesh(e: Entry) {

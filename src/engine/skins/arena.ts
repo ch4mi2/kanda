@@ -15,9 +15,10 @@ export const ARENA: Skin = {
   fog: '#b9e2ff',
   fogDensity: 0.0042,
   fogStart: 20,
+  fogBands: 0,
 
   sunColor: '#fff8e6',
-  shade: '#8c82d2',
+  shade: '#a398dc',
   cel: true,
   celBands: 3,
   celSoftness: 0.22,
@@ -49,6 +50,9 @@ export const ARENA: Skin = {
   contrast: 1.08,
   vignette: 0.1,
   tiltShift: 0,
+
+  trees: { shape: 'lolly', crown: '#38b445', crownAlt: '#86d63a', trunk: '#7a4f2e', density: 0.2, scale: 1.9 },
+  clouds: { lit: '#ffffff', shaded: '#bcc8f2', cel: true },
 
   labelColor: '#ffffff',
   labelHalo: 'rgba(20,30,90,.95)',

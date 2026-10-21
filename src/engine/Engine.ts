@@ -7,6 +7,9 @@ import { MapControls } from 'three/addons/controls/MapControls.js';
 import { DEFAULT_CENTER, MAX_ELEVATION_M, PITCH_MAX, PITCH_MIN } from '../config/tiles';
 import { sunDateFromSlstMinutes, sunPosition } from '../map/sunPosition';
 import { bearingOf, lngLatToScene, sceneToLngLat } from './geo';
+import { Masks } from './masks';
+import { CloudLayer } from './props/clouds';
+import { TreeLayer } from './props/trees';
 import {
   createOceanMaterial,
   createShadowDepthMaterial,
@@ -78,6 +81,8 @@ export class Engine {
   };
   private sky: THREE.Mesh;
   private ocean: THREE.Mesh;
+  private trees: TreeLayer;
+  private clouds: CloudLayer;
   private skin: Skin = DEFAULT_SKIN;
   private exaggerationMult = 1;
   private sunMinutes = 12 * 60;
@@ -131,6 +136,10 @@ export class Engine {
 
     this.tiles = new TerrainTiles(new TileSource(), createTerrainMaterial(this.u));
     this.scene.add(this.tiles.group);
+    const masks = new Masks();
+    this.trees = new TreeLayer(masks, this.u);
+    this.clouds = new CloudLayer(this.u);
+    this.scene.add(this.trees.group, this.clouds.group);
 
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), createSkyMaterial(this.u, this.skySky));
     this.sky.frustumCulled = false;
@@ -207,6 +216,12 @@ export class Engine {
     u.uCliff.value = skin.cliff ? 1 : 0;
     u.uFoamAmt.value = skin.foamAmount;
     u.uWaterMode.value = skin.waterMode;
+    u.uFogBands.value = skin.fogBands;
+    u.uFlat.value = skin.geometry === 'smooth' ? 0 : 1;
+    u.uTerrace.value = skin.geometry === 'terrace' ? 1 : 0;
+    this.tiles.setFaceted(skin.geometry === 'clay');
+    this.trees.setStyle(skin.trees);
+    this.clouds.setStyle(skin.clouds);
     this.post.applySkin(skin, this.dpr);
     this.applyExaggeration();
     this.refreshColors();
@@ -656,6 +671,9 @@ export class Engine {
     this.post.uniforms.uTilt.value = summit ? 0 : this.skin.tiltShift;
 
     this.tiles.update(cam, this.host.clientHeight);
+    this.trees.update(cam.position, this.tiles.rendered);
+    this.clouds.group.visible = this.skin.clouds != null && !summit;
+    this.clouds.update(this.dt, cam.position, (MAX_ELEVATION_M / 1000) * exag);
     this.renderShadow(exag);
     this.tiles.settle();
 
@@ -689,14 +707,14 @@ export class Engine {
     const was = children.map((m) => m.visible);
     for (const m of children) m.visible = false;
     for (const m of meshes) m.visible = true;
-    const sceneVis = [this.sky.visible, this.ocean.visible];
-    this.sky.visible = this.ocean.visible = false;
+    const sceneVis = [this.sky.visible, this.ocean.visible, this.trees.group.visible, this.clouds.group.visible];
+    this.sky.visible = this.ocean.visible = this.trees.group.visible = this.clouds.group.visible = false;
     this.scene.overrideMaterial = this.shadowMat;
     this.renderer.setRenderTarget(this.shadow.target);
     this.renderer.render(this.scene, this.shadow.camera);
     this.renderer.setRenderTarget(null);
     this.scene.overrideMaterial = null;
-    [this.sky.visible, this.ocean.visible] = sceneVis;
+    [this.sky.visible, this.ocean.visible, this.trees.group.visible, this.clouds.group.visible] = sceneVis;
     children.forEach((m, i) => (m.visible = was[i]));
 
     this.u.uShadowMat.value.copy(this.shadow.matrix);

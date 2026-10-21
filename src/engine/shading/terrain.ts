@@ -7,31 +7,40 @@ import masksUrl from '../../data/masks.png';
 import { SRI_LANKA_BBOX } from '../../config/tiles';
 import { lngLatToScene } from '../geo';
 
-const NOISE = /* glsl */ `
+export const NOISE_GLSL = /* glsl */ `
 float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }
 float vnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
 float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2.03+17.1; a*=.5; } return s; }
 `;
 
+/** Terrace a height (m): flat plateaus joined by steep risers. */
+export const TERRACE_GLSL = /* glsl */ `
+float terraceH(float h, float stepM) {
+  float q = h / stepM;
+  return stepM * (floor(q) + smoothstep(.72, 1., fract(q)));
+}`;
+
 /** Shared vertex stage: raw-metre Y -> exaggerated km, sea flattened to 0. */
 export const TERRAIN_VERT = /* glsl */ `
 attribute vec2 aGrad;
 attribute float aDrop;
-uniform float uExag;
+uniform float uExag, uTerrace, uTerraceStep;
 varying vec3 vW;
 varying vec2 vGrad;
 varying float vH;
+${TERRACE_GLSL}
 void main() {
-  float y = (max(position.y, 0.) - aDrop) * 0.001 * uExag;
+  float h = uTerrace > .5 ? terraceH(position.y, uTerraceStep) : position.y;
+  float y = (max(h, 0.) - aDrop) * 0.001 * uExag;
   vec4 w = modelMatrix * vec4(position.x, y, position.z, 1.);
   vW = w.xyz; vGrad = aGrad; vH = position.y;
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 
-const LIGHT = /* glsl */ `
+export const LIGHT_GLSL = /* glsl */ `
 uniform vec3 uSun, uSunCol, uShade, uFog;
-uniform float uCel, uBands, uCelSoft, uWrap, uFogDen, uFogStart;
+uniform float uCel, uBands, uCelSoft, uWrap, uFogDen, uFogStart, uFogBands;
 float lightTerm(float ndl, float sh) {
   if (uCel < .5) return clamp((ndl + uWrap) / (1. + uWrap), 0., 1.) * mix(.3, 1., sh);
   float l = clamp(ndl, 0., 1.) * mix(.1, 1., sh);
@@ -41,11 +50,19 @@ float lightTerm(float ndl, float sh) {
 vec3 shadeCol(vec3 base, float lit) { return base * mix(uShade, uSunCol, lit); }
 vec3 fogIt(vec3 c, vec3 p) {
   float d = length(cameraPosition - p);
-  return mix(c, uFog, 1. - exp(-max(d - uFogStart, 0.) * uFogDen));
+  float f = 1. - exp(-max(d - uFogStart, 0.) * uFogDen);
+  if (uFogBands > 0.) {
+    float q = f * uFogBands;
+    f = (floor(q) + smoothstep(.3, .7, fract(q))) / uFogBands;
+  }
+  return mix(c, uFog, f);
 }`;
 
+/** Value noise, light terms and fog - shared by terrain, trees and clouds. */
+export const COMMON_GLSL = NOISE_GLSL + LIGHT_GLSL;
+
 const TERRAIN_FRAG = /* glsl */ `
-uniform float uTime, uRim, uPatch, uRockSlope, uSnowLine, uCliff, uFoamAmt, uWaterMode, uExag;
+uniform float uTime, uRim, uPatch, uRockSlope, uSnowLine, uCliff, uFoamAmt, uWaterMode, uExag, uFlat;
 uniform float uShadowOn, uShadowBias, uShadowTexel;
 uniform vec3 uGrassLo, uGrassHi, uForest, uRock, uSnow, uCliffCol, uWater, uWaterHi, uWaterDeep, uFoam;
 uniform vec4 uMaskBox;      // x0, z0, 1/w, 1/h of the masks image in scene km
@@ -53,8 +70,27 @@ uniform sampler2D uMasks;   // R forest, G lake edge, B lake depth
 uniform sampler2D tShadow;
 uniform mat4 uShadowMat;
 varying vec3 vW; varying vec2 vGrad; varying float vH;
-${NOISE}
-${LIGHT}
+${NOISE_GLSL}
+${LIGHT_GLSL}
+
+float waterPattern(vec2 p) {
+  float fade = 1. - smoothstep(25., 90., length(cameraPosition.xz - p) + cameraPosition.y);
+  float v;
+  if (uWaterMode < .5) {
+    v = smoothstep(.74, .95, vnoise(p * 7. + vec2(uTime * .5, uTime * .31)));
+  } else if (uWaterMode < 1.5) {
+    vec2 q = p * 1.5 + vec2(uTime * .05, 0.);
+    float d = abs(fract(q.x + q.y) - .5) + abs(fract(q.x - q.y) - .5);
+    v = smoothstep(.6, .66, d) * .85;
+  } else if (uWaterMode < 2.5) {
+    float s = sin(p.x * 1.4 + sin(p.y * .8 + uTime * .6) * 1.6);
+    float band = step(fract(p.y * .45 + .2 * sin(p.x * .5)), .09);
+    v = smoothstep(.55, .85, s) * band;
+  } else {
+    v = step(.64, vnoise(floor(p * 1.3))) * .4;
+  }
+  return v * fade;
+}
 
 float shadowAt(vec3 p, float ndl) {
   // No early returns: texture reads must stay in uniform control flow.
@@ -73,6 +109,7 @@ float shadowAt(vec3 p, float ndl) {
 
 void main() {
   vec3 V = normalize(cameraPosition - vW);
+  vec3 faceN = normalize(cross(dFdx(vW), dFdy(vW))); // derivatives stay out of branches
   vec3 col;
   bool sea = vH <= 0.5;
   vec2 muv = (vW.xz - uMaskBox.xy) * uMaskBox.zw;
@@ -84,20 +121,27 @@ void main() {
     float x = -vH; // metres below sea level
     float depth = smoothstep(0., 220., x);
     col = mix(uWaterHi, mix(uWater, uWaterDeep, depth), smoothstep(0., 14., x));
-    float sp = smoothstep(.74, .95, vnoise(vW.xz * 7. + vec2(uTime * .5, uTime * .31)));
-    col = mix(col, uWaterHi, sp * .5 * (1. - depth));
+    col = mix(col, uWaterHi, waterPattern(vW.xz) * .6 * (1. - depth * .6));
     float wob = (vnoise(vW.xz * 18. + uTime * .3) - .5) * 2.2;
     float foam = (1. - smoothstep(0., 3.2, x + wob)) * .95
                + smoothstep(.55, .9, sin((x + wob) * .55 - uTime * 1.3)) * (1. - smoothstep(3., 15., x)) * .45;
     col = mix(col, uFoam, clamp(foam, 0., 1.) * uFoamAmt);
     col = shadeCol(col, .85);
   } else {
-    vec3 N = normalize(vec3(-vGrad.x * uExag, 1., -vGrad.y * uExag));
+    vec3 N;
     // Near-field detail: the 38 m DEM is a smooth blob at eye level, so within a few
     // km roughen the normal and speckle the colour. Far terrain stays clean.
     float near = 1. - smoothstep(.2, 5., length(cameraPosition - vW));
-    vec2 nz = vec2(vnoise(vW.xz * 38.), vnoise(vW.xz * 38. + 31.4)) - .5;
-    N = normalize(N + vec3(nz.x, 0., nz.y) * .45 * near);
+    if (uFlat > .5) {
+      // Faceted skins (clay, terraces): the true triangle normal.
+      N = faceN;
+      if (dot(N, V) < 0.) N = -N;
+      near *= .35;
+    } else {
+      N = normalize(vec3(-vGrad.x * uExag, 1., -vGrad.y * uExag));
+      vec2 nz = vec2(vnoise(vW.xz * 38.), vnoise(vW.xz * 38. + 31.4)) - .5;
+      N = normalize(N + vec3(nz.x, 0., nz.y) * .45 * near);
+    }
     float n = fbm(vW.xz * .28), n2 = vnoise(vW.xz * 1.4);
     float e = smoothstep(250., 1850., vH);
     vec3 base = mix(uGrassLo, uGrassHi, clamp(e + (n - .5) * uPatch * 2., 0., 1.));
@@ -119,8 +163,7 @@ void main() {
       vec3 wc = mix(uWater, uWaterDeep, smoothstep(0., .9, mk.b));
       float fr = pow(1. - max(V.y, 0.), 3.);
       wc = mix(wc, uWaterHi, fr * .5);
-      float sp = smoothstep(.74, .95, vnoise(vW.xz * 11. + vec2(uTime * .5, uTime * .31)));
-      wc = mix(wc, uWaterHi, sp * .6 * sh);
+      wc = mix(wc, uWaterHi, waterPattern(vW.xz) * .7 * sh);
       float foam = smoothstep(.22, .34, lakeEdge) * (1. - smoothstep(.45, .62, lakeEdge));
       wc = mix(wc, uFoam, foam * uFoamAmt);
       col = mix(col, shadeCol(wc, mix(.55, 1., sh)), lake);
@@ -146,6 +189,10 @@ export function createTerrainUniforms(): TerrainUniforms {
   tex.anisotropy = 4;
   return {
     uExag: { value: 2.6 },
+    uFlat: { value: 0 },
+    uTerrace: { value: 0 },
+    uTerraceStep: { value: 240 },
+    uFogBands: { value: 0 },
     uTime: { value: 0 },
     uSun: { value: new THREE.Vector3(0, 1, 0) },
     uSunCol: { value: c() }, uShade: { value: c() }, uFog: { value: c() },
@@ -179,7 +226,7 @@ export function createTerrainMaterial(u: TerrainUniforms): THREE.ShaderMaterial 
 /** Depth-only material for the sun's shadow pass (same displacement). */
 export function createShadowDepthMaterial(u: TerrainUniforms): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
-    uniforms: { uExag: u.uExag },
+    uniforms: { uExag: u.uExag, uTerrace: u.uTerrace, uTerraceStep: u.uTerraceStep },
     vertexShader: TERRAIN_VERT,
     fragmentShader: 'void main() { gl_FragColor = vec4(1.); }',
     side: THREE.DoubleSide,
@@ -193,7 +240,7 @@ export function createOceanMaterial(u: TerrainUniforms): THREE.ShaderMaterial {
     uniforms: u,
     vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
     fragmentShader: `uniform vec3 uWater, uWaterDeep, uWaterHi; uniform float uTime;
-      varying vec3 vW; ${NOISE} ${LIGHT}
+      varying vec3 vW; ${NOISE_GLSL} ${LIGHT_GLSL}
       void main(){
         vec3 col = mix(uWater, uWaterDeep, .85);
         float sp = smoothstep(.74, .95, vnoise(vW.xz * 7. + vec2(uTime * .5, uTime * .31)));
