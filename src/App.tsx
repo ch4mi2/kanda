@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
+import { initialBearingDeg } from './map/nearbyPeaks';
 import type { Map as MLMap } from 'maplibre-gl';
 import MapView from './map/MapView';
-import ThreeView from './engine/ThreeView';
 import PeakCard from './components/PeakCard';
 import NearbyPeaks from './components/NearbyPeaks';
 import ExaggerationSlider from './components/ExaggerationSlider';
@@ -44,8 +44,22 @@ function toSelected(f: PeakFeature, map: MLMap | null): SelectedPeak {
   };
 }
 
-// Phase 7 migration flag: ?engine=three renders the new three.js engine.
-const USE_THREE = new URLSearchParams(window.location.search).get('engine') === 'three';
+/** Live camera bearing of a MapLibre map (for the compass strip). */
+function useMapBearing(map: MLMap | null): number {
+  const [bearing, setBearing] = useState(0);
+  useEffect(() => {
+    if (!map) return;
+    const update = () => setBearing(map.getBearing());
+    update();
+    map.on('rotate', update);
+    map.on('move', update);
+    return () => {
+      map.off('rotate', update);
+      map.off('move', update);
+    };
+  }, [map]);
+  return bearing;
+}
 
 export default function App() {
   const [exaggeration, setExaggeration] = useState(DEFAULT_EXAGGERATION);
@@ -60,6 +74,7 @@ export default function App() {
     DEFAULT_LAYER_VISIBILITY,
   );
   const peaks = usePeaks();
+  const bearing = useMapBearing(map);
 
   const handleMapReady = useCallback((m: MLMap) => setMap(m), []);
 
@@ -120,21 +135,17 @@ export default function App() {
 
   return (
     <div className="app">
-      {USE_THREE ? (
-        <ThreeView exaggeration={exaggeration} sunMinutes={sunMinutes} />
-      ) : (
-        <MapView
-          exaggeration={exaggeration}
-          sunMinutes={sunMinutes}
-          viewpoint={viewpoint}
-          onPeakSelect={setSelectedPeak}
-          onMapReady={handleMapReady}
-        />
-      )}
+      <MapView
+        exaggeration={exaggeration}
+        sunMinutes={sunMinutes}
+        viewpoint={viewpoint}
+        onPeakSelect={setSelectedPeak}
+        onMapReady={handleMapReady}
+      />
 
       {inSummit ? (
         <>
-          <CompassStrip map={map} />
+          <CompassStrip bearing={bearing} />
           <SummitBar peak={viewpoint} onExit={() => setViewpoint(null)} />
           <SummitLabels
             map={map}
@@ -147,7 +158,16 @@ export default function App() {
             <div className="sheet sheet--summit">
               <PeakCard
                 peak={selectedPeak}
-                map={map}
+                onFly={() =>
+                  map?.flyTo({
+                    center: [selectedPeak.lng, selectedPeak.lat],
+                    zoom: 13,
+                    pitch: 72,
+                    bearing: map.getBearing(),
+                    duration: 1800,
+                    curve: 1.4,
+                  })
+                }
                 onClose={() => setSelectedPeak(null)}
                 onStand={() => {
                   setViewpoint(selectedPeak);
@@ -187,7 +207,16 @@ export default function App() {
             <div className="sheet">
               <PeakCard
                 peak={selectedPeak}
-                map={map}
+                onFly={() =>
+                  map?.flyTo({
+                    center: [selectedPeak.lng, selectedPeak.lat],
+                    zoom: 13,
+                    pitch: 72,
+                    bearing: map.getBearing(),
+                    duration: 1800,
+                    curve: 1.4,
+                  })
+                }
                 onClose={() => setSelectedPeak(null)}
                 onStand={() => {
                   setViewpoint(selectedPeak);
@@ -198,7 +227,14 @@ export default function App() {
                 origin={selectedPeak}
                 peaks={peaks}
                 elevationFloor={elevationFloor}
-                map={map}
+                onLook={(np) => {
+                  if (!map) return;
+                  const c = map.getCenter();
+                  map.easeTo({
+                    bearing: initialBearingDeg([c.lng, c.lat], [np.lng, np.lat]),
+                    duration: 700,
+                  });
+                }}
                 onPick={pickNearby}
               />
             </div>
