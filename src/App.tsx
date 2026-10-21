@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Map as MLMap } from 'maplibre-gl';
 import MapView from './map/MapView';
+import ThreeView from './engine/ThreeView';
 import PeakCard from './components/PeakCard';
 import NearbyPeaks from './components/NearbyPeaks';
 import ExaggerationSlider from './components/ExaggerationSlider';
@@ -42,6 +43,9 @@ function toSelected(f: PeakFeature, map: MLMap | null): SelectedPeak {
     eleSource: p.ele != null ? 'osm' : sampled != null ? 'terrain' : 'unknown',
   };
 }
+
+// Phase 7 migration flag: ?engine=three renders the new three.js engine.
+const USE_THREE = new URLSearchParams(window.location.search).get('engine') === 'three';
 
 export default function App() {
   const [exaggeration, setExaggeration] = useState(DEFAULT_EXAGGERATION);
@@ -116,13 +120,17 @@ export default function App() {
 
   return (
     <div className="app">
-      <MapView
-        exaggeration={exaggeration}
-        sunMinutes={sunMinutes}
-        viewpoint={viewpoint}
-        onPeakSelect={setSelectedPeak}
-        onMapReady={handleMapReady}
-      />
+      {USE_THREE ? (
+        <ThreeView exaggeration={exaggeration} sunMinutes={sunMinutes} />
+      ) : (
+        <MapView
+          exaggeration={exaggeration}
+          sunMinutes={sunMinutes}
+          viewpoint={viewpoint}
+          onPeakSelect={setSelectedPeak}
+          onMapReady={handleMapReady}
+        />
+      )}
 
       {inSummit ? (
         <>
