@@ -1,9 +1,9 @@
-import type { Map as MLMap } from 'maplibre-gl';
 import type { SelectedPeak } from '../types';
 
 interface PeakCardProps {
   peak: SelectedPeak;
-  map: MLMap | null;
+  /** Fly the camera to this peak. */
+  onFly?: () => void;
   onClose: () => void;
   /** Enter summit view standing on this peak. */
   onStand: () => void;
@@ -17,20 +17,8 @@ function wikipediaUrl(wikipedia: string): string | null {
   return `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
 }
 
-export default function PeakCard({ peak, map, onClose, onStand }: PeakCardProps) {
+export default function PeakCard({ peak, onFly, onClose, onStand }: PeakCardProps) {
   const wikiUrl = peak.wikipedia ? wikipediaUrl(peak.wikipedia) : null;
-
-  const flyHere = () => {
-    if (!map) return;
-    map.flyTo({
-      center: [peak.lng, peak.lat],
-      zoom: 13,
-      pitch: 72,
-      bearing: map.getBearing(),
-      duration: 1800,
-      curve: 1.4,
-    });
-  };
 
   return (
     <div className="card peak-card">
@@ -71,7 +59,7 @@ export default function PeakCard({ peak, map, onClose, onStand }: PeakCardProps)
         <button className="btn btn--primary" onClick={onStand}>
           Stand here
         </button>
-        <button className="btn btn--ghost" onClick={flyHere}>
+        <button className="btn btn--ghost" onClick={onFly}>
           Fly here
         </button>
         {wikiUrl && (

@@ -1,0 +1,201 @@
+/* three.js engine chrome: peak labels + nav cluster (Phase 7).
+   Label colour / halo / font come from the active skin via CSS variables set
+   on the engine host (Engine.applySkin). */
+
+.peak-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.peak-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  white-space: nowrap;
+  text-align: center;
+  color: var(--label-color, #fff);
+  font: 400 15px/1.05 var(--label-font, var(--font-ui));
+  letter-spacing: 0.01em;
+  text-shadow:
+    0 0 2px var(--label-halo, rgba(0, 0, 0, 0.9)),
+    0 0 2px var(--label-halo, rgba(0, 0, 0, 0.9)),
+    0 0 7px var(--label-halo, rgba(0, 0, 0, 0.9));
+  will-change: transform;
+  transition: opacity 0.2s;
+}
+
+.peak-label__name {
+  display: block;
+}
+
+.peak-label__meta {
+  display: block;
+  font: 600 11px/1.2 var(--font-ui);
+  opacity: 0.92;
+  font-variant-numeric: tabular-nums;
+}
+
+.peak-label::after {
+  content: '';
+  display: block;
+  width: 2px;
+  height: 10px;
+  margin: 3px auto 0;
+  border-radius: 1px;
+  background: var(--label-color, #fff);
+  box-shadow: 0 0 2px var(--label-halo, rgba(0, 0, 0, 0.9));
+}
+
+.peak-label--sel .peak-label__name {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* Bottom-right sits above the Data sources toggle. */
+.nav-cluster {
+  position: absolute;
+  right: var(--s3);
+  bottom: 46px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--paper-90);
+  box-shadow: var(--shadow-float);
+}
+
+/* On a phone the peak sheet owns the bottom edge. */
+.app:has(.sheet) .nav-cluster {
+  display: none;
+}
+
+.nav-cluster button {
+  appearance: none;
+  border: 0;
+  background: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font: 600 20px/1 var(--font-ui);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.nav-cluster button + button {
+  border-top: 1px solid rgba(13, 37, 27, 0.12);
+}
+
+.nav-cluster__needle {
+  width: 10px;
+  height: 22px;
+  background: linear-gradient(to bottom, #ff5c46 50%, var(--ink) 50%);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  transition: transform 0.1s linear;
+}
+
+@media (min-width: 721px) {
+  .nav-cluster {
+    right: var(--s4);
+    bottom: 52px;
+  }
+  .app:has(.sheet) .nav-cluster {
+    display: flex;
+  }
+}
+
+.skin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skin-chip__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  flex: none;
+}
+
+/* Phone-only skin switcher (the dock that holds the picker is desktop-only). */
+.skin-fab {
+  position: absolute;
+  right: var(--s3);
+  bottom: calc(46px + 132px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+
+.app:has(.sheet) .skin-fab {
+  display: none;
+}
+
+.skin-fab__panel {
+  max-width: calc(100vw - 2 * var(--s3));
+}
+
+.skin-fab__btn {
+  appearance: none;
+  border: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  background: var(--paper-90);
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+}
+
+.skin-fab__swatch {
+  width: 22px;
+  height: 22px;
+  border-color: rgba(13, 37, 27, 0.35);
+}
+
+@media (min-width: 721px) {
+  .skin-fab {
+    display: none;
+  }
+}
+
+.loading-pill {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-pill);
+  background: var(--panel-bg);
+  color: var(--panel-fg);
+  font: 600 13px/1 var(--font-ui);
+  pointer-events: none;
+}
+
+.engine-error {
+  position: absolute;
+  inset: 40% var(--s5) auto;
+  margin: 0;
+  padding: var(--s4);
+  border-radius: var(--r-lg);
+  background: var(--paper-90);
+  color: var(--ink);
+  text-align: center;
+  font: 600 14px/1.4 var(--font-ui);
+}

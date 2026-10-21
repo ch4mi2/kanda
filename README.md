@@ -36,10 +36,10 @@ npm install
 npm run dev
 ```
 
-Opens at `localhost:5173`, streaming elevation tiles live from the
+Opens at `localhost:5273`, streaming elevation tiles live from the
 [AWS Open Data](https://registry.opendata.aws/terrain-tiles/) bucket — no key
-needed. It re-downloads ~2,000 tiles per session this way, so it's slow; for
-real work, set up local tiles below.
+needed. It re-downloads tiles every session this way, so it's slow; for real work,
+set up local tiles below.
 
 ## Full tile pipeline
 
@@ -49,10 +49,7 @@ reproducible artifact, not the binaries. After a fresh clone:
 ```bash
 npm run fetch:terrain      # ~54 MB elevation pyramid
 npm run repair:dem         # repair DEM spikes/pits + one smooth pass
-npm run generate:texture   # DEM + forest -> procedural surface texture (~10 min)
-npm run pack:texture       # -> public/tiles/texture.pmtiles
 npm run pack:pmtiles       # -> public/tiles/terrain.pmtiles
-npm run fetch:glyphs       # self-hosted map-label glyphs
 
 cp .env.local.example .env.local   # sets VITE_TILE_MODE=local
 npm run dev
@@ -62,13 +59,15 @@ With `VITE_TILE_MODE=local` (or `pmtiles`) the app never touches the network.
 
 ## Tech
 
-Vite + React + [MapLibre GL JS](https://maplibre.org/), used imperatively.
-MapLibre's `color-relief` layer paints the map from the elevation data already
-loaded for the 3D terrain — one dataset, no licensing questions, and a better
-look for orientation than a satellite blur. Locally, packed elevation and
-texture tiles can ship as [PMTiles](https://protomaps.com/docs/pmtiles)
-archives served over HTTP range requests; the live deploy currently streams
-terrain straight from AWS Open Data instead (see `CLAUDE.md` for why).
+Vite + React + [three.js](https://threejs.org/), used imperatively. A custom
+terrain engine streams Terrarium elevation tiles (z7–z12) with a quadtree LOD,
+shades them with cel lighting, GPU cast shadows and depth-based outlines, and
+paints everything from the elevation data plus forest/lake masks — one dataset,
+no licensing questions, and a look built for telling mountains apart. Five
+skins (Arena, Ember, Clay, Block World, Ink) are plain data. Packed elevation
+tiles can ship as a [PMTiles](https://protomaps.com/docs/pmtiles) archive
+served over HTTP range requests; the live deploy currently streams terrain
+straight from AWS Open Data instead (see `CLAUDE.md` for why).
 
 Architecture, design decisions, and the traps that have already cost time are
 documented in [`CLAUDE.md`](CLAUDE.md).
@@ -80,7 +79,7 @@ documented in [`CLAUDE.md`](CLAUDE.md).
   credit requested
 - **Peaks, rivers, water, forest, landcover:** © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, ODbL
-- **Rendering:** [MapLibre GL JS](https://maplibre.org/), BSD-3-Clause
+- **Rendering:** [three.js](https://threejs.org/), MIT
 
 Attribution is shown in-app and is not optional — see
 `src/components/Attribution.tsx`.
