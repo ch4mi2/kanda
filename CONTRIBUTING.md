@@ -34,10 +34,7 @@ reproducible artifact, not the binaries. After a fresh clone:
 ```bash
 npm run fetch:terrain      # ~54 MB elevation pyramid -> public/tiles/terrain/
 npm run repair:dem         # repair DEM spikes/pits + one smooth pass
-npm run generate:texture   # DEM + forest -> texture tile pyramid (~10 min)
-npm run pack:texture       # -> public/tiles/texture.pmtiles
 npm run pack:pmtiles       # -> public/tiles/terrain.pmtiles
-npm run fetch:glyphs       # self-hosted map label glyphs -> public/fonts/
 ```
 
 Then:
@@ -83,13 +80,13 @@ Branch off `main`:
 - **`CLAUDE.md` is the source of truth for architecture and the traps.** Read it
   before touching the map code — it carries decisions that have already cost
   time.
-- **MapLibre is used imperatively inside `useEffect`, never `react-map-gl`.**
+- **three.js is used imperatively inside `useEffect`, never react-three-fiber.**
   Terrain and camera work fight declarative wrappers. React earns its place in
-  the UI panels, not in the map instance.
+  the UI panels, not in the map engine.
 - `src/config/tiles.ts` is the single choke point for tile URLs and camera
   defaults. Change providers there and nowhere else.
-- The map's whole look is data in `src/skins/` — no palette lives in
-  `buildStyle.ts`.
+- The map's whole look is data in `src/skins/` — no palette lives in the
+  engine.
 - Design tokens are CSS custom properties in `src/index.css`; read `var(--ink)`,
   never a raw hex.
 - Match the style of the code around you — comment density, naming, idiom.

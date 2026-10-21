@@ -22,7 +22,10 @@ interface Item {
   lastText: string;
 }
 
-const MAX_OVERVIEW = 36;
+/** Fewer labels the further out the camera is, so the island view stays legible. */
+function overviewLimit(distanceKm: number): number {
+  return distanceKm > 110 ? 14 : distanceKm > 55 ? 24 : 36;
+}
 const MAX_SUMMIT = 40;
 const OCCLUSION_EVERY = 6;
 
@@ -114,6 +117,8 @@ export class PeakLabels {
       if (summit) {
         km = haversineKm([this.origin!.lng, this.origin!.lat], [it.lng, it.lat]);
         if (km > SUMMIT_LABEL_RADIUS_KM) continue;
+        // Low hills far away are noise on the skyline; the peaks you want to name are taller.
+        if (ele < 450 && km > 8) continue;
         bearing = initialBearingDeg([this.origin!.lng, this.origin!.lat], [it.lng, it.lat]);
         if (Math.abs(((bearing - viewBearing + 540) % 360) - 180) > 62) continue;
       }
@@ -128,7 +133,7 @@ export class PeakLabels {
     }
     cands.sort((a, b) => a.p - b.p);
 
-    const limit = summit ? MAX_SUMMIT : MAX_OVERVIEW;
+    const limit = summit ? MAX_SUMMIT : overviewLimit(eng.orbitDistanceKm);
     const taken: Array<[number, number]> = [];
     let placed = 0;
     const shownNow = new Set<Item>();

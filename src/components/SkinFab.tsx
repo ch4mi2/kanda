@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Skin } from '../engine/skins';
+import type { Skin } from '../skins';
 import SkinPicker from './SkinPicker';
 
 interface SkinFabProps {

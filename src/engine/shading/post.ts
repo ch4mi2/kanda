@@ -2,7 +2,7 @@
 // and the skin's colour grade.
 
 import * as THREE from 'three';
-import type { Skin } from '../skins';
+import type { Skin } from '../../skins';
 
 export class PostPass {
   readonly uniforms = {

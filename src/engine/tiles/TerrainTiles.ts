@@ -180,6 +180,8 @@ export class TerrainTiles {
   exaggeration = 2.6;
   /** Vertices per tile edge: 128 normally, 32 for the faceted clay skin. */
   grid = GRID;
+  /** Screen-space error (px) a tile may have before it splits; phones use a coarser value. */
+  splitPx = SPLIT_PX;
   private jitter = false;
 
   private entries = new Map<string, Entry>();
@@ -287,7 +289,7 @@ export class TerrainTiles {
 
     if (e.z < MAX_Z) {
       const errPx = ((((box.max.x - box.min.x) / this.grid) * 0.5) / dist) * focalPx;
-      if (errPx > SPLIT_PX) {
+      if (errPx > this.splitPx) {
         const kids: Entry[] = [];
         for (let dy = 0; dy < 2; dy++) {
           for (let dx = 0; dx < 2; dx++) kids.push(this.entry(e.z + 1, e.x * 2 + dx, e.y * 2 + dy));

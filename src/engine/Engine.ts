@@ -19,7 +19,7 @@ import {
 } from './shading/terrain';
 import { PostPass } from './shading/post';
 import { SunShadow } from './shading/shadow';
-import { DEFAULT_SKIN, type Skin } from './skins';
+import { DEFAULT_SKIN, type Skin } from '../skins';
 import { TerrainTiles } from './tiles/TerrainTiles';
 import { TileSource } from './tiles/TileSource';
 
@@ -116,25 +116,27 @@ export class Engine {
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     THREE.ColorManagement.enabled = false; // hex in = hex out; skins are authored in display space
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Phones: cap pixel ratio, use cheaper MSAA and a coarser tile LOD.
+    const small = Math.min(window.screen.width, window.screen.height) < 700;
+    this.dpr = Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2);
     this.renderer.setPixelRatio(this.dpr);
     this.canvas = this.renderer.domElement;
     this.canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none';
     container.appendChild(this.canvas);
 
-    this.rt = new THREE.WebGLRenderTarget(1, 1, { samples: 4 });
+    this.rt = new THREE.WebGLRenderTarget(1, 1, { samples: small ? 2 : 4 });
     this.rt.depthTexture = new THREE.DepthTexture(1, 1);
     this.rt.depthTexture.type = THREE.FloatType;
     this.post.uniforms.tColor.value = this.rt.texture;
     this.post.uniforms.tDepth.value = this.rt.depthTexture;
 
-    const small = Math.min(window.screen.width, window.screen.height) < 700;
     this.shadow = new SunShadow(small ? 1024 : 2048);
     this.u.tShadow.value = this.shadow.target.depthTexture;
     this.u.uShadowTexel.value = 1 / this.shadow.size;
     this.shadowMat = createShadowDepthMaterial(this.u);
 
     this.tiles = new TerrainTiles(new TileSource(), createTerrainMaterial(this.u));
+    if (small) this.tiles.splitPx = 3.4;
     this.scene.add(this.tiles.group);
     const masks = new Masks();
     this.trees = new TreeLayer(masks, this.u);
@@ -234,6 +236,16 @@ export class Engine {
 
   get currentSkin(): Skin {
     return this.skin;
+  }
+
+  /** True once enough terrain has loaded to show something. */
+  get ready(): boolean {
+    return this.tiles.stats.drawn >= 3;
+  }
+
+  /** Distance from the camera to its orbit pivot, km. */
+  get orbitDistanceKm(): number {
+    return this.camera.position.distanceTo(this.controls.target);
   }
 
   get currentMode(): EngineMode {

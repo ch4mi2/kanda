@@ -846,49 +846,6 @@
   color: var(--water);
 }
 
-/* ---------- MapLibre control restyle (compass + zoom cluster) ---------- */
-
-.maplibregl-ctrl-bottom-right {
-  bottom: 46px; /* clear of the Data sources toggle at bottom-right */
-  right: var(--s3);
-}
-/* The peak sheet owns the bottom edge on a phone. */
-.app:has(.sheet) .maplibregl-ctrl-bottom-right {
-  display: none;
-}
-
-.maplibregl-ctrl-group {
-  background: var(--panel-bg);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-float);
-  overflow: hidden;
-}
-
-.maplibregl-ctrl-group button {
-  width: 40px;
-  height: 40px;
-  background: transparent;
-}
-.maplibregl-ctrl-group button + button {
-  border-top: 1px solid rgba(247, 245, 236, 0.12);
-}
-.maplibregl-ctrl-group button:hover {
-  background: rgba(247, 245, 236, 0.08);
-}
-.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-  filter: invert(1) brightness(1.4);
-}
-
-.maplibregl-ctrl-scale {
-  background: var(--panel-bg);
-  color: var(--panel-fg);
-  border-color: rgba(247, 245, 236, 0.4);
-  border-radius: 0 var(--s1) 0 0;
-  font-family: var(--font-ui);
-  font-size: 10px;
-}
 
 /* ---------- desktop / large tablet ---------- */
 @media (min-width: 721px) {
@@ -931,15 +888,5 @@
   .attribution {
     right: var(--s4);
     bottom: var(--s4);
-  }
-
-  /* Relief dock owns bottom-left; nudge the compass/zoom cluster clear of
-     the attribution toggle at bottom-right. */
-  .app:has(.sheet) .maplibregl-ctrl-bottom-right {
-    display: block;
-  }
-  .maplibregl-ctrl-bottom-right {
-    bottom: 52px;
-    right: var(--s4);
   }
 }

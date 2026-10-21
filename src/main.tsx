@@ -9,11 +9,9 @@ import '@fontsource/outfit/latin-400.css';
 import '@fontsource/outfit/latin-600.css';
 import './index.css';
 import App from './App.tsx';
-import AppThree from './AppThree.tsx';
-import { USE_THREE } from './engineFlag';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {USE_THREE ? <AppThree /> : <App />}
+    <App />
   </StrictMode>,
 );
