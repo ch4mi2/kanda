@@ -1,0 +1,392 @@
+<title>Kanda Look Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Outfit:wght@400;600&display=swap">
+<style>
+/* Layout: full-bleed WebGL terrain, brand top-left, one glass dock along the bottom. Single dark look by choice. */
+:root {
+  --ink: #0d251b;
+  --ink-glass: rgba(13, 37, 27, 0.72);
+  --paper: #f7f5ec;
+  --moss: #9fb5a9;
+  --chip: #e8eee5;
+  --leaf: #5cb17a;
+  --line: rgba(247, 245, 236, 0.14);
+  --lbl: #fff3e0;
+  --lbl-halo: rgba(70, 30, 20, 0.85);
+  --display: "Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --ui: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--ink); color: var(--paper); font-family: var(--ui); }
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font: 600 13px/1.15 var(--ui); color: var(--lbl);
+  text-shadow: 0 0 3px var(--lbl-halo), 0 0 8px var(--lbl-halo); transition: opacity .25s; will-change: transform; text-align: center; opacity: 0; }
+.lbl small { display: block; font-weight: 400; font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
+.lbl::after { content: ""; display: block; width: 1px; height: 12px; margin: 3px auto 0; background: var(--lbl); opacity: .7; }
+.brand { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; background: var(--ink-glass); backdrop-filter: blur(10px); }
+.brand h1 { margin: 0; font: 800 22px/1 var(--display); letter-spacing: -.01em; }
+.brand p { margin: 0; font-size: 12px; color: var(--moss); letter-spacing: .02em; }
+.dock { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+.panel { pointer-events: auto; width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 12px; padding: 14px;
+  border-radius: 20px; background: var(--ink-glass); backdrop-filter: blur(14px); border: 1px solid var(--line); }
+.looks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.look { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 14px;
+  border: 1px solid var(--line); min-width: 0; transition: background .2s, border-color .2s; }
+.look:hover { background: rgba(247, 245, 236, .06); }
+.look:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+.look[aria-pressed="true"] { background: rgba(247, 245, 236, .12); border-color: var(--paper); }
+.look strong { font: 800 17px/1 var(--display); }
+.look span { font-size: 12px; line-height: 1.35; color: var(--moss); }
+.sw { display: flex; height: 6px; border-radius: 3px; overflow: hidden; }
+.sw i { flex: 1; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.btn { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px;
+  background: var(--chip); color: var(--ink); font: 600 13px/1 var(--ui); white-space: nowrap; }
+.btn:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+.btn.ghost { background: transparent; color: var(--paper); border: 1px solid var(--line); }
+.time { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; }
+.time output { font: 600 14px/1 var(--ui); font-variant-numeric: tabular-nums; width: 44px; }
+input[type=range] { flex: 1; min-width: 0; accent-color: var(--leaf); }
+.hint { font-size: 12px; color: var(--moss); }
+@media (max-width: 560px) {
+  .look span { display: none; }
+  .look strong { font-size: 15px; }
+  .brand h1 { font-size: 18px; }
+  .hint { display: none; }
+}
+</style>
+
+<canvas id="gl"></canvas>
+<div id="labels"></div>
+<div class="brand"><h1>Kanda look lab</h1><p>Knuckles Range · real SRTM terrain · 46 × 42 km</p></div>
+<div class="dock"><div class="panel">
+  <div class="looks" id="looks"></div>
+  <div class="row">
+    <div class="time"><button class="btn ghost" id="play" aria-label="Play the day">▶ Day</button>
+      <input type="range" id="hour" min="6.1" max="17.9" step="0.01" aria-label="Time of day"><output id="hourOut">17:20</output></div>
+    <button class="btn" id="summit">Stand on Gombaniya</button>
+  </div>
+  <div class="hint" id="hint">Drag to orbit · right-drag to pan · scroll to zoom</div>
+</div></div>
+
+<script>/*DEM*/</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+THREE.ColorManagement.enabled = false; // hex in = hex out; stylised shading works in display space
+
+const D = window.KANDA_DEM, W = D.w, H = D.h, kmW = D.kmW, kmH = D.kmH;
+const EX = 1.6, pxX = kmW / (W - 1), pxZ = kmH / (H - 1);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function b64u8(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+function blur(src, w, h, r, passes) {
+  let a = Float32Array.from(src); const t = new Float32Array(a.length), n = 2 * r + 1;
+  for (let p = 0; p < passes; p++) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let s = 0; for (let k = -r; k <= r; k++) s += a[y * w + Math.min(w - 1, Math.max(0, x + k))]; t[y * w + x] = s / n; }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let s = 0; for (let k = -r; k <= r; k++) s += t[Math.min(h - 1, Math.max(0, y + k)) * w + x]; a[y * w + x] = s / n; }
+  }
+  return a;
+}
+const raw = new Uint16Array(b64u8(D.b64).buffer);
+const hG = blur(raw, W, H, 1, 2);   // geometry: one light pass kills SRTM speckle
+const hN = blur(raw, W, H, 2, 2);   // normals: smoother still, so shading reads as clean planes
+function maskTex(b64) {
+  const m = blur(b64u8(b64), W, H, 1, 1), u = new Uint8Array(W * H);
+  for (let i = 0; i < u.length; i++) u[i] = m[i];
+  const t = new THREE.DataTexture(u, W, H, THREE.RedFormat); t.magFilter = t.minFilter = THREE.LinearFilter; t.needsUpdate = true; return t;
+}
+const waterTex = maskTex(D.water), forestTex = maskTex(D.forest);
+
+function heightKm(x, z) { // scene coords -> exaggerated height
+  const fx = Math.min(W - 1.001, Math.max(0, (x / kmW + .5) * (W - 1))), fz = Math.min(H - 1.001, Math.max(0, (z / kmH + .5) * (H - 1)));
+  const i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, p = j * W + i;
+  return ((hG[p] * (1 - u) + hG[p + 1] * u) * (1 - v) + (hG[p + W] * (1 - u) + hG[p + W + 1] * u) * v) / 1000 * EX;
+}
+
+function buildGeo(step) {
+  const w = Math.floor((W - 1) / step) + 1, h = Math.floor((H - 1) / step) + 1;
+  const pos = new Float32Array(w * h * 3), nor = new Float32Array(w * h * 3), uv = new Float32Array(w * h * 2), ah = new Float32Array(w * h);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const gi = i * step, gj = j * step, k = j * w + i, hm = hG[gj * W + gi];
+    pos.set([(gi / (W - 1) - .5) * kmW, hm / 1000 * EX, (gj / (H - 1) - .5) * kmH], k * 3);
+    const l = hN[gj * W + Math.max(0, gi - 1)], r = hN[gj * W + Math.min(W - 1, gi + 1)], u = hN[Math.max(0, gj - 1) * W + gi], d = hN[Math.min(H - 1, gj + 1) * W + gi];
+    const nx = -EX * (r - l) / 1000 / (2 * pxX), nz = -EX * (d - u) / 1000 / (2 * pxZ), len = Math.hypot(nx, 1, nz);
+    nor.set([nx / len, 1 / len, nz / len], k * 3);
+    uv.set([gi / (W - 1), gj / (H - 1)], k * 2); ah[k] = hm;
+  }
+  const idx = [];
+  for (let j = 0; j < h - 1; j++) for (let i = 0; i < w - 1; i++) { const a = j * w + i, b = a + 1, c = a + w, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setAttribute('aH', new THREE.BufferAttribute(ah, 1));
+  g.setIndex(idx); return g;
+}
+const geoSmooth = buildGeo(1);
+const geoFacet = buildGeo(5).toNonIndexed(); geoFacet.computeVertexNormals(); // non-indexed -> flat facets
+
+// ---- cast shadows: CPU march over the heightmap toward the sun (MapLibre can't do this) ----
+const SW = W / 2, SH = H / 2, hS = new Float32Array(SW * SH);
+for (let j = 0; j < SH; j++) for (let i = 0; i < SW; i++) hS[j * SW + i] = hN[(2 * j) * W + 2 * i] / 1000 * EX;
+const shadowData = new Uint8Array(SW * SH).fill(255);
+const shadowTex = new THREE.DataTexture(shadowData, SW, SH, THREE.RedFormat); shadowTex.magFilter = shadowTex.minFilter = THREE.LinearFilter; shadowTex.needsUpdate = true;
+let maxHS = 0; for (const v of hS) maxHS = Math.max(maxHS, v);
+function computeShadows(sun) {
+  const hl = Math.hypot(sun.x, sun.z), tan = sun.y / Math.max(hl, 1e-4), STEP = .22;
+  const dx = sun.x / hl * STEP / (2 * pxX), dz = sun.z / hl * STEP / (2 * pxZ);
+  for (let j = 0; j < SH; j++) for (let i = 0; i < SW; i++) {
+    const h0 = hS[j * SW + i] + .004; let s = 1, x = i, z = j;
+    for (let k = 1; k < 110; k++) {
+      x += dx; z += dz; if (x < 0 || z < 0 || x > SW - 1 || z > SH - 1) break;
+      const t = k * STEP, ray = h0 + t * tan; if (ray > maxHS) break;
+      s = Math.min(s, 9 * (ray - hS[(z | 0) * SW + (x | 0)]) / t); if (s <= 0) { s = 0; break; }
+    }
+    shadowData[j * SW + i] = Math.max(0, s) * 255;
+  }
+  shadowTex.needsUpdate = true;
+}
+
+// ---- the three looks ----
+const LOOKS = [
+  { id: 'ember', name: 'Ember', blurb: 'Golden hour, posterised light, ridges stacked in paper-cut layers. After Firewatch.', hour: 17.35,
+    style: 0, zen: '#e9874f', hor: '#ffd59a', fog: '#f4ad72', sunCol: '#ffd391', amb: '#3a1f3e', low: '#4d2b27', mid: '#9a4a30', high: '#d0743f',
+    forest: '#2e4638', rock: '#b8643f', water: '#3d6e74', waterHi: '#ffc98a', mist: '#ffcf9c', mistAmt: .4, fogDen: .03, fogStart: 7, fogBands: 6,
+    bands: 3, rim: .5, cloudSh: 0, disc: 1.6, lbl: '#fff3e0', halo: 'rgba(80,32,20,.85)' },
+  { id: 'drift', name: 'Drift', blurb: 'Dawn pastels, soft gradients, mist pooling in the valleys. After Alto’s Odyssey.', hour: 6.45,
+    style: 1, zen: '#4a5a9c', hor: '#f6b9a8', fog: '#e7a9aa', sunCol: '#ffd6b8', amb: '#3a3d78', low: '#2f3463', mid: '#5d5690', high: '#e3a3a6',
+    forest: '#384a72', rock: '#9481aa', water: '#5a6fa8', waterHi: '#ffd0c0', mist: '#fbe3e0', mistAmt: .85, fogDen: .03, fogStart: 6, fogBands: 0,
+    bands: 0, rim: .9, cloudSh: 0, disc: .9, lbl: '#ffffff', halo: 'rgba(52,56,104,.85)' },
+  { id: 'paper', name: 'Papercraft', blurb: 'Low-poly facets, two-tone toon light, puffy clouds drifting overhead.', hour: 10.5,
+    style: 2, zen: '#5aa9e3', hor: '#d6eef4', fog: '#cfe6ec', sunCol: '#fff4dc', amb: '#476a86', low: '#7fb85a', mid: '#4a8c4c', high: '#b89f63',
+    forest: '#2f7d54', rock: '#a09381', water: '#4fb3d9', waterHi: '#e8fbff', mist: '#ffffff', mistAmt: 0, fogDen: .016, fogStart: 14, fogBands: 0,
+    bands: 2, rim: .15, cloudSh: .35, disc: 0, lbl: '#0d251b', halo: 'rgba(255,255,255,.9)' },
+];
+const C = (h) => new THREE.Color(h);
+
+const NOISE = `
+float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }
+float vnoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
+float fbm(vec2 p){ float s=0., a=.5; for(int i=0;i<4;i++){ s+=a*vnoise(p); p=p*2.03+17.1; a*=.5; } return s; }`;
+
+const U = {
+  uStyle: { value: 0 }, uTime: { value: 0 }, uSun: { value: new THREE.Vector3(0, 1, 0) }, uHalf: { value: new THREE.Vector2(kmW / 2, kmH / 2) },
+  uShadow: { value: shadowTex }, uWaterM: { value: waterTex }, uForestM: { value: forestTex },
+  uSunCol: { value: C('#fff') }, uAmb: { value: C('#000') }, uFog: { value: C('#fff') }, uLow: { value: C('#000') }, uMid: { value: C('#000') },
+  uHigh: { value: C('#000') }, uForest: { value: C('#000') }, uRock: { value: C('#000') }, uWater: { value: C('#000') }, uWaterHi: { value: C('#000') },
+  uMist: { value: C('#fff') }, uMistAmt: { value: 0 }, uFogDen: { value: .05 }, uFogStart: { value: 4 }, uFogBands: { value: 0 },
+  uBands: { value: 3 }, uRim: { value: 0 }, uCloudSh: { value: 0 },
+};
+const terrainMat = new THREE.ShaderMaterial({
+  uniforms: U,
+  vertexShader: `attribute float aH; varying vec3 vW; varying vec3 vN; varying vec2 vUv; varying float vH;
+    void main(){ vec4 w = modelMatrix*vec4(position,1.); vW=w.xyz; vN=normal; vUv=uv; vH=aH; gl_Position=projectionMatrix*viewMatrix*w; }`,
+  fragmentShader: `uniform float uStyle,uTime,uMistAmt,uFogDen,uFogStart,uFogBands,uBands,uRim,uCloudSh; uniform vec2 uHalf;
+    uniform vec3 uSun,uSunCol,uAmb,uFog,uLow,uMid,uHigh,uForest,uRock,uWater,uWaterHi,uMist; uniform sampler2D uShadow,uWaterM,uForestM;
+    varying vec3 vW; varying vec3 vN; varying vec2 vUv; varying float vH; ${NOISE}
+    float soften(float x, float b){ float q=x*b; float f=fract(q); return (floor(q)+smoothstep(.42,.58,f))/b; }
+    void main(){
+      vec3 N = normalize(vN); vec3 V = normalize(cameraPosition - vW);
+      float e = smoothstep(250., 1850., vH);
+      vec3 base = mix(uLow, uMid, smoothstep(0.,.45,e)); base = mix(base, uHigh, smoothstep(.4,1.,e));
+      float fm = texture2D(uForestM, vUv).r;
+      base = mix(base, uForest, fm*.8);
+      base *= .93 + .14*fbm(vW.xz*.3);
+      base = mix(base, uRock, smoothstep(.42,.7,1.-N.y)*.75);
+      float sh = texture2D(uShadow, vUv).r;
+      float ndl = dot(N, uSun);
+      float lit;
+      if (uStyle < .5) { lit = soften(clamp(ndl,0.,1.)*mix(.08,1.,sh), uBands); }
+      else if (uStyle < 1.5) { lit = smoothstep(0.,1., clamp((ndl+.3)/1.3,0.,1.)*mix(.3,1.,sh)); }
+      else { lit = mix(.38, 1., smoothstep(.08,.14, ndl)*smoothstep(.35,.55,sh)); }
+      float cl = smoothstep(.56,.72, fbm(vW.xz*.11 + vec2(uTime*.025, uTime*.012)));
+      lit *= 1. - cl*uCloudSh;
+      vec3 col = base*(uAmb + uSunCol*lit);
+      col += uSunCol*pow(1.-max(dot(N,V),0.),4.)*uRim*.35*sh;
+      float wm = smoothstep(.25,.6, texture2D(uWaterM, vUv).r);
+      if (wm > 0.) {
+        float fr = pow(1.-max(V.y,0.),3.);
+        float sp = smoothstep(.72,.95, vnoise(vW.xz*7. + vec2(uTime*.5,uTime*.31)))*.7;
+        vec3 wc = mix(uWater, uWaterHi, clamp(fr*.8 + sp*sh,0.,1.));
+        col = mix(col, wc, wm);
+      }
+      float mh = .72 + .22*vnoise(vW.xz*.15);
+      float mist = (1.-smoothstep(mh-.25, mh+.25, vW.y)) * smoothstep(.3,.72, fbm(vW.xz*.16 + vec2(uTime*.035,-uTime*.018)));
+      col = mix(col, uMist, mist*uMistAmt);
+      float d = length(cameraPosition - vW);
+      float f = 1. - exp(-max(d-uFogStart,0.)*uFogDen);
+      if (uFogBands > 0.) f = soften(f, uFogBands);
+      vec2 ed = smoothstep(1., .8, abs(vW.xz)/uHalf); f = max(f, 1.-ed.x*ed.y);
+      gl_FragColor = vec4(mix(col, uFog, f), 1.);
+    }`,
+});
+
+const SU = { uZen: { value: C('#000') }, uHor: { value: C('#000') }, uFog: U.uFog, uSun: U.uSun, uSunCol: U.uSunCol, uDisc: { value: 1 } };
+const skyMat = new THREE.ShaderMaterial({
+  uniforms: SU, side: THREE.BackSide, depthWrite: false,
+  vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader: `uniform vec3 uZen,uHor,uFog,uSun,uSunCol; uniform float uDisc; varying vec3 vD;
+    void main(){ vec3 d = normalize(vD); float y = d.y;
+      vec3 c = mix(uHor, uZen, pow(smoothstep(0.,.55,y),.8)); c = mix(uFog, c, smoothstep(-.02,.1,y));
+      float g = max(dot(d,uSun),0.); c += uSunCol*(pow(g,10.)*.3 + smoothstep(.9985,.999,g)*uDisc);
+      gl_FragColor = vec4(c,1.); }`,
+});
+
+// ---- scene ----
+const canvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, .3, 1500);
+const sky = new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), skyMat); scene.add(sky);
+const terrain = new THREE.Mesh(geoSmooth, terrainMat); scene.add(terrain);
+
+// papercraft clouds: low-poly puffs with their own toon shader
+const cloudMat = new THREE.ShaderMaterial({
+  uniforms: { uSun: U.uSun, uFog: U.uFog, uFogDen: U.uFogDen, uFogStart: U.uFogStart },
+  vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+  fragmentShader: `uniform vec3 uSun,uFog; uniform float uFogDen,uFogStart; varying vec3 vW;
+    void main(){ vec3 N = normalize(cross(dFdx(vW), dFdy(vW))); float l = smoothstep(.05,.2,dot(N,uSun));
+      vec3 c = mix(vec3(.80,.87,.93), vec3(1.), l); float d = length(cameraPosition-vW);
+      gl_FragColor = vec4(mix(c, uFog, (1.-exp(-max(d-uFogStart,0.)*uFogDen))*.8), 1.); }`,
+});
+const clouds = new THREE.Group(); scene.add(clouds);
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let c = 0; c < 9; c++) {
+  const g = new THREE.Group();
+  for (let p = 0, n = 3 + (rnd() * 3 | 0); p < n; p++) {
+    const r = .5 + rnd() * .6, m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), cloudMat);
+    m.position.set((p - n / 2) * .9 + rnd() * .4, rnd() * .4, rnd() * .8 - .4); m.scale.y = .7; m.rotation.set(rnd() * 3, rnd() * 3, 0); g.add(m);
+  }
+  g.position.set(rnd() * kmW - kmW / 2, 6 + rnd() * 1.5, rnd() * kmH * .8 - kmH * .5); g.userData.v = .25 + rnd() * .25; clouds.add(g);
+}
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.maxPolarAngle = 1.38; controls.minDistance = 2.5; controls.maxDistance = 70;
+const HOME = { pos: new THREE.Vector3(-5, 5.2, 25), target: new THREE.Vector3(1.5, 1.8, -3) };
+camera.position.copy(HOME.pos); controls.target.copy(HOME.target);
+
+// ---- peaks ----
+const labelsEl = document.getElementById('labels');
+const peaks = [...D.peaks].sort((a, b) => b.e - a.e).map((p) => {
+  const x = (p.u - .5) * kmW, z = (p.v - .5) * kmH, el = document.createElement('div');
+  el.className = 'lbl'; el.innerHTML = `${p.n}<small>${p.e.toLocaleString('en')} m</small>`; labelsEl.appendChild(el);
+  return { ...p, el, pos: new THREE.Vector3(x, heightKm(x, z), z), ghost: false };
+});
+const gomb = peaks.find((p) => p.n === 'Gombaniya'), lake = peaks.find((p) => p.n === 'Lakegala');
+function occluded(from, to) {
+  const n = 48;
+  for (let k = 5; k < n - 2; k++) {
+    const t = k / n, x = from.x + (to.x - from.x) * t, z = from.z + (to.z - from.z) * t, y = from.y + (to.y - from.y) * t;
+    if (heightKm(x, z) > y + .03) return true;
+  }
+  return false;
+}
+
+// ---- sun ----
+let hour = 17.35, shadowHour = -1, lastShadowT = 0;
+function sunDir(h) { const t = (h - 6) / 12 * Math.PI; return new THREE.Vector3(Math.cos(t), Math.sin(t) * .96, .3 * Math.sin(t) + .05).normalize(); }
+const hourIn = document.getElementById('hour'), hourOut = document.getElementById('hourOut');
+function setHour(h) {
+  hour = h; hourIn.value = h; const m = Math.round(h * 60); hourOut.textContent = `${String(m / 60 | 0).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  U.uSun.value.copy(sunDir(h));
+}
+hourIn.addEventListener('input', () => { setHour(+hourIn.value); playing = false; playBtn.textContent = '▶ Day'; });
+
+// ---- look switching ----
+let current = 0;
+const looksEl = document.getElementById('looks');
+LOOKS.forEach((L, i) => {
+  const b = document.createElement('button'); b.className = 'look'; b.id = 'look-' + L.id;
+  b.innerHTML = `<div class="sw">${[L.zen, L.hor, L.high, L.mid, L.forest, L.amb].map((c) => `<i style="background:${c}"></i>`).join('')}</div><strong>${L.name}</strong><span>${L.blurb}</span>`;
+  b.addEventListener('click', () => applyLook(i, true)); looksEl.appendChild(b);
+});
+function applyLook(i, resetHour) {
+  current = i; const L = LOOKS[i];
+  [...looksEl.children].forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+  U.uStyle.value = L.style;
+  for (const [u, k] of [['uSunCol', 'sunCol'], ['uAmb', 'amb'], ['uFog', 'fog'], ['uLow', 'low'], ['uMid', 'mid'], ['uHigh', 'high'], ['uForest', 'forest'], ['uRock', 'rock'], ['uWater', 'water'], ['uWaterHi', 'waterHi'], ['uMist', 'mist']]) U[u].value.set(L[k]);
+  U.uMistAmt.value = L.mistAmt; U.uFogDen.value = L.fogDen; U.uFogStart.value = L.fogStart; U.uFogBands.value = L.fogBands;
+  U.uBands.value = L.bands; U.uRim.value = L.rim; U.uCloudSh.value = L.cloudSh;
+  SU.uZen.value.set(L.zen); SU.uHor.value.set(L.hor); SU.uDisc.value = L.disc;
+  terrain.geometry = L.style === 2 ? geoFacet : geoSmooth;
+  clouds.visible = L.style === 2;
+  document.documentElement.style.setProperty('--lbl', L.lbl); document.documentElement.style.setProperty('--lbl-halo', L.halo);
+  if (resetHour) setHour(L.hour);
+  try { localStorage.setItem('kanda-look', L.id); } catch (e) {}
+}
+
+// ---- summit view ----
+let summit = false, anim = null;
+const summitBtn = document.getElementById('summit'), hint = document.getElementById('hint');
+function flyTo(pos, target, dur, done) { anim = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: target, s: performance.now(), dur: reduceMotion ? 1 : dur, done }; controls.enabled = false; }
+summitBtn.addEventListener('click', () => {
+  summit = !summit;
+  if (summit) {
+    const eye = gomb.pos.clone().add(new THREE.Vector3(0, .03, 0));
+    const dir = lake.pos.clone().sub(eye).setY(0).normalize();
+    camera.near = .005; camera.fov = 62; camera.updateProjectionMatrix();
+    flyTo(eye.clone().sub(dir.multiplyScalar(.02)).add(new THREE.Vector3(0, .002, 0)), eye, 2200, () => {
+      controls.enableZoom = controls.enablePan = false; controls.rotateSpeed = -.35; controls.minDistance = 0; controls.maxPolarAngle = 1.75; controls.minPolarAngle = 1.2;
+    });
+    summitBtn.textContent = 'Back to overview'; hint.textContent = 'Drag to look around from the summit · grab-the-world';
+  } else {
+    controls.enableZoom = controls.enablePan = true; controls.rotateSpeed = 1; controls.minDistance = 2.5; controls.maxPolarAngle = 1.38; controls.minPolarAngle = 0;
+    flyTo(HOME.pos.clone(), HOME.target.clone(), 2000, () => { camera.near = .3; camera.fov = 50; camera.updateProjectionMatrix(); });
+    summitBtn.textContent = 'Stand on Gombaniya'; hint.textContent = 'Drag to orbit · right-drag to pan · scroll to zoom';
+  }
+});
+
+// ---- day playback ----
+let playing = false; const playBtn = document.getElementById('play');
+playBtn.addEventListener('click', () => { playing = !playing; playBtn.textContent = playing ? '❚❚ Pause' : '▶ Day'; });
+
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+let saved = 0; try { const id = localStorage.getItem('kanda-look'); saved = Math.max(0, LOOKS.findIndex((l) => l.id === id)); } catch (e) {}
+applyLook(saved, true);
+
+const clock = new THREE.Clock(); let frame = 0; const v = new THREE.Vector3();
+function tick() {
+  const dt = Math.min(clock.getDelta(), .1), now = performance.now();
+  if (!reduceMotion) U.uTime.value += dt;
+  if (playing) { let h = hour + dt * 1.1; if (h > 17.9) h = 6.1; setHour(h); }
+  if (Math.abs(hour - shadowHour) > .02 && now - lastShadowT > 60) { computeShadows(U.uSun.value); shadowHour = hour; lastShadowT = now; }
+  if (clouds.visible && !reduceMotion) for (const c of clouds.children) { c.position.x += c.userData.v * dt; if (c.position.x > kmW / 2 + 4) c.position.x = -kmW / 2 - 4; }
+  if (anim) {
+    const t = Math.min(1, (now - anim.s) / anim.dur), e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    camera.position.lerpVectors(anim.p0, anim.p1, e); controls.target.lerpVectors(anim.t0, anim.t1, e); camera.lookAt(controls.target);
+    if (t >= 1) { const d = anim.done; anim = null; controls.enabled = true; d && d(); }
+  } else controls.update();
+  sky.position.copy(camera.position);
+  renderer.render(scene, camera);
+  // labels
+  const w = innerWidth, h = innerHeight, checkOcc = frame++ % 8 === 0, taken = [];
+  for (const p of peaks) {
+    if (summit && p === gomb) { p.el.style.opacity = 0; continue; }
+    v.copy(p.pos).project(camera);
+    const dist = camera.position.distanceTo(p.pos);
+    if (v.z > 1 || v.x < -1.1 || v.x > 1.1 || v.y < -1.1 || v.y > 1.1) { p.el.style.opacity = 0; continue; }
+    if (checkOcc) p.ghost = occluded(camera.position, p.pos);
+    const s = Math.max(.7, Math.min(1.15, 14 / dist + .6));
+    const sx = (v.x * .5 + .5) * w, sy = (-v.y * .5 + .5) * h;
+    if (taken.some((t) => Math.abs(t[0] - sx) < 96 && Math.abs(t[1] - sy) < 36)) { p.el.style.opacity = 0; continue; }
+    taken.push([sx, sy]);
+    p.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%) scale(${s.toFixed(3)})`;
+    p.el.style.opacity = p.ghost ? .32 : 1;
+    p.el.querySelector('small').textContent = summit && !anim ? `${p.e.toLocaleString('en')} m · ${(dist / 1).toFixed(1)} km` : `${p.e.toLocaleString('en')} m`;
+  }
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
