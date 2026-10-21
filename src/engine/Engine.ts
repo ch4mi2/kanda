@@ -26,6 +26,8 @@ import { TileSource } from './tiles/TileSource';
 const DEG = Math.PI / 180;
 const MAX_DIST_KM = 700;
 const MIN_DIST_KM = 0.8;
+/** Beyond this, shadows can't resolve anything useful (whole-island view) - turn them off. */
+const SHADOW_MAX_DIST_KM = 180;
 /** Where the camera starts: the central highlands, island view. */
 const HOME = { lng: 80.75, lat: 7.0, distanceKm: 150, pitch: 62, bearing: -20 };
 
@@ -648,21 +650,35 @@ export class Engine {
         cam.quaternion.copy(this.summitQuat(s.yaw, s.pitch));
       }
     } else if (!this.anim) {
-      // Keep the orbit pivot on the ground under it: shift camera and target together.
-      const g = this.tiles.heightAt(ctl.target.x, ctl.target.z);
+      // Keep the orbit pivot on the ground under it, shifting camera and target
+      // together - but on a smoothed, scale-aware sample (averaged over a patch,
+      // read at a fixed coarse zoom) eased in over ~0.8s, not the raw per-frame
+      // DEM height. The raw sample jumps over every ridge while panning and
+      // again whenever a finer tile loads in (CLAUDE.md "camera bob").
+      const pivotDist = cam.position.distanceTo(ctl.target);
+      const zoom = pivotDist < 60 ? 11 : 9;
+      const radius = Math.max(1.5, pivotDist * 0.12);
+      const g = this.tiles.groundHeightNear(ctl.target.x, ctl.target.z, radius, zoom);
       if (g != null) {
         const want = (Math.max(g, 0) / 1000) * exag;
-        const dy = (want - ctl.target.y) * (1 - Math.exp(-this.dt * 10));
+        const dy = (want - ctl.target.y) * (1 - Math.exp(-this.dt / 0.8));
         ctl.target.y += dy;
         cam.position.y += dy;
       }
       ctl.update();
     }
-    // Never let the camera sink into the ground.
+    // Never let the camera sink into the ground - ease it up rather than snap,
+    // and only near the ground, so a refining tile doesn't yank the camera.
     const under = this.tiles.heightAt(cam.position.x, cam.position.z);
     if (under != null && !summit) {
       const floor = (Math.max(under, 0) / 1000) * exag + 0.03;
-      if (cam.position.y < floor) cam.position.y = floor;
+      const gap = cam.position.y - floor;
+      if (gap < 0) {
+        // A small dip (LOD noise nudging the sample) eases up smoothly; a big
+        // one (e.g. a teleport) still snaps, so the camera never stays buried.
+        if (gap > -0.15) cam.position.y += (floor - cam.position.y) * (1 - Math.exp(-this.dt / 0.3));
+        else cam.position.y = floor;
+      }
     }
 
     // Depth range follows how close the camera is to the surface.
@@ -699,6 +715,12 @@ export class Engine {
     const cam = this.camera;
     const ctl = this.controls;
     const summit = this.mode === 'summit';
+    const dist = summit ? 0 : cam.position.distanceTo(ctl.target);
+    if (!summit && dist > SHADOW_MAX_DIST_KM) {
+      // Whole-island view: nothing at this scale would resolve a shadow anyway.
+      this.u.uShadowOn.value = 0;
+      return;
+    }
     let R: number;
     const center = this.tmp.set(ctl.target.x, 0, ctl.target.z);
     if (summit) {
@@ -708,10 +730,18 @@ export class Engine {
       const h = Math.hypot(f.x, f.z) || 1;
       center.set(cam.position.x + (f.x / h) * R * 0.5, 0, cam.position.z + (f.z / h) * R * 0.5);
     } else {
-      R = THREE.MathUtils.clamp(cam.position.distanceTo(ctl.target) * 0.5, 20, 80);
+      R = THREE.MathUtils.clamp(dist * 0.5, 20, 80);
     }
     const maxH = (MAX_ELEVATION_M / 1000) * exag + 0.2;
-    const fit = this.shadow.fit(center, R, this.sunDir, maxH);
+
+    // Match the shadow mesh's zoom to what the main pass actually draws near
+    // the pivot - a shadow mesh coarser than the main mesh makes the finer
+    // receiver shadow itself (CLAUDE.md "shadow box").
+    const focalPx = this.host.clientHeight / (2 * Math.tan((cam.fov * Math.PI) / 360));
+    const mainZoomEstimate = this.tiles.estimateZoom(summit ? 1 : dist, focalPx);
+    const shadowZoom = THREE.MathUtils.clamp(mainZoomEstimate, 9, 12);
+
+    const fit = this.shadow.fit(center, R, this.sunDir, maxH, shadowZoom);
     const meshes = this.tiles.shadowMeshes(fit.rect[0], fit.rect[1], fit.rect[2], fit.rect[3], fit.zoom);
     if (!this.shadow.needsRender(fit.signature, meshes.length)) return;
 
@@ -730,9 +760,12 @@ export class Engine {
     children.forEach((m, i) => (m.visible = was[i]));
 
     this.u.uShadowMat.value.copy(this.shadow.matrix);
-    // Coarse shadow mesh vs finer main mesh: tolerate ~35% of the vertex spacing, exaggerated.
-    const biasKm = SunShadow.spacingKm(fit.zoom) * 0.35 * (exag / 2.6) + 0.02;
+    // Bias covers whichever mesh (shadow or main) is coarser, so neither a
+    // finer shadow mesh nor a finer main mesh self-shadows against the other.
+    const biasKm =
+      Math.max(SunShadow.spacingKm(shadowZoom), SunShadow.spacingKm(mainZoomEstimate)) * 0.45 * (exag / 2.6) + 0.02;
     this.u.uShadowBias.value = biasKm / this.shadow.depthRangeKm;
+    this.u.uShadowNormalOffset.value = 1.5 * fit.texelKm;
     this.u.uShadowOn.value = meshes.length ? 1 : 0;
   }
 }

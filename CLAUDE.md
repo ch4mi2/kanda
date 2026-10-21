@@ -120,10 +120,21 @@ development**; without it you silently run in remote mode.
    ready and buildable.** That is what prevents holes and parent/child overlap.
    Mesh builds are budgeted per frame; a tile that is loaded but not yet built
    counts as not ready. Tiles are skirted to hide LOD cracks.
-3. **Shadow bias scales with mesh spacing and exaggeration.** The sun depth pass
-   draws *coarser* tiles (z10–11) than the main pass (up to z12); the surface
-   can sit ~100 m off. `Engine.renderShadow` sets the bias from
-   `SunShadow.spacingKm(zoom)`. Too small = the whole map is in shadow.
+3. **Shadow bias scales with mesh spacing and exaggeration.** `Engine.renderShadow`
+   picks the shadow-pass zoom from `TerrainTiles.estimateZoom()` (an SSE estimate
+   at the camera's distance to the pivot, clamped z9–12) so it matches the main
+   pass's LOD instead of a fixed z10–11, and sizes the bias off
+   `SunShadow.spacingKm()` for whichever of the two is coarser. `shadowAt()` also
+   pushes the receiver along its normal by ~1.5 shadow texels and fades to lit
+   over the outer 15% of the box, and shadows turn off past ~180 km (island
+   view) where they can't resolve anything. Too small a bias = the whole map is
+   in shadow. **Known residual:** on very steep, high-relief ground (e.g. the
+   Horton Plains / Kirigalpotta escarpment) a patch can still self-shadow even
+   with zoom matched and bias pushed far past what spacing alone would need
+   (verified insensitive to bias up to ~45x and to the normal offset) — this
+   predates Phase 7E (present before this fix too, just hidden inside the
+   bigger hard-edged box) and needs real GPU depth-texture readback to
+   root-cause, not more bias tuning.
 4. **GLSL: texture reads must stay in uniform control flow.** An early
    `return` before `texture2D` triggered ANGLE's X3595 warning (undefined
    derivatives). `shadowAt` uses `step()` masks instead; derivative normals

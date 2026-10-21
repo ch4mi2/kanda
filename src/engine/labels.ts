@@ -13,21 +13,47 @@ interface Item {
   name: string;
   lng: number;
   lat: number;
-  /** Elevation for placing the label: OSM `ele`, else the loaded DEM, else 0. */
+  /** Elevation for placing the label: OSM `ele`, else the first positive DEM
+   *  sample seen (cached from then on - it no longer moves with LOD). */
   ele: number;
   el: HTMLButtonElement;
   small: HTMLElement;
   shown: boolean;
   ghost: boolean;
+  /** Last raw occlusion reading and how many checks in a row have agreed with
+   *  it - `ghost` only flips once this reaches OCCLUSION_HYSTERESIS. */
+  occlusionRaw: boolean;
+  occlusionStreak: number;
   lastText: string;
+  /** Pending `display:none` after a fade-out; cleared if shown again first. */
+  hideTimer: ReturnType<typeof setTimeout> | null;
 }
 
-/** Fewer labels the further out the camera is, so the island view stays legible. */
-function overviewLimit(distanceKm: number): number {
-  return distanceKm > 110 ? 14 : distanceKm > 55 ? 24 : 36;
+/** Fewer labels the further out the camera is, so the island view stays
+ *  legible. A pure state machine (zone in, limit out) so the boundary has
+ *  hysteresis: crossing 110/55 km outward and 95/45 km inward, with a dead
+ *  band between them, so a label doesn't flicker in/out right at the edge. */
+export type LabelZone = 0 | 1 | 2;
+export function nextLabelZone(zone: LabelZone, distanceKm: number): LabelZone {
+  if (zone === 2) return distanceKm > 55 ? 1 : 2;
+  if (zone === 1) return distanceKm > 110 ? 0 : distanceKm < 45 ? 2 : 1;
+  return distanceKm < 95 ? 1 : 0;
 }
+export function limitForZone(zone: LabelZone): number {
+  return zone === 0 ? 14 : zone === 1 ? 24 : 36;
+}
+
 const MAX_SUMMIT = 40;
 const OCCLUSION_EVERY = 6;
+const OCCLUSION_HYSTERESIS = 3;
+const FADE_MS = 180;
+/** Already-shown labels get a bonus (pushes them up the priority order) and a
+ *  smaller overlap box (so a new candidate has to overlap it more before it
+ *  can displace it) - both keep a label from flickering out over a near-tie. */
+const SHOWN_BONUS_OVERVIEW = 400; // metres-equivalent, vs. priority = -ele
+const SHOWN_BONUS_SUMMIT = 5; // km-equivalent, vs. priority = km
+const OVERLAP_HALF: [number, number] = [104, 38];
+const OVERLAP_HALF_SHOWN: [number, number] = [60, 22];
 
 export class PeakLabels {
   private engine: Engine;
@@ -39,6 +65,7 @@ export class PeakLabels {
   private off: () => void;
   private proj: Projected = { x: 0, y: 0, visible: false, distanceKm: 0 };
   private frame = 0;
+  private zone: LabelZone = 1;
 
   constructor(engine: Engine, peaks: PeakFeature[], onPick: (f: PeakFeature) => void) {
     this.engine = engine;
@@ -70,7 +97,10 @@ export class PeakLabels {
         small,
         shown: false,
         ghost: false,
+        occlusionRaw: false,
+        occlusionStreak: 0,
         lastText: '',
+        hideTimer: null,
       });
     }
     this.off = engine.onFrame(() => this.update());
@@ -91,13 +121,17 @@ export class PeakLabels {
 
   dispose() {
     this.off();
+    for (const it of this.items) if (it.hideTimer != null) clearTimeout(it.hideTimer);
     this.layer.remove();
   }
 
+  /** OSM `ele`, else the first positive DEM sample - cached on the item from
+   *  then on, so it does not drift as finer tiles load (CLAUDE.md "labels"). */
   private elevation(it: Item): number {
     if (it.ele > 0) return it.ele;
     const h = this.engine.heightAt(it.lng, it.lat);
-    return h != null && h > 0 ? h : 0;
+    if (h != null && h > 0) it.ele = h;
+    return it.ele;
   }
 
   private update() {
@@ -124,8 +158,10 @@ export class PeakLabels {
       }
       const pr = eng.project(it.lng, it.lat, ele, this.proj);
       if (!pr.visible) continue;
-      // Summit: nearer peaks first. Overview: taller peaks first.
-      const priority = summit ? km : -ele;
+      // Summit: nearer peaks first. Overview: taller peaks first. A label
+      // already shown gets a bonus so it isn't displaced by a near-tie.
+      const bonus = it.shown ? (summit ? SHOWN_BONUS_SUMMIT : SHOWN_BONUS_OVERVIEW) : 0;
+      const priority = (summit ? km : -ele) - bonus;
       const scale = summit
         ? 0.82 + Math.max(0, Math.min(1, 1 - km / SUMMIT_LABEL_RADIUS_KM)) * 0.34
         : Math.max(0.72, Math.min(1.15, 60 / pr.distanceKm + 0.6));
@@ -133,22 +169,39 @@ export class PeakLabels {
     }
     cands.sort((a, b) => a.p - b.p);
 
-    const limit = summit ? MAX_SUMMIT : overviewLimit(eng.orbitDistanceKm);
+    if (!summit) this.zone = nextLabelZone(this.zone, eng.orbitDistanceKm);
+    const limit = summit ? MAX_SUMMIT : limitForZone(this.zone);
     const taken: Array<[number, number]> = [];
     let placed = 0;
     const shownNow = new Set<Item>();
     for (const c of cands) {
       if (placed >= limit) break;
-      if (c.it.id !== this.selectedId && taken.some((t) => Math.abs(t[0] - c.sx) < 104 && Math.abs(t[1] - c.sy) < 38)) continue;
+      // A label already shown tolerates more overlap, so it keeps its spot.
+      const [hx, hy] = c.it.shown ? OVERLAP_HALF_SHOWN : OVERLAP_HALF;
+      if (c.it.id !== this.selectedId && taken.some((t) => Math.abs(t[0] - c.sx) < hx && Math.abs(t[1] - c.sy) < hy)) continue;
       taken.push([c.sx, c.sy]);
       placed++;
       shownNow.add(c.it);
       const it = c.it;
       if (!it.shown) {
+        if (it.hideTimer != null) {
+          clearTimeout(it.hideTimer);
+          it.hideTimer = null;
+        }
         it.el.style.display = '';
         it.shown = true;
       }
-      if ((frame + it.id) % OCCLUSION_EVERY === 0) it.ghost = eng.occluded(it.lng, it.lat, this.elevation(it));
+      if ((frame + it.id) % OCCLUSION_EVERY === 0) {
+        const raw = eng.occluded(it.lng, it.lat, this.elevation(it));
+        if (raw === it.occlusionRaw) it.occlusionStreak++;
+        else {
+          it.occlusionRaw = raw;
+          it.occlusionStreak = 1;
+        }
+        // Flip only after several consistent checks in a row, so a single
+        // noisy sample near a ridgeline doesn't flicker the label.
+        if (it.occlusionStreak >= OCCLUSION_HYSTERESIS) it.ghost = raw;
+      }
       const eleText = this.elevation(it) > 0 ? `${Math.round(this.elevation(it)).toLocaleString('en')} m` : '';
       const text = summit
         ? `${eleText ? eleText + ' · ' : ''}${c.km < 10 ? c.km.toFixed(1) : Math.round(c.km)} km ${compassLabel(c.bearing)}${it.ghost ? ' · hidden' : ''}`
@@ -164,8 +217,13 @@ export class PeakLabels {
     }
     for (const it of this.items) {
       if (it.shown && !shownNow.has(it)) {
-        it.el.style.display = 'none';
         it.shown = false;
+        it.el.style.opacity = '0';
+        if (it.hideTimer != null) clearTimeout(it.hideTimer);
+        it.hideTimer = setTimeout(() => {
+          if (!it.shown) it.el.style.display = 'none';
+          it.hideTimer = null;
+        }, FADE_MS);
       }
     }
   }

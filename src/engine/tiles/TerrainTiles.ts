@@ -9,7 +9,7 @@
 
 import * as THREE from 'three';
 import { SRI_LANKA_BBOX } from '../../config/tiles';
-import { sceneToTileXY, tileFootprint } from '../geo';
+import { KM_PER_MERC, sceneToTileXY, tileFootprint } from '../geo';
 import { TILE_PX, TileSource } from './TileSource';
 
 export const GRID = 128;
@@ -117,9 +117,12 @@ function buildGeometry(heights: Int16Array | null, size: number, opt: GeoOptions
   const total = L.gridVerts + L.ring.length;
   const pos = new Float32Array(total * 3);
   const grad = new Float32Array(total * 2);
+  const grad2 = new Float32Array(total * 2);
   const drop = new Float32Array(total);
   const pxMeters = (size * 1000) / (TILE_PX - 1);
   const du = 1 / (TILE_PX - 1);
+  const du2 = 2 / (TILE_PX - 1);
+  const du4 = 4 / (TILE_PX - 1);
   for (let j = 0; j <= n; j++) {
     for (let i = 0; i <= n; i++) {
       let u = i / n;
@@ -134,8 +137,18 @@ function buildGeometry(heights: Int16Array | null, size: number, opt: GeoOptions
       pos[k * 3] = u * size;
       pos[k * 3 + 1] = sampleHeights(h, u, v);
       pos[k * 3 + 2] = v * size;
-      grad[k * 2] = (sampleHeights(h, u + du, v) - sampleHeights(h, u - du, v)) / (2 * pxMeters);
-      grad[k * 2 + 1] = (sampleHeights(h, u, v + du) - sampleHeights(h, u, v - du)) / (2 * pxMeters);
+      // Normals from a wider stencil (±1px averaged with ±2px): kills SRTM
+      // single-pixel speckle but keeps ridgelines crisp (CLAUDE.md "jaggedness").
+      const g1x = (sampleHeights(h, u + du, v) - sampleHeights(h, u - du, v)) / (2 * pxMeters);
+      const g2x = (sampleHeights(h, u + du2, v) - sampleHeights(h, u - du2, v)) / (4 * pxMeters);
+      const g1z = (sampleHeights(h, u, v + du) - sampleHeights(h, u, v - du)) / (2 * pxMeters);
+      const g2z = (sampleHeights(h, u, v + du2) - sampleHeights(h, u, v - du2)) / (4 * pxMeters);
+      grad[k * 2] = (g1x + g2x) * 0.5;
+      grad[k * 2 + 1] = (g1z + g2z) * 0.5;
+      // A second, much smoother gradient (±4px) drives the rock mask only, so
+      // rock forms coherent faces instead of per-pixel confetti.
+      grad2[k * 2] = (sampleHeights(h, u + du4, v) - sampleHeights(h, u - du4, v)) / (8 * pxMeters);
+      grad2[k * 2 + 1] = (sampleHeights(h, u, v + du4) - sampleHeights(h, u, v - du4)) / (8 * pxMeters);
     }
   }
   const skirtDrop = Math.min(800, Math.max(60, size * 30));
@@ -147,11 +160,14 @@ function buildGeometry(heights: Int16Array | null, size: number, opt: GeoOptions
     pos[dst * 3 + 2] = pos[src * 3 + 2];
     grad[dst * 2] = grad[src * 2];
     grad[dst * 2 + 1] = grad[src * 2 + 1];
+    grad2[dst * 2] = grad2[src * 2];
+    grad2[dst * 2 + 1] = grad2[src * 2 + 1];
     drop[dst] = skirtDrop;
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('aGrad', new THREE.BufferAttribute(grad, 2));
+  g.setAttribute('aGrad2', new THREE.BufferAttribute(grad2, 2));
   g.setAttribute('aDrop', new THREE.BufferAttribute(drop, 1));
   g.setIndex(L.index);
   return g;
@@ -337,14 +353,55 @@ export class TerrainTiles {
   /** Terrain height in metres at a scene point, from the finest loaded tile
    *  covering it; null when nothing covering it has loaded yet. */
   heightAt(x: number, z: number): number | null {
-    for (let zoom = MAX_Z; zoom >= ROOT_Z; zoom--) {
-      const [tx, ty] = sceneToTileXY(x, z, zoom);
-      const e = this.entries.get(`${zoom}/${Math.floor(tx)}/${Math.floor(ty)}`);
+    return this.heightAtZoom(x, z, MAX_Z);
+  }
+
+  /** Terrain height in metres at a scene point, from the finest loaded tile at
+   *  or below `zoom` covering it (falls back to coarser zooms, never finer).
+   *  Used to sample the ground at a fixed zoom so LOD refinement doesn't move
+   *  it frame to frame (CLAUDE.md "camera bob"). */
+  heightAtZoom(x: number, z: number, zoom: number): number | null {
+    for (let zz = Math.min(zoom, MAX_Z); zz >= ROOT_Z; zz--) {
+      const [tx, ty] = sceneToTileXY(x, z, zz);
+      const e = this.entries.get(`${zz}/${Math.floor(tx)}/${Math.floor(ty)}`);
       if (!e || e.state !== 'ready') continue;
       if (!e.heights) return 0;
       return sampleHeights(e.heights, tx - Math.floor(tx), ty - Math.floor(ty));
     }
     return null;
+  }
+
+  /** Mean of a 5x5 grid of `heightAtZoom` samples spanning `radiusKm` around
+   *  (x,z): a smoothed, scale-aware ground height for the orbit pivot, so
+   *  panning doesn't bob over every ridge. Null only if nothing nearby has
+   *  loaded yet. */
+  groundHeightNear(x: number, z: number, radiusKm: number, zoom: number): number | null {
+    let sum = 0;
+    let count = 0;
+    for (let j = -2; j <= 2; j++) {
+      for (let i = -2; i <= 2; i++) {
+        const sample = this.heightAtZoom(x + (i / 2) * radiusKm, z + (j / 2) * radiusKm, zoom);
+        if (sample != null) {
+          sum += sample;
+          count++;
+        }
+      }
+    }
+    return count > 0 ? sum / count : null;
+  }
+
+  /** Approximates the zoom level `visit()`'s screen-space-error split would
+   *  settle on at distance `distKm`, without walking the quadtree. Used to
+   *  pick a shadow-pass zoom that matches the main pass - a shadow mesh finer
+   *  than the main mesh makes the coarse receiver shadow itself (CLAUDE.md
+   *  "shadow box"). */
+  estimateZoom(distKm: number, focalPx: number): number {
+    const d = Math.max(0.05, distKm);
+    // errPx(z) = (tileKm(z)/grid*0.5/d)*focalPx; solve for the tileKm where
+    // errPx == splitPx, the boundary at which visit() stops splitting.
+    const tileKm = (this.splitPx * d * this.grid) / (0.5 * focalPx);
+    const z = Math.log2(KM_PER_MERC / tileKm);
+    return THREE.MathUtils.clamp(Math.ceil(z), ROOT_Z, MAX_Z);
   }
 
   private evict() {

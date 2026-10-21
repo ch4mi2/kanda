@@ -7,8 +7,10 @@ import * as THREE from 'three';
 export interface ShadowFit {
   /** Scene-plane rectangle of tiles to draw into the depth pass. */
   rect: [number, number, number, number];
-  /** Tile zoom to draw them at. */
+  /** Tile zoom to draw them at (as passed to fit()). */
   zoom: number;
+  /** Width of one shadow-map texel in km - for pushing a receiver off the surface before the lookup. */
+  texelKm: number;
   /** Changes whenever the depth map has to be re-rendered. */
   signature: string;
 }
@@ -40,8 +42,10 @@ export class SunShadow {
   }
 
   /** Fit the light camera around a ground square of half-width `radiusKm`
-   *  centred on `center`, for a sun in direction `sun` (unit, pointing at it). */
-  fit(center: THREE.Vector3, radiusKm: number, sun: THREE.Vector3, maxHeightKm: number): ShadowFit {
+   *  centred on `center`, for a sun in direction `sun` (unit, pointing at it).
+   *  `zoom` is the caller's choice of tile zoom for the shadow mesh (picked to
+   *  match the main pass's LOD, not derived from radiusKm). */
+  fit(center: THREE.Vector3, radiusKm: number, sun: THREE.Vector3, maxHeightKm: number, zoom: number): ShadowFit {
     const cam = this.camera;
     const up = Math.abs(sun.y) > 0.98 ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
     cam.position.copy(center).addScaledVector(sun, radiusKm * 3 + maxHeightKm);
@@ -86,10 +90,10 @@ export class SunShadow {
       Math.min(center.z - radiusKm, center.z - radiusKm + sz) - 2,
       Math.max(center.z + radiusKm, center.z + radiusKm + sz) + 2,
     ];
-    const zoom = Math.min(11, Math.max(10, Math.ceil(Math.log2(39787 / (radiusKm * 1.4)))));
     return {
       rect,
       zoom,
+      texelKm: texel,
       signature: [x0, x1, y0, y1, sun.x.toFixed(4), sun.y.toFixed(4), sun.z.toFixed(4), zoom].join('|'),
     };
   }
