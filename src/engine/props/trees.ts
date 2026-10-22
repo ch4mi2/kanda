@@ -57,7 +57,7 @@ export class TreeLayer {
   private material: THREE.ShaderMaterial;
   private tiles = new Map<string, { mesh: THREE.InstancedMesh | null; seen: number }>();
   private frame = 0;
-  private tmpOut = { lake: 0 };
+  private tmpOut = { forest: 0, lake: 0 };
   private masks: Masks;
 
   constructor(masks: Masks, u: TerrainUniforms) {
@@ -127,7 +127,7 @@ export class TreeLayer {
   update(camera: THREE.Vector3, rendered: Entry[]) {
     this.frame++;
     const style = this.style;
-    if (!style || !this.geo || !this.masks.ready || !this.masks.landcoverReady) return;
+    if (!style || !this.geo || !this.masks.ready) return;
     let builds = 0;
     for (const e of rendered) {
       if (e.z !== MAX_Z || !e.heights) continue;
@@ -184,18 +184,14 @@ export class TreeLayer {
         const z = f.z0 + v * f.size;
         this.masks.sample(x, z, this.tmpOut);
         if (this.tmpOut.lake > 0.25) continue;
-        if (this.masks.builtUp(x, z) > 0.5) continue;
         const slope = Math.hypot(
           sampleHeights(heights, u + 0.004, v) - sampleHeights(heights, u - 0.004, v),
           sampleHeights(heights, u, v + 0.004) - sampleHeights(heights, u, v - 0.004),
         ) / (2 * 0.004 * f.size * 1000);
         if (slope > 0.85) continue;
-        const treeFrac = this.masks.treeDensity(x, z);
-        if (r > style.density * treeFrac) continue;
-        // Dense canopy (tree fraction > 0.8, e.g. Sinharaja) reads taller than
-        // open woodland/scrub — same geometry, biased per-instance height.
-        const tall = treeFrac > 0.8;
-        const sc = (tall ? 1.0 + rnd() * 0.5 : 0.65 + rnd() * 0.45) * style.scale;
+        const p = this.tmpOut.forest > 0.45 ? style.density : style.density * 0.05;
+        if (r > p) continue;
+        const sc = (0.7 + rnd() * 0.6) * style.scale;
         pos.set(x, 0, z);
         q.setFromAxisAngle(up, rnd() * 6.283);
         scl.set(sc, sc * (0.85 + rnd() * 0.3), sc);

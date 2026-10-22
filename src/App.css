@@ -425,13 +425,6 @@
   color: var(--moss);
 }
 
-.peak-card__park {
-  margin: 0 0 var(--s3);
-  font-size: var(--t-meta);
-  font-weight: 600;
-  color: var(--leaf-deep);
-}
-
 .peak-card__stats {
   display: flex;
   gap: var(--s2);

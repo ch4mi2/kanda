@@ -42,10 +42,6 @@ export const ARENA: Skin = {
   foam: '#ffffff',
   foamAmount: 1,
   waterMode: 0,
-  river: '#1f8fc2',
-  waterLabel: '#0d4a66',
-  waterfall: '#eafcff',
-  park: '#caa857',
 
   outline: 0.35,
   outlineColor: '#1b2a5a',
