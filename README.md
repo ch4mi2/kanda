@@ -62,8 +62,8 @@ With `VITE_TILE_MODE=local` (or `pmtiles`) the app never touches the network.
 Vite + React + [three.js](https://threejs.org/), used imperatively. A custom
 terrain engine streams Terrarium elevation tiles (z7–z12) with a quadtree LOD,
 shades them with cel lighting, GPU cast shadows and depth-based outlines, and
-paints everything from the elevation data plus forest/lake masks — one dataset,
-no licensing questions, and a look built for telling mountains apart. Four
+paints everything from the elevation data plus lake masks and WorldCover land
+cover — no satellite imagery, and a look built for telling mountains apart. Four
 skins (Arena, Ember, Block World) are plain data. Packed elevation
 tiles can ship as a [PMTiles](https://protomaps.com/docs/pmtiles) archive
 served over HTTP range requests; the live deploy currently streams terrain
@@ -78,8 +78,11 @@ documented in [`CLAUDE.md`](CLAUDE.md).
   (ESA / European Union), via AWS Open Data. Offshore depth: Terrarium bathymetry
   (GEBCO) via [Tilezen](https://github.com/tilezen/joerd). The live site still
   serves the SRTM-based Terrarium tiles until the new pyramid is hosted
-- **Peaks, rivers, water, forest, landcover:** © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+- **Peaks, rivers, water:** © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, ODbL
+- **Land cover:** © ESA WorldCover project 2021 / Contains modified Copernicus
+  Sentinel data (2021) processed by ESA WorldCover consortium,
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - **Rendering:** [three.js](https://threejs.org/), MIT
 
 Attribution is shown in-app and is not optional — see

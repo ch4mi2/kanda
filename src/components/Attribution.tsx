@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PEAKS_ATTRIBUTION, TERRAIN } from '../config/tiles';
+import { LANDCOVER_ATTRIBUTION, PEAKS_ATTRIBUTION, TERRAIN } from '../config/tiles';
 
 export default function Attribution() {
   const [open, setOpen] = useState(false);
@@ -16,6 +16,7 @@ export default function Attribution() {
       {open && (
         <div className="attribution__body">
           <p dangerouslySetInnerHTML={{ __html: TERRAIN.attribution }} />
+          <p dangerouslySetInnerHTML={{ __html: LANDCOVER_ATTRIBUTION }} />
           <p dangerouslySetInnerHTML={{ __html: PEAKS_ATTRIBUTION }} />
           <p>
             Rendered with{' '}

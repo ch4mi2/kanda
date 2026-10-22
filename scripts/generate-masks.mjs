@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Bakes the landcover masks the three.js terrain shader samples into one RGB
+// Bakes the lake masks the three.js terrain shader samples into one RGB
 // image over the island bbox (Web-Mercator, z10 ~150 m/px — same grid as
-// water-depth.png so the two line up):
+// landcover.png so the two line up):
 //
-//   R  forest canopy      (forest.geojson, lightly blurred)
+//   R  unused (forest canopy used to live here — moved to landcover.png's R,
+//      see generate-landcover.mjs and CLAUDE.md, "one forest truth")
 //   G  inland water       (water.geojson, tight edge — the shoreline)
 //   B  distance-from-shore proxy for water depth (wide blur of the same mask;
 //      SRTM saw the full reservoirs so there is no real bathymetry inland)
@@ -11,14 +12,14 @@
 //   node scripts/generate-masks.mjs      (npm run generate:masks)
 //
 // Skins own the colours; this file only says *where* things are. Output is
-// committed (src/data/masks.png) — pure function of the two geojson files.
+// committed (src/data/masks.png) — pure function of water.geojson.
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { deflateSync, crc32 } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { lonToMercX, latToMercY, TILE_SIZE } from './lib/tilemath.mjs';
-import { FOREST, WATER, SRI_LANKA_BBOX, rasterizePolygons, blurMask } from './lib/texture-core.mjs';
+import { WATER, SRI_LANKA_BBOX, rasterizePolygons, blurMask } from './lib/texture-core.mjs';
 
 const OUT = path.resolve(fileURLToPath(new URL('..', import.meta.url)), 'src/data/masks.png');
 const RASTER_Z = 10;
@@ -62,18 +63,13 @@ async function main() {
   const toPy = (lat) => ((latToMercY(lat, RASTER_Z) - my0) / (my1 - my0)) * H;
   console.log(`masks ${W}x${H} (z${RASTER_Z})`);
 
-  const forest = blurMask(
-    rasterizePolygons(JSON.parse(await readFile(FOREST, 'utf8')).features, W, H, toPx, toPy),
-    W, H, 2,
-  );
   const waterRaw = rasterizePolygons(JSON.parse(await readFile(WATER, 'utf8')).features, W, H, toPx, toPy);
   const edge = blurMask(waterRaw, W, H, 1);
   let depth = waterRaw;
   for (let i = 0; i < DEPTH_PASSES; i++) depth = blurMask(depth, W, H, DEPTH_R);
 
-  const rgb = Buffer.alloc(W * H * 3);
+  const rgb = Buffer.alloc(W * H * 3); // R unused (zero-filled)
   for (let i = 0; i < W * H; i++) {
-    rgb[i * 3] = forest[i];
     rgb[i * 3 + 1] = edge[i];
     rgb[i * 3 + 2] = Math.min(255, depth[i] * 1.8); // 0.55 of the field = "deep"
   }
