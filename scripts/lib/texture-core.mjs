@@ -305,7 +305,7 @@ export async function buildDem(bbox, { quiet = false, strict = true } = {}) {
   }
   if (!loaded && strict) {
     throw new Error(
-      `No z${SAMPLE_Z} DEM tiles under ${TILE_DIR}. Run: npm run fetch:terrain && npm run repair:dem`,
+      `No z${SAMPLE_Z} DEM tiles under ${TILE_DIR}. Run: npm run fetch:terrain && npm run build:dem`,
     );
   }
   if (!quiet) console.log(`  ${loaded} z${SAMPLE_Z} DEM tiles loaded`);

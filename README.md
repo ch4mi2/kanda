@@ -47,8 +47,8 @@ Everything under `public/tiles/` is gitignored — the scripts are the
 reproducible artifact, not the binaries. After a fresh clone:
 
 ```bash
-npm run fetch:terrain      # ~54 MB elevation pyramid
-npm run repair:dem         # repair DEM spikes/pits + one smooth pass
+npm run fetch:terrain      # ~54 MB Terrarium pyramid -> public/tiles/src-terrarium/ (offshore bathymetry)
+npm run build:dem          # Copernicus GLO-30 (~300 MB download) -> public/tiles/terrain/
 npm run pack:pmtiles       # -> public/tiles/terrain.pmtiles
 
 cp .env.local.example .env.local   # sets VITE_TILE_MODE=local
@@ -74,9 +74,10 @@ documented in [`CLAUDE.md`](CLAUDE.md).
 
 ## Data sources & attribution
 
-- **Elevation:** SRTM (NASA/USGS) & GMTED2010 (USGS) via
-  [Tilezen](https://github.com/tilezen/joerd) / AWS Open Data — public domain,
-  credit requested
+- **Elevation:** [Copernicus DEM](https://registry.opendata.aws/copernicus-dem) GLO-30
+  (ESA / European Union), via AWS Open Data. Offshore depth: Terrarium bathymetry
+  (GEBCO) via [Tilezen](https://github.com/tilezen/joerd). The live site still
+  serves the SRTM-based Terrarium tiles until the new pyramid is hosted
 - **Peaks, rivers, water, forest, landcover:** © [OpenStreetMap](https://www.openstreetmap.org/copyright)
   contributors, ODbL
 - **Rendering:** [three.js](https://threejs.org/), MIT

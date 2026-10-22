@@ -70,7 +70,7 @@ src/
                        app never calls Overpass), masks.png (forest + lake
                        masks, committed, `npm run generate:masks`), usePeaks.ts.
 scripts/               fetch-peaks, fetch-osm-features, fetch-terrain,
-                       repair-dem, pack-pmtiles, generate-masks;
+                       build-dem, check-peaks, pack-pmtiles, generate-masks;
                        lib/tilemath.mjs, lib/texture-core.mjs (the polygon
                        rasteriser + blur + bbox the masks script reuses; the
                        rest of that file is dead weight from the old texture
@@ -84,9 +84,12 @@ the old "never react-map-gl"). React earns its place in the panels.
 
 ## Data — why there are no API keys
 
-- **Elevation:** Terrarium-encoded SRTM/GMTED2010 from AWS Open Data. Public
-  domain, credit requested. **The DEM ceiling is z12** (~38 m/px, SRTM's native
-  resolution). Never fetch or pack tiles past z12 — pure upscaling, 4× the bytes.
+- **Elevation:** Copernicus GLO-30 (TanDEM-X, 30 m) from AWS Open Data, built
+  into a Terrarium pyramid by `scripts/build-dem.mjs`; sea comes from the old
+  Tilezen Terrarium pyramid (`public/tiles/src-terrarium/`) because GLO-30 has
+  no ocean. **The DEM ceiling is z12** (~38 m/px). Never fetch or pack tiles
+  past z12 — pure upscaling, 4× the bytes. `remote` mode (production, until the
+  new pyramid is hosted) still reads AWS Terrarium (SRTM).
 - **Peaks:** OpenStreetMap via Overpass, ODbL, fetched once into a committed
   GeoJSON. **Forest / lakes:** OSM, baked into `masks.png`.
 - **No satellite imagery, deliberately** (licensed, huge). Every colour comes
@@ -98,7 +101,7 @@ Attribution is required — see `components/Attribution.tsx`.
 
 `TERRAIN.mode` in `config/tiles.ts` reads `VITE_TILE_MODE`:
 - `remote` (default) — AWS S3 (CORS `*`). Slow-ish: tiles re-download per session.
-- `local` — loose PNG pyramid in `public/tiles/terrain/` (`npm run fetch:terrain`).
+- `local` — loose PNG pyramid in `public/tiles/terrain/` (`npm run build:dem`).
   The pyramid is **sparse outside the island**; `TileSource` returns `null` for
   a missing tile and the engine treats it as flat sea (also guards the SPA
   `index.html` fallback by checking `content-type`).
@@ -168,7 +171,12 @@ development**; without it you silently run in remote mode.
     first time a new import appears and **hard-reloads the page** — a reload in
     the middle of a scripted test looks like a bug. (c) `erasableSyntaxOnly`:
     no TS parameter properties (`constructor(private x)`).
-13. **`public/` is copied into `dist/` by Vite regardless of tile mode.** If you
+13. **Sea depth is synthetic at z12.** Terrarium's z12 sea is flat 0 m and the
+    shader draws 0 m as foam, so zooming in turned blue sea white. `build-dem`
+    gives z12 sea a depth (upsampled z10 bathymetry or a shelf ramp from the
+    shore, whichever is deeper); z11 and below inherit it. AWS `remote` mode
+    still has the flat sea.
+14. **`public/` is copied into `dist/` by Vite regardless of tile mode.** If you
     have ever run the local tile pipeline, `public/tiles/terrain.pmtiles`
     exists and a local `wrangler deploy` rejects it (>25 MiB asset). A fresh CI
     checkout never has `public/tiles/` so `deploy.yml` is unaffected; move it
@@ -218,14 +226,15 @@ npm run lint            # oxlint
 npm test                # vitest
 npm run fetch:peaks     # refresh peaks from Overpass
 npm run fetch:osm       # refresh water/rivers geojson from Overpass
-npm run fetch:terrain   # download the 54 MB tile pyramid (resumable)
-npm run repair:dem      # repair DEM spikes/pits + one smooth pass (in place)
+npm run fetch:terrain   # 54 MB Terrarium pyramid -> src-terrarium/ (bathymetry input)
+npm run build:dem       # Copernicus GLO-30 -> terrain/ (fetches ~300 MB, resumable)
+npm run check:peaks     # DEM height vs OSM ele: Terrarium base vs terrain/
 npm run pack:pmtiles    # pack the loose pyramid into terrain.pmtiles
 npm run generate:masks  # forest.geojson + water.geojson -> src/data/masks.png
 ```
 
 After a fresh clone (`public/tiles/` is gitignored): `fetch:terrain` →
-`repair:dem` → `pack:pmtiles`, then set `VITE_TILE_MODE` in `.env.local`.
+`build:dem` → `pack:pmtiles`, then set `VITE_TILE_MODE` in `.env.local`.
 Everything in `src/data/` **is** committed.
 
 ## Deployment

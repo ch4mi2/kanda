@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Downloads the full z0-12 Terrarium elevation tile pyramid for Sri Lanka
-// from the AWS Open Data bucket (no auth, no key) into public/tiles/terrain/,
-// making the app fully self-contained and offline-capable.
+// Downloads the full z0-12 Terrarium tile pyramid for Sri Lanka from the AWS
+// Open Data bucket (no auth, no key) into public/tiles/src-terrarium/. It is
+// the bathymetry/base input of scripts/build-dem.mjs, which builds the pyramid
+// the app actually serves (public/tiles/terrain/) from Copernicus GLO-30.
 //
 // Resumable: existing files are skipped, so re-running after an interruption
 // only fetches what's missing. Run with:
 //   node scripts/fetch-terrain.mjs
-// Then set VITE_TILE_MODE=local (see .env.local.example) to use the local
-// copy instead of the network.
+// Then run `npm run build:dem`.
 
 import { mkdir, writeFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +25,7 @@ const BBOX = [79.5, 5.7, 82.0, 10.0];
 
 const OUT_DIR = path.resolve(
   fileURLToPath(new URL('.', import.meta.url)),
-  '../public/tiles/terrain',
+  '../public/tiles/src-terrarium',
 );
 
 async function fileExists(p) {
@@ -101,7 +101,7 @@ async function main() {
   if (results.error > 0) {
     console.log('\nRe-run this script to retry failed tiles.');
   }
-  console.log('\nSet VITE_TILE_MODE=local in .env.local and restart the dev server to use these tiles.');
+  console.log('\nNext: npm run build:dem');
 }
 
 main().catch((err) => {

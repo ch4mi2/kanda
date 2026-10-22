@@ -269,7 +269,7 @@ const DEFAULTS = {
     tileDir: path.join(ROOT, 'public/tiles/terrain'),
     outFile: path.join(ROOT, 'public/tiles/terrain.pmtiles'),
     name: 'kanda-terrain',
-    description: 'Terrarium-encoded SRTM/GMTED2010 DEM for Sri Lanka',
+    description: 'Terrarium-encoded Copernicus GLO-30 DEM for Sri Lanka',
     centerZoom: 8,
   },
 };
