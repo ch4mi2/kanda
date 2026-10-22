@@ -32,8 +32,8 @@ Everything under `public/tiles/` is gitignored — the scripts are the
 reproducible artifact, not the binaries. After a fresh clone:
 
 ```bash
-npm run fetch:terrain      # ~54 MB elevation pyramid -> public/tiles/terrain/
-npm run repair:dem         # repair DEM spikes/pits + one smooth pass
+npm run fetch:terrain      # ~54 MB Terrarium pyramid -> public/tiles/src-terrarium/
+npm run build:dem          # Copernicus GLO-30 -> public/tiles/terrain/
 npm run pack:pmtiles       # -> public/tiles/terrain.pmtiles
 ```
 

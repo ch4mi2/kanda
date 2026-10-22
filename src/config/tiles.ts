@@ -13,9 +13,12 @@ const TILE_BASE_URL = import.meta.env.VITE_TILE_BASE_URL ?? '';
 
 export const TERRAIN = {
   // VITE_TILE_MODE switches the terrain source:
-  //   remote  - AWS Open Data S3 (default; re-fetches tiles every session)
-  //   local   - loose PNG pyramid in public/tiles/terrain/ (npm run fetch:terrain)
-  //   pmtiles - single packed archive public/tiles/terrain.pmtiles
+  //   remote  - AWS Open Data S3, SRTM-based Terrarium (default; re-fetches tiles
+  //             every session). Lower accuracy and flat z12 sea - the production
+  //             stopgap until the Copernicus pyramid below is hosted.
+  //   local   - loose PNG pyramid in public/tiles/terrain/, Copernicus GLO-30
+  //             (npm run build:dem)
+  //   pmtiles - the same pyramid packed into public/tiles/terrain.pmtiles
   //             (npm run pack:pmtiles) served via HTTP range requests
   mode: (import.meta.env.VITE_TILE_MODE ?? 'remote') as TileMode,
 
@@ -27,16 +30,19 @@ export const TERRAIN = {
 
   encoding: 'terrarium' as const,
   tileSize: 256,
-  // z12 tiles are ~38 m/px at this latitude, matching native SRTM
-  // resolution. Higher zoom is pure oversampling of the same data.
+  // z12 tiles are ~38 m/px at this latitude, about the native 30 m of both
+  // SRTM and Copernicus GLO-30. Higher zoom is pure oversampling.
   maxzoom: 12,
 
+  // Matches the data each mode actually serves.
   attribution:
-    'Elevation: SRTM (NASA/USGS) &amp; GMTED2010 (USGS) via <a href="https://github.com/tilezen/joerd" target="_blank" rel="noopener">Tilezen</a> / AWS Open Data',
+    (import.meta.env.VITE_TILE_MODE ?? 'remote') === 'remote'
+      ? 'Elevation: SRTM (NASA/USGS) &amp; GMTED2010 (USGS) via <a href="https://github.com/tilezen/joerd" target="_blank" rel="noopener">Tilezen</a> / AWS Open Data'
+      : 'Elevation: <a href="https://registry.opendata.aws/copernicus-dem" target="_blank" rel="noopener">Copernicus DEM</a> GLO-30 (ESA / European Union), accessed 22 October 2026. Sea depth: SRTM-era Terrarium bathymetry (GEBCO) via <a href="https://github.com/tilezen/joerd" target="_blank" rel="noopener">Tilezen</a> / AWS Open Data',
 };
 
 // Sri Lanka bounding box: [west, south, east, north]. Exactly the area
-// scripts/fetch-terrain.mjs and scripts/pack-pmtiles.mjs cover; it also frames
+// scripts/build-dem.mjs and scripts/pack-pmtiles.mjs cover; it also frames
 // the z7 root tiles and the masks image.
 export const SRI_LANKA_BBOX = [79.5, 5.7, 82.0, 10.0] as const;
 
