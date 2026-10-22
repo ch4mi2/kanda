@@ -57,7 +57,7 @@ src/
     ThreeView.tsx      React shell (creates/disposes the Engine, WebGL error).
   skins/               A Skin is pure data (palette, light, fog, outline, water,
                        geometry mode, trees, clouds, label font). Arena (default),
-                       Ember, Clay, Block World, Ink. localStorage 'kanda:skin'.
+                       Ember, Clay, Block World. localStorage 'kanda:skin'.
   config/tiles.ts      Terrain URLs/modes, bbox, camera + relief limits.
   map/                 sunPosition.ts (NOAA solar maths, no dep) and
                        nearbyPeaks.ts (haversine, bearings). Name is historical.

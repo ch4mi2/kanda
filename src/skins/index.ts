@@ -2,13 +2,12 @@ import { ARENA } from './arena';
 import { BLOCK_WORLD } from './blockWorld';
 import { CLAY } from './clay';
 import { EMBER } from './ember';
-import { INK } from './ink';
 import type { Skin } from './types';
 
 export type { Skin, GeometryMode, WaterMode, TreeShape, TreeStyle, CloudStyle } from './types';
 
 /** Menu order. Arena first: it is the default. */
-export const SKINS: Skin[] = [ARENA, EMBER, CLAY, BLOCK_WORLD, INK];
+export const SKINS: Skin[] = [ARENA, EMBER, CLAY, BLOCK_WORLD];
 export const DEFAULT_SKIN: Skin = ARENA;
 
 export function skinById(id: string | null | undefined): Skin {
