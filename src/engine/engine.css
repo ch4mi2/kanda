@@ -105,7 +105,11 @@
   transition: transform 0.1s linear;
 }
 
-@media (min-width: 721px) {
+/* `min-height` keeps a short landscape phone (often ≥721px wide) on the
+   compact mobile layout instead of tripping the desktop rules meant for
+   real screen room — see the matching guard on `.controls-fab` below and
+   the desktop block in App.css. */
+@media (min-width: 721px) and (min-height: 600px) {
   .nav-cluster {
     right: var(--s4);
     bottom: 52px;
@@ -129,8 +133,9 @@
   flex: none;
 }
 
-/* Phone-only skin switcher (the dock that holds the picker is desktop-only). */
-.skin-fab {
+/* Phone-only controls FAB: skin, sun and relief, since the dock that holds
+   them on desktop is hidden below. Opens upward from the nav cluster. */
+.controls-fab {
   position: absolute;
   right: var(--s3);
   bottom: calc(46px + 132px);
@@ -141,15 +146,20 @@
   gap: var(--s2);
 }
 
-.app:has(.sheet) .skin-fab {
+.app:has(.sheet) .controls-fab {
   display: none;
 }
 
-.skin-fab__panel {
-  max-width: calc(100vw - 2 * var(--s3));
+.controls-fab__panel {
+  width: min(280px, calc(100vw - 2 * var(--s3)));
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
 }
 
-.skin-fab__btn {
+.controls-fab__btn {
   appearance: none;
   border: 0;
   width: 40px;
@@ -162,14 +172,14 @@
   cursor: pointer;
 }
 
-.skin-fab__swatch {
+.controls-fab__swatch {
   width: 22px;
   height: 22px;
   border-color: rgba(13, 37, 27, 0.35);
 }
 
-@media (min-width: 721px) {
-  .skin-fab {
+@media (min-width: 721px) and (min-height: 600px) {
+  .controls-fab {
     display: none;
   }
 }

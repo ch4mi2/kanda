@@ -18,7 +18,7 @@ import SummitBar from './components/SummitBar';
 import CompassStrip from './components/CompassStrip';
 import NavCluster from './components/NavCluster';
 import SkinPicker from './components/SkinPicker';
-import SkinFab from './components/SkinFab';
+import ControlsFab from './components/ControlsFab';
 import { SKINS, loadSavedSkin, saveSkin, type Skin } from './skins';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
 import { slstNowMinutes } from './map/sunPosition';
@@ -200,7 +200,15 @@ export default function AppThree() {
             <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
           </div>
 
-          <SkinFab skins={SKINS} value={skin} onChange={chooseSkin} />
+          <ControlsFab
+            skins={SKINS}
+            skin={skin}
+            onSkinChange={chooseSkin}
+            sunMinutes={sunMinutes}
+            onSunChange={setSunMinutes}
+            exaggeration={exaggeration}
+            onExaggerationChange={setExaggeration}
+          />
 
           <NavCluster
             bearing={bearing}

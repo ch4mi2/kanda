@@ -1,7 +1,10 @@
 /* Mobile-first: base rules target a phone in portrait — most of Kanda's
-   users are on one, on a summit. Desktop refinements are in the
-   `min-width: 721px` block at the bottom. All colour / spacing / radius
-   values come from the tokens in index.css. */
+   users are on one, on a summit. Desktop refinements are gated on
+   `min-width: 721px` AND `min-height: 600px` — width alone misclassifies a
+   landscape phone (routinely ≥721px wide, but ~375–430px tall) as desktop,
+   which is what used to cram the full relief dock, legend and side-panel
+   sheet into a sliver of a viewport. All colour / spacing / radius values
+   come from the tokens in index.css. */
 
 .app {
   position: relative;
@@ -698,7 +701,7 @@
   right: var(--s3);
   max-height: none;
 }
-@media (min-width: 721px) {
+@media (min-width: 721px) and (min-height: 600px) {
   .sheet.sheet--summit {
     left: 50%;
     right: auto;
@@ -768,7 +771,7 @@
   display: none;
 }
 
-@media (min-width: 721px) {
+@media (min-width: 721px) and (min-height: 600px) {
   .summit-bar {
     left: 50%;
     right: auto;
@@ -848,7 +851,7 @@
 
 
 /* ---------- desktop / large tablet ---------- */
-@media (min-width: 721px) {
+@media (min-width: 721px) and (min-height: 600px) {
   .topstack {
     top: var(--s4);
     left: var(--s4);
@@ -888,5 +891,21 @@
   .attribution {
     right: var(--s4);
     bottom: var(--s4);
+  }
+}
+
+/* ---------- compact landscape (phones that stayed on the mobile layout
+   above but are short on vertical room) ---------- */
+@media (orientation: landscape) and (max-height: 600px) {
+  .topstack {
+    gap: var(--s1);
+  }
+
+  .search__results {
+    max-height: 30vh;
+  }
+
+  .sheet {
+    max-height: 48vh;
   }
 }
