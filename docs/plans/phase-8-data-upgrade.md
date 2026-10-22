@@ -1,5 +1,30 @@
 # Phase 8: better elevation and real land cover
 
+## Status and tracking
+
+**Work is tracked in GitHub issues** under the milestone
+[Phase 8: data upgrade](https://github.com/ch4mi2/kanda/milestones). This file is the
+design reference; tick progress there, not here.
+
+| Item | Status |
+|---|---|
+| 8A GLO-30 height | Done: #16, served from R2 via #17 |
+| Rivers + water names + layer toggle (added) | #19 |
+| 8B-1/2 WorldCover source + script | #20 |
+| 8B-3 wire land cover | #21 |
+| 8B-4 urban/farmland look (optional) | #22 |
+| 8B-5 small tanks from WorldCover (optional) | #23 |
+| 8C-1/2 canopy height | #24 |
+| 8C-3 bare-earth height (optional) | #25 |
+| 8C-4 waterfalls + national parks | #26 |
+
+Decision 1 below is settled: **R2** (`kanda-tiles` bucket, `TILE_BASE_URL` repo variable).
+
+**Added after planning: water.** Rivers and lake/river names were MapLibre layers and
+were dropped by accident in the 7D cutover; only the lake tint survived (baked into
+`masks.png`). `water.geojson` and `rivers.geojson` are still committed. #19 brings them
+back in the three.js engine with a persisted toggle.
+
 ## Context
 
 Kanda is now a three.js app (Phase 7, `feature/threejs-cutover` = 7D). Its
