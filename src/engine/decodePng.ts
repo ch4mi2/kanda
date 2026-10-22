@@ -47,7 +47,7 @@ export async function fetchPng(url: string): Promise<{ width: number; height: nu
     } else if (type === 'IDAT') {
       idatParts.push(buf.subarray(pos + 8, pos + 8 + len));
     } else if (type === 'IEND') break;
-    pos += 12 + len + 4; // length + type + body + CRC
+    pos += len + 12; // 4-byte length + 4-byte type + `len` bytes body + 4-byte CRC
   }
 
   const idat = new Uint8Array(idatParts.reduce((n, p) => n + p.length, 0));

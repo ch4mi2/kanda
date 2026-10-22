@@ -1,15 +1,13 @@
 interface WaterToggleProps {
   value: boolean;
   onChange: (value: boolean) => void;
-  waterfalls: boolean;
-  onWaterfallsChange: (value: boolean) => void;
 }
 
-/** Rivers + water/river name labels, and waterfall markers, each on or off.
+/** Rivers, water/river name labels and waterfall markers, one switch.
  *  Same chip-row panel as SkinPicker (.layers), persisted under
- *  `kanda:layers` (src/config/layers.ts). Park outlines have no toggle -
- *  like the lake tint, they stay on regardless (#26). */
-export default function WaterToggle({ value, onChange, waterfalls, onWaterfallsChange }: WaterToggleProps) {
+ *  `kanda:layers` (src/config/layers.ts). The lake tint and park outlines
+ *  have no toggle - they stay on regardless, like the terrain itself. */
+export default function WaterToggle({ value, onChange }: WaterToggleProps) {
   return (
     <div className="panel layers">
       <span className="layers__head">Layers</span>
@@ -21,14 +19,6 @@ export default function WaterToggle({ value, onChange, waterfalls, onWaterfallsC
           onClick={() => onChange(!value)}
         >
           Water
-        </button>
-        <button
-          type="button"
-          className={`layers__chip${waterfalls ? ' layers__chip--on' : ''}`}
-          aria-pressed={waterfalls}
-          onClick={() => onWaterfallsChange(!waterfalls)}
-        >
-          Waterfalls
         </button>
       </div>
     </div>

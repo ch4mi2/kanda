@@ -15,8 +15,6 @@ interface ControlsFabProps {
   onExaggerationChange: (v: number) => void;
   water: boolean;
   onWaterChange: (v: boolean) => void;
-  waterfalls: boolean;
-  onWaterfallsChange: (v: boolean) => void;
 }
 
 /** Phone-sized stand-in for the relief dock, which is hidden below the
@@ -32,8 +30,6 @@ export default function ControlsFab({
   onExaggerationChange,
   water,
   onWaterChange,
-  waterfalls,
-  onWaterfallsChange,
 }: ControlsFabProps) {
   const [open, setOpen] = useState(false);
   return (
@@ -43,12 +39,7 @@ export default function ControlsFab({
           <SkinPicker skins={skins} value={skin} onChange={onSkinChange} />
           <TimeOfDaySlider minutes={sunMinutes} onChange={onSunChange} />
           <ExaggerationSlider value={exaggeration} onChange={onExaggerationChange} />
-          <WaterToggle
-            value={water}
-            onChange={onWaterChange}
-            waterfalls={waterfalls}
-            onWaterfallsChange={onWaterfallsChange}
-          />
+          <WaterToggle value={water} onChange={onWaterChange} />
         </div>
       )}
       <button
