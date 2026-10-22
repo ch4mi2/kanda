@@ -95,8 +95,8 @@ float waterPattern(vec2 p) {
 float shadowAt(vec3 p, vec3 N, float ndl) {
   // No early returns: texture reads must stay in uniform control flow.
   vec3 op = p + N * uShadowNormalOffset; // off the surface, so a coarser receiver doesn't self-shadow
-  vec4 sp = uShadowMat * vec4(op, 1.);
-  vec3 c = sp.xyz * .5 + .5;
+  // uShadowMat already includes the clip -> [0,1] texture/depth remap (SunShadow.bias).
+  vec3 c = (uShadowMat * vec4(op, 1.)).xyz;
   // Fade toward lit over the outer 15% of the box instead of a hard rectangle.
   float edgeDist = min(min(c.x, 1. - c.x), min(c.y, 1. - c.y));
   float edgeFade = smoothstep(0., .15, edgeDist);
