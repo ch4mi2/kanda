@@ -128,13 +128,11 @@ development**; without it you silently run in remote mode.
    pushes the receiver along its normal by ~1.5 shadow texels and fades to lit
    over the outer 15% of the box, and shadows turn off past ~180 km (island
    view) where they can't resolve anything. Too small a bias = the whole map is
-   in shadow. **Known residual:** on very steep, high-relief ground (e.g. the
-   Horton Plains / Kirigalpotta escarpment) a patch can still self-shadow even
-   with zoom matched and bias pushed far past what spacing alone would need
-   (verified insensitive to bias up to ~45x and to the normal offset) — this
-   predates Phase 7E (present before this fix too, just hidden inside the
-   bigger hard-edged box) and needs real GPU depth-texture readback to
-   root-cause, not more bias tuning.
+   in shadow. **`uShadowMat` already includes the clip→[0,1] remap**
+   (`SunShadow.bias`); the shader must not `* .5 + .5` again. It once did, which
+   sampled the wrong quadrant of the depth map and squashed `c.z` into
+   [0.5, 1] — a big, bias-insensitive self-shadowed box (the long-standing
+   "known residual").
 4. **GLSL: texture reads must stay in uniform control flow.** An early
    `return` before `texture2D` triggered ANGLE's X3595 warning (undefined
    derivatives). `shadowAt` uses `step()` masks instead; derivative normals
