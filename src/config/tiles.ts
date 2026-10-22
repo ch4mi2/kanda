@@ -69,7 +69,7 @@ export const PEAKS_ATTRIBUTION =
   'Peaks: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)';
 
 export const WATER_ATTRIBUTION =
-  'Water &amp; rivers: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)';
+  'Water, rivers, waterfalls &amp; national parks: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)';
 
 export const LANDCOVER_ATTRIBUTION =
   'Land cover: &copy; ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>';

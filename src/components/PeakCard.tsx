@@ -31,6 +31,7 @@ export default function PeakCard({ peak, onFly, onClose, onStand }: PeakCardProp
           {[peak.name_si, peak.name_ta].filter(Boolean).join(' · ')}
         </p>
       )}
+      {peak.parkName && <p className="peak-card__park">in {peak.parkName}</p>}
 
       <div className="peak-card__stats">
         <div className="stat">

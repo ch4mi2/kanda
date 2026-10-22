@@ -6,6 +6,7 @@
 import { SUMMIT_LABEL_RADIUS_KM } from '../config/tiles';
 import { compassLabel, haversineKm, initialBearingDeg, type PeakFeature } from '../map/nearbyPeaks';
 import { riverLabelAnchor, waterLabelAnchor, type RiverFeature, type WaterFeature } from '../map/water';
+import type { WaterfallFeature } from '../map/waterfalls';
 import type { Engine, Projected } from './Engine';
 
 interface Item {
@@ -387,6 +388,147 @@ export class WaterLabels {
     place(lakeCands, MAX_LAKE_LABELS);
     place(riverCands, MAX_RIVER_LABELS);
 
+    for (const it of this.items) {
+      if (it.shown && !shownNow.has(it)) {
+        it.shown = false;
+        it.el.style.display = 'none';
+      }
+    }
+  }
+}
+
+/** Waterfall markers - a third DOM layer, point features like peaks (name +
+ *  height, no occlusion or summit skyline model). Overview only, same as
+ *  WaterLabels. Peaks keep priority: this layer also treats whatever
+ *  PeakLabels placed this frame as exclusion zones before placing its own,
+ *  per #26 ("peaks keep winning the collision budget over waterfalls"). */
+const MAX_WATERFALL_LABELS = 18;
+/** Beyond this, a waterfall is too small a feature to read - same spirit as
+ *  WaterLabels' lake-minor distance gate. */
+const MAX_WATERFALL_DISTANCE_KM = 70;
+const WATERFALL_OVERLAP_HALF: [number, number] = [70, 20];
+
+interface WaterfallItem {
+  name: string;
+  lng: number;
+  lat: number;
+  heightM: number | null;
+  ele: number;
+  el: HTMLDivElement;
+  shown: boolean;
+}
+
+export class WaterfallLabels {
+  private engine: Engine;
+  private peakLabels: PeakLabels;
+  private layer: HTMLDivElement;
+  private items: WaterfallItem[] = [];
+  private off: () => void;
+  private proj: Projected = { x: 0, y: 0, visible: false, distanceKm: 0 };
+  private visible = true;
+
+  constructor(engine: Engine, peakLabels: PeakLabels, waterfalls: WaterfallFeature[]) {
+    this.engine = engine;
+    this.peakLabels = peakLabels;
+    this.layer = document.createElement('div');
+    this.layer.className = 'waterfall-labels';
+    engine.host.appendChild(this.layer);
+
+    for (const f of waterfalls) {
+      if (!f.properties.name) continue;
+      const el = document.createElement('div');
+      el.className = 'waterfall-label';
+      const name = document.createElement('span');
+      name.className = 'waterfall-label__name';
+      name.textContent = f.properties.name;
+      el.appendChild(name);
+      if (f.properties.height != null) {
+        const small = document.createElement('small');
+        small.className = 'waterfall-label__meta';
+        small.textContent = `${Math.round(f.properties.height)} m`;
+        el.appendChild(small);
+      }
+      el.style.display = 'none';
+      this.layer.appendChild(el);
+      this.items.push({
+        name: f.properties.name,
+        lng: f.geometry.coordinates[0],
+        lat: f.geometry.coordinates[1],
+        heightM: f.properties.height,
+        ele: 0,
+        el,
+        shown: false,
+      });
+    }
+    this.off = engine.onFrame(() => this.update());
+  }
+
+  setVisible(visible: boolean) {
+    this.visible = visible;
+    this.layer.style.display = visible ? '' : 'none';
+  }
+
+  dispose() {
+    this.off();
+    this.layer.remove();
+  }
+
+  private elevation(it: WaterfallItem): number {
+    if (it.ele > 0) return it.ele;
+    const h = this.engine.heightAt(it.lng, it.lat);
+    if (h != null && h > 0) it.ele = h;
+    return it.ele;
+  }
+
+  private update() {
+    const eng = this.engine;
+    if (!this.visible || eng.currentMode === 'summit') {
+      for (const it of this.items) {
+        if (it.shown) {
+          it.shown = false;
+          it.el.style.display = 'none';
+        }
+      }
+      return;
+    }
+    if (eng.orbitDistanceKm > MAX_WATERFALL_DISTANCE_KM) {
+      for (const it of this.items) {
+        if (it.shown) {
+          it.shown = false;
+          it.el.style.display = 'none';
+        }
+      }
+      return;
+    }
+
+    const cands: Array<{ it: WaterfallItem; p: number; sx: number; sy: number }> = [];
+    for (const it of this.items) {
+      const pr = eng.project(it.lng, it.lat, this.elevation(it), this.proj);
+      if (!pr.visible) continue;
+      // Taller falls win a near-tie; unknown height sorts last.
+      cands.push({ it, p: -(it.heightM ?? 0), sx: pr.x, sy: pr.y });
+    }
+    cands.sort((a, b) => a.p - b.p);
+
+    const taken: Array<[number, number]> = [...this.peakLabels.placedPositions];
+    const shownNow = new Set<WaterfallItem>();
+    let placed = 0;
+    for (const c of cands) {
+      if (placed >= MAX_WATERFALL_LABELS) break;
+      if (
+        taken.some(
+          (t) => Math.abs(t[0] - c.sx) < WATERFALL_OVERLAP_HALF[0] && Math.abs(t[1] - c.sy) < WATERFALL_OVERLAP_HALF[1],
+        )
+      )
+        continue;
+      taken.push([c.sx, c.sy]);
+      placed++;
+      shownNow.add(c.it);
+      const it = c.it;
+      it.el.style.display = '';
+      it.el.style.transform = `translate(${c.sx.toFixed(1)}px, ${c.sy.toFixed(1)}px) translate(-50%, -100%)`;
+      it.shown = true;
+    }
     for (const it of this.items) {
       if (it.shown && !shownNow.has(it)) {
         it.shown = false;

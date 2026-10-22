@@ -10,8 +10,10 @@ import { bearingOf, lngLatToScene, sceneToLngLat } from './geo';
 import { Masks } from './masks';
 import { CloudLayer } from './props/clouds';
 import { NEAR_KM as RIVER_NEAR_KM, RiverLayer } from './props/rivers';
+import { ParkLayer } from './props/parks';
 import { TreeLayer } from './props/trees';
 import type { RiverFeature } from '../map/water';
+import type { ParkFeature } from '../map/parks';
 import {
   createOceanMaterial,
   createShadowDepthMaterial,
@@ -88,6 +90,7 @@ export class Engine {
   private trees: TreeLayer;
   private clouds: CloudLayer;
   private rivers: RiverLayer;
+  private parks: ParkLayer;
   private skin: Skin = DEFAULT_SKIN;
   private exaggerationMult = 1;
   private sunMinutes = 12 * 60;
@@ -147,7 +150,8 @@ export class Engine {
     this.trees = new TreeLayer(masks, this.u);
     this.clouds = new CloudLayer(this.u);
     this.rivers = new RiverLayer(this.u);
-    this.scene.add(this.trees.group, this.clouds.group, this.rivers.group);
+    this.parks = new ParkLayer(this.u);
+    this.scene.add(this.trees.group, this.clouds.group, this.rivers.group, this.parks.group);
 
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), createSkyMaterial(this.u, this.skySky));
     this.sky.frustumCulled = false;
@@ -230,6 +234,7 @@ export class Engine {
     this.trees.setStyle(skin.trees);
     this.clouds.setStyle(skin.clouds);
     this.rivers.setColor(skin.river);
+    this.parks.setColor(skin.park);
     this.post.applySkin(skin, this.dpr);
     this.applyExaggeration();
     this.refreshColors();
@@ -240,6 +245,7 @@ export class Engine {
     s.setProperty('--label-font', skin.labelFont);
     s.setProperty('--water-label-color', skin.waterLabel);
     s.setProperty('--river-label-color', skin.river);
+    s.setProperty('--waterfall-label-color', skin.waterfall);
   }
 
   get currentSkin(): Skin {
@@ -255,6 +261,12 @@ export class Engine {
    *  baked into masks.png is unaffected - it's part of the terrain itself). */
   setWaterVisible(visible: boolean) {
     this.rivers.group.visible = visible;
+  }
+
+  /** Loads the park/protected-area outlines once src/data/parks.geojson has
+   *  been fetched. Always on, like the lake tint - no layer toggle (#26). */
+  setParks(features: ParkFeature[]) {
+    this.parks.setFeatures(features, this.tiles);
   }
 
   /** True once enough terrain has loaded to show something. */
@@ -615,6 +627,7 @@ export class Engine {
     this.controls.dispose();
     this.tiles.dispose();
     this.rivers.dispose();
+    this.parks.dispose();
     this.shadow.dispose();
     this.rt.dispose();
     this.renderer.dispose();
@@ -754,6 +767,7 @@ export class Engine {
     this.clouds.group.visible = this.skin.clouds != null && !summit;
     this.clouds.update(this.dt, cam.position, (MAX_ELEVATION_M / 1000) * exag);
     this.rivers.update(summit ? RIVER_NEAR_KM : this.orbitDistanceKm, now, this.tiles);
+    this.parks.update(now, this.tiles);
     this.renderShadow(exag);
     this.tiles.settle();
 

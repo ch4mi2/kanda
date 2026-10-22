@@ -44,6 +44,8 @@ export const BLOCK_WORLD: Skin = {
   waterMode: 1,
   river: '#3f74c9',
   waterLabel: '#1c3f73',
+  waterfall: '#eafcff',
+  park: '#cf9f4f',
 
   outline: 0.55,
   outlineColor: '#3a2614',
