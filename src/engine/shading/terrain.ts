@@ -4,7 +4,6 @@
 
 import * as THREE from 'three';
 import masksUrl from '../../data/masks.png';
-import landcoverUrl from '../../data/landcover.png';
 import { SRI_LANKA_BBOX } from '../../config/tiles';
 import { lngLatToScene } from '../geo';
 
@@ -66,9 +65,8 @@ const TERRAIN_FRAG = /* glsl */ `
 uniform float uTime, uRim, uPatch, uRockSlope, uSnowLine, uCliff, uFoamAmt, uWaterMode, uExag, uFlat;
 uniform float uShadowOn, uShadowBias, uShadowTexel, uShadowNormalOffset;
 uniform vec3 uGrassLo, uGrassHi, uForest, uRock, uSnow, uCliffCol, uWater, uWaterHi, uWaterDeep, uFoam;
-uniform vec4 uMaskBox;      // x0, z0, 1/w, 1/h of the masks image in scene km (shared by uMasks and uLandcover — same grid)
-uniform sampler2D uMasks;   // G lake edge, B lake depth (R unused)
-uniform sampler2D uLandcover; // R tree, G shrub, B built-up, A open ground
+uniform vec4 uMaskBox;      // x0, z0, 1/w, 1/h of the masks image in scene km
+uniform sampler2D uMasks;   // R forest, G lake edge, B lake depth
 uniform sampler2D tShadow;
 uniform mat4 uShadowMat;
 varying vec3 vW; varying vec2 vGrad, vGrad2; varying float vH;
@@ -120,7 +118,6 @@ void main() {
   bool sea = vH <= 0.5;
   vec2 muv = (vW.xz - uMaskBox.xy) * uMaskBox.zw;
   vec3 mk = texture2D(uMasks, muv).rgb;
-  float treeFrac = texture2D(uLandcover, muv).r;
   float lakeEdge = mk.g;
   float lake = smoothstep(.3, .5, lakeEdge) * (sea ? 0. : 1.);
 
@@ -153,7 +150,7 @@ void main() {
     float n = fbm(vW.xz * .28);
     float e = smoothstep(250., 1850., vH);
     vec3 base = mix(uGrassLo, uGrassHi, clamp(e + (n - .5) * uPatch * 2., 0., 1.));
-    base = mix(base, uForest, smoothstep(.3, .7, treeFrac) * .7);
+    base = mix(base, uForest, smoothstep(.3, .7, mk.r) * .7);
     base *= 1. + (vnoise(vW.xz * 90.) - .5) * .3 * near;
     float slope = 1. - N.y;
     float slope2 = 1. - N2.y;
@@ -196,12 +193,6 @@ export function createTerrainUniforms(): TerrainUniforms {
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.magFilter = THREE.LinearFilter;
   tex.anisotropy = 4;
-  const lcTex = new THREE.TextureLoader().load(landcoverUrl);
-  lcTex.flipY = false;
-  lcTex.wrapS = lcTex.wrapT = THREE.ClampToEdgeWrapping;
-  lcTex.minFilter = THREE.LinearMipmapLinearFilter;
-  lcTex.magFilter = THREE.LinearFilter;
-  lcTex.anisotropy = 4;
   return {
     uExag: { value: 2.6 },
     uFlat: { value: 0 },
@@ -220,7 +211,6 @@ export function createTerrainUniforms(): TerrainUniforms {
     uWater: { value: c() }, uWaterHi: { value: c() }, uWaterDeep: { value: c() }, uFoam: { value: c() },
     uFoamAmt: { value: 1 }, uWaterMode: { value: 0 },
     uMasks: { value: tex },
-    uLandcover: { value: lcTex },
     uMaskBox: { value: new THREE.Vector4(nw.x, nw.z, 1 / (se.x - nw.x), 1 / (se.z - nw.z)) },
     tShadow: { value: null },
     uShadowMat: { value: new THREE.Matrix4() },

@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ThreeView from './engine/ThreeView';
 import type { Engine } from './engine/Engine';
-import { PeakLabels, WaterLabels, WaterfallLabels } from './engine/labels';
+import { PeakLabels } from './engine/labels';
 import PeakCard from './components/PeakCard';
 import NearbyPeaks from './components/NearbyPeaks';
 import ExaggerationSlider from './components/ExaggerationSlider';
@@ -19,15 +19,11 @@ import CompassStrip from './components/CompassStrip';
 import NavCluster from './components/NavCluster';
 import SkinPicker from './components/SkinPicker';
 import ControlsFab from './components/ControlsFab';
-import WaterToggle from './components/WaterToggle';
 import { SKINS, loadSavedSkin, saveSkin, type Skin } from './skins';
 import { DEFAULT_EXAGGERATION } from './config/tiles';
-import { loadLayers, saveLayers, type LayerState } from './config/layers';
 import { slstNowMinutes } from './map/sunPosition';
 import { initialBearingDeg, type NearbyPeak, type PeakFeature } from './map/nearbyPeaks';
 import { usePeaks } from './data/usePeaks';
-import { useWaterFeatures } from './data/useWaterFeatures';
-import { findContainingPark, type ParkFeature } from './map/parks';
 import type { SelectedPeak } from './types';
 // Skin label fonts (self-hosted, no CDN). Fredoka is used by the 7C skins.
 import '@fontsource/luckiest-guy/latin-400.css';
@@ -47,7 +43,6 @@ function selectedFrom(
   lng: number,
   lat: number,
   engine: Engine | null,
-  parks: ParkFeature[],
 ): SelectedPeak {
   const sampled = peak.ele == null && engine ? engine.heightAt(lng, lat) : null;
   const terrain = sampled != null && sampled > 0 ? Math.round(sampled) : null;
@@ -57,7 +52,6 @@ function selectedFrom(
     lat,
     displayEle: peak.ele ?? terrain,
     eleSource: peak.ele != null ? 'osm' : terrain != null ? 'terrain' : 'unknown',
-    parkName: findContainingPark(lng, lat, parks)?.properties.name ?? null,
   };
 }
 
@@ -71,15 +65,11 @@ export default function AppThree() {
   const [bearing, setBearing] = useState(0);
   const [ready, setReady] = useState(false);
   const [skin, setSkin] = useState<Skin>(loadSavedSkin);
-  const [layers, setLayers] = useState<LayerState>(loadLayers);
   const peaks = usePeaks();
-  const { water, rivers, waterfalls, parks } = useWaterFeatures();
   const labelsRef = useRef<PeakLabels | null>(null);
-  const waterLabelsRef = useRef<WaterLabels | null>(null);
-  const waterfallLabelsRef = useRef<WaterfallLabels | null>(null);
   const selectRef = useRef<(f: PeakFeature) => void>(() => {});
   selectRef.current = (f) =>
-    setSelectedPeak(selectedFrom(f.properties, f.geometry.coordinates[0], f.geometry.coordinates[1], engine, parks));
+    setSelectedPeak(selectedFrom(f.properties, f.geometry.coordinates[0], f.geometry.coordinates[1], engine));
 
   // Peak labels: one DOM layer owned by the engine's frame loop.
   useEffect(() => {
@@ -103,64 +93,6 @@ export default function AppThree() {
     labelsRef.current?.setSelected(selectedPeak?.id ?? null);
   }, [selectedPeak, engine, peaks]);
 
-  // Water/river name labels - a second DOM layer, built once the geojson has
-  // loaded (runs after the peak-labels effect above, so labelsRef is set).
-  useEffect(() => {
-    if (!engine || !labelsRef.current || (water.length === 0 && rivers.length === 0)) return;
-    const wl = new WaterLabels(engine, labelsRef.current, water, rivers);
-    wl.setVisible(layers.water);
-    waterLabelsRef.current = wl;
-    return () => {
-      wl.dispose();
-      waterLabelsRef.current = null;
-    };
-    // Visibility is pushed by the effect below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, peaks, water, rivers]);
-
-  useEffect(() => {
-    waterLabelsRef.current?.setVisible(layers.water);
-  }, [layers.water, engine, water, rivers]);
-
-  // Waterfall markers - same DOM-layer pattern as water/river labels, a
-  // fourth layer built once the geojson has loaded.
-  useEffect(() => {
-    if (!engine || !labelsRef.current || waterfalls.length === 0) return;
-    const wfl = new WaterfallLabels(engine, labelsRef.current, waterfalls);
-    wfl.setVisible(layers.water);
-    waterfallLabelsRef.current = wfl;
-    return () => {
-      wfl.dispose();
-      waterfallLabelsRef.current = null;
-    };
-    // Visibility is pushed by the effect below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, peaks, waterfalls]);
-
-  useEffect(() => {
-    waterfallLabelsRef.current?.setVisible(layers.water);
-  }, [layers.water, engine, waterfalls]);
-
-  // River lines: fed to the engine once, then shown/hidden by the toggle.
-  useEffect(() => {
-    if (engine && rivers.length > 0) engine.setRivers(rivers);
-  }, [engine, rivers]);
-  useEffect(() => {
-    engine?.setWaterVisible(layers.water);
-  }, [engine, layers.water]);
-
-  // Park/protected-area outlines: fed to the engine once, always visible.
-  useEffect(() => {
-    if (engine && parks.length > 0) engine.setParks(parks);
-  }, [engine, parks]);
-
-  const toggleWater = useCallback((on: boolean) => {
-    setLayers((prev) => {
-      const next = { ...prev, water: on };
-      saveLayers(next);
-      return next;
-    });
-  }, []);
   // Compass: only re-render when the heading moves by a visible amount.
   useEffect(() => {
     if (!engine) return;
@@ -193,15 +125,15 @@ export default function AppThree() {
   const pickFromSearch = useCallback(
     (f: PeakFeature) => {
       const [lng, lat] = f.geometry.coordinates;
-      setSelectedPeak(selectedFrom(f.properties, lng, lat, engine, parks));
+      setSelectedPeak(selectedFrom(f.properties, lng, lat, engine));
       engine?.flyTo({ lng, lat, distanceKm: 26, pitch: 66 }, 1800);
     },
-    [engine, parks],
+    [engine],
   );
 
   const pickNearby = useCallback(
-    (np: NearbyPeak) => setSelectedPeak(selectedFrom(np.peak, np.lng, np.lat, engine, parks)),
-    [engine, parks],
+    (np: NearbyPeak) => setSelectedPeak(selectedFrom(np.peak, np.lng, np.lat, engine)),
+    [engine],
   );
 
   const lookAtPeak = useCallback(
@@ -266,7 +198,6 @@ export default function AppThree() {
             />
             <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
             <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
-            <WaterToggle value={layers.water} onChange={toggleWater} />
           </div>
 
           <ControlsFab
@@ -277,8 +208,6 @@ export default function AppThree() {
             onSunChange={setSunMinutes}
             exaggeration={exaggeration}
             onExaggerationChange={setExaggeration}
-            water={layers.water}
-            onWaterChange={toggleWater}
           />
 
           <NavCluster

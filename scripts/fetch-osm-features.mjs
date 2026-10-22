@@ -1,16 +1,12 @@
 #!/usr/bin/env node
-// Queries Overpass once for Sri Lanka's water bodies, major rivers,
-// waterfalls and national parks / protected areas, then writes small
-// committed GeoJSON files. Same rationale as fetch-peaks.mjs: the app never
-// calls Overpass at runtime.
+// Queries Overpass once for Sri Lanka's water bodies and major rivers, then
+// writes small committed GeoJSON files. Same rationale as fetch-peaks.mjs: the
+// app never calls Overpass at runtime.
 //
 // The full dataset is ~16k water polygons — far too big to commit or ship. We
 // keep only what reads at this app's zooms (island to massif): water bodies
 // between MIN_WATER_HA and MAX_WATER_HA (excludes paddy-field tanks and the
 // ocean polygon), and named rivers. Geometry is Douglas-Peucker simplified.
-//
-// Forest used to be fetched here too (forest.geojson); ESA WorldCover
-// (scripts/generate-landcover.mjs) replaced it as the one forest truth.
 //
 //   node scripts/fetch-osm-features.mjs
 
@@ -23,8 +19,10 @@ const BBOX = '5.7,79.5,10.0,82.0'; // Overpass order: S,W,N,E
 
 const MIN_WATER_HA = 50; // smaller = village tank, a couple of px at z10
 const MAX_WATER_HA = 60000; // larger = the sea polygon or a mega-lagoon blob
+const MIN_FOREST_HA = 700; // only the big blocks / named reserves
+const MAX_FOREST_HA = 120000; // guard against a country-sized "wood" polygon
 const SIMPLIFY_DEG = 0.0005; // ~55 m — plenty at z13, near the DEM's own limit
-const MIN_PARK_HA = 5; // drops degenerate slivers, not real protected areas
+const SIMPLIFY_FOREST_DEG = 0.0006; // ~65 m — enough to stay smooth, not spiky
 
 const OUT_DIR = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../src/data');
 
@@ -144,6 +142,49 @@ async function fetchWater() {
   return polys;
 }
 
+// --- forest blocks -------------------------------------------------------
+async function fetchForest() {
+  console.log('Querying forest blocks...');
+  const data = await overpass(`
+    [out:json][timeout:180];
+    (
+      way[natural=wood](${BBOX});
+      way[landuse=forest](${BBOX});
+      relation[natural=wood](${BBOX});
+      relation[landuse=forest](${BBOX});
+    );
+    out geom;
+  `);
+
+  const polys = [];
+  for (const el of data.elements ?? []) {
+    const members =
+      el.type === 'relation'
+        ? (el.members ?? []).filter((m) => m.type === 'way' && m.geometry)
+        : [el];
+    for (const m of members) {
+      if (!m.geometry || m.geometry.length < 4) continue;
+      let ring = toRing(m.geometry);
+      if (!closed(ring)) ring.push(ring[0]);
+      const ha = ringAreaHa(ring);
+      if (ha < MIN_FOREST_HA || ha > MAX_FOREST_HA) continue;
+      ring = simplify(ring, SIMPLIFY_FOREST_DEG);
+      if (!closed(ring)) ring.push(ring[0]);
+      // Drop anything simplification degraded into a sliver — a big forest
+      // shrunk to a triangle jutting off the terrain is worse than no forest.
+      if (ring.length < 6) continue;
+      if (ringAreaHa(ring) < 0.55 * ha) continue;
+      polys.push({
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [ring] },
+        properties: { name: el.tags?.name ?? null, ha: Math.round(ha) },
+      });
+    }
+  }
+  polys.sort((a, b) => b.properties.ha - a.properties.ha);
+  return polys;
+}
+
 // --- rivers (named lines) ------------------------------------------------
 async function fetchRivers() {
   console.log('Querying named rivers...');
@@ -167,89 +208,6 @@ async function fetchRivers() {
   return lines;
 }
 
-/** OSM `height` on a waterfall is free text ("220", "220 m", "~15m") - pull
- *  the first number out and drop the rest rather than rejecting the tag. */
-function parseHeightM(raw) {
-  if (!raw) return null;
-  const m = String(raw).match(/(\d+(?:\.\d+)?)/);
-  return m ? Number(m[1]) : null;
-}
-
-// --- waterfalls (named points) ---------------------------------------------
-async function fetchWaterfalls() {
-  console.log('Querying waterfalls...');
-  const data = await overpass(`
-    [out:json][timeout:180];
-    (
-      node[waterway=waterfall][name](${BBOX});
-      way[waterway=waterfall][name](${BBOX});
-    );
-    out center;
-  `);
-
-  const points = [];
-  for (const el of data.elements ?? []) {
-    const name = el.tags?.name;
-    if (!name) continue;
-    const lng = el.type === 'node' ? el.lon : el.center?.lon;
-    const lat = el.type === 'node' ? el.lat : el.center?.lat;
-    if (lng == null || lat == null) continue;
-    points.push({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [Number(lng.toFixed(5)), Number(lat.toFixed(5))] },
-      properties: { name, height: parseHeightM(el.tags?.height) },
-    });
-  }
-  return points;
-}
-
-// --- national parks / protected areas (named outlines) ---------------------
-async function fetchParks() {
-  console.log('Querying national parks & protected areas...');
-  const data = await overpass(`
-    [out:json][timeout:180];
-    (
-      way[boundary=national_park](${BBOX});
-      way[boundary=protected_area](${BBOX});
-      relation[boundary=national_park](${BBOX});
-      relation[boundary=protected_area](${BBOX});
-    );
-    out geom;
-  `);
-
-  const polys = [];
-  for (const el of data.elements ?? []) {
-    // Relations tag inner members (enclaves) the same as outer boundaries;
-    // only the outer ring reads as "the park's edge" at this app's scale.
-    const members =
-      el.type === 'relation'
-        ? (el.members ?? []).filter((m) => m.type === 'way' && m.geometry && m.role !== 'inner')
-        : [el];
-    for (const m of members) {
-      const geom = m.geometry;
-      if (!geom || geom.length < 4) continue;
-      let ring = toRing(geom);
-      if (!closed(ring)) ring.push(ring[0]);
-      const ha = ringAreaHa(ring);
-      if (ha < MIN_PARK_HA) continue;
-      ring = simplify(ring, SIMPLIFY_DEG);
-      if (ring.length < 4) continue;
-      if (!closed(ring)) ring.push(ring[0]);
-      polys.push({
-        type: 'Feature',
-        geometry: { type: 'Polygon', coordinates: [ring] },
-        properties: {
-          name: el.tags?.name ?? null,
-          kind: el.tags?.boundary ?? 'protected_area',
-          ha: Math.round(ha),
-        },
-      });
-    }
-  }
-  polys.sort((a, b) => b.properties.ha - a.properties.ha);
-  return polys;
-}
-
 function wrap(features, extra) {
   return {
     type: 'FeatureCollection',
@@ -266,34 +224,28 @@ function wrap(features, extra) {
 
 async function main() {
   const water = await fetchWater();
+  const forest = await fetchForest();
   const rivers = await fetchRivers();
-  const waterfalls = await fetchWaterfalls();
-  const parks = await fetchParks();
 
   await writeFile(
     path.join(OUT_DIR, 'water.geojson'),
     JSON.stringify(wrap(water, { minHa: MIN_WATER_HA, maxHa: MAX_WATER_HA })) + '\n',
   );
   await writeFile(
+    path.join(OUT_DIR, 'forest.geojson'),
+    JSON.stringify(wrap(forest, { minHa: MIN_FOREST_HA })) + '\n',
+  );
+  await writeFile(
     path.join(OUT_DIR, 'rivers.geojson'),
     JSON.stringify(wrap(rivers)) + '\n',
   );
-  await writeFile(
-    path.join(OUT_DIR, 'waterfalls.geojson'),
-    JSON.stringify(wrap(waterfalls)) + '\n',
-  );
-  await writeFile(
-    path.join(OUT_DIR, 'parks.geojson'),
-    JSON.stringify(wrap(parks, { minHa: MIN_PARK_HA })) + '\n',
-  );
 
   const kb = (o) => Math.round(JSON.stringify(o).length / 1024);
-  console.log(`\nwater.geojson      : ${water.length} bodies, ${kb(wrap(water))} KB`);
+  console.log(`\nwater.geojson  : ${water.length} bodies, ${kb(wrap(water))} KB`);
   console.log(`  biggest: ${water.slice(0, 5).map((f) => `${f.properties.name ?? '?'} ${f.properties.ha}ha`).join(', ')}`);
-  console.log(`rivers.geojson     : ${rivers.length} rivers, ${kb(wrap(rivers))} KB`);
-  console.log(`waterfalls.geojson : ${waterfalls.length} waterfalls, ${kb(wrap(waterfalls))} KB`);
-  console.log(`parks.geojson      : ${parks.length} boundaries, ${kb(wrap(parks))} KB`);
-  console.log(`  biggest: ${parks.slice(0, 5).map((f) => `${f.properties.name ?? '?'} ${f.properties.ha}ha`).join(', ')}`);
+  console.log(`forest.geojson : ${forest.length} blocks, ${kb(wrap(forest))} KB`);
+  console.log(`  biggest: ${forest.slice(0, 5).map((f) => `${f.properties.name ?? '?'} ${f.properties.ha}ha`).join(', ')}`);
+  console.log(`rivers.geojson : ${rivers.length} rivers, ${kb(wrap(rivers))} KB`);
 }
 
 main().catch((err) => {

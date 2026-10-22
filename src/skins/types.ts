@@ -74,14 +74,6 @@ export interface Skin {
   foam: string;
   foamAmount: number;
   waterMode: WaterMode;
-  /** Named-river line colour and river name labels (src/data/rivers.geojson). */
-  river: string;
-  /** Lake / reservoir name-label colour (src/data/water.geojson). */
-  waterLabel: string;
-  /** Waterfall marker + label colour (src/data/waterfalls.geojson). */
-  waterfall: string;
-  /** National park / protected area boundary line colour (src/data/parks.geojson). */
-  park: string;
 
   // post
   outline: number;
