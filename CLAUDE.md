@@ -42,8 +42,11 @@ src/
                        DEFAULT_CENTER; lng/lat <-> scene, tile footprints.
     labels.ts          Peak labels: a DOM layer positioned from the camera each
                        frame (elevation priority, declutter, occlusion ghosting;
-                       summit mode adds distance + compass direction).
-    masks.ts           CPU copy of src/data/masks.png (tree placement).
+                       summit mode adds distance + compass direction). Also
+                       WaterLabels (lake/river names, same declutter pass,
+                       peaks always win).
+    masks.ts           CPU copy of masks.png (lake) + landcover.png (tree/
+                       shrub/built-up placement).
     tiles/
       TileSource.ts    Terrarium DEM fetch + decode for remote/local/pmtiles.
       TerrainTiles.ts  Tile cache, quadtree LOD (z7 roots -> z12), mesh builder,
@@ -53,28 +56,32 @@ src/
       shadow.ts        Sun depth pass fitting + bias maths.
       post.ts          Fullscreen pass: depth outlines, tilt-shift, grade.
     props/             trees.ts (instanced, per z12 tile near the camera),
-                       clouds.ts.
+                       clouds.ts, rivers.ts (draped ribbon mesh from
+                       rivers.geojson).
     ThreeView.tsx      React shell (creates/disposes the Engine, WebGL error).
   skins/               A Skin is pure data (palette, light, fog, outline, water,
-                       geometry mode, trees, clouds, label font). Arena (default),
-                       Ember, Block World. localStorage 'kanda:skin'.
+                       river/waterLabel, geometry mode, trees, clouds, label
+                       font). Arena (default), Ember, Block World. localStorage
+                       'kanda:skin'; the Water layer toggle is 'kanda:layers'.
   config/tiles.ts      Terrain URLs/modes, bbox, camera + relief limits.
   map/                 sunPosition.ts (NOAA solar maths, no dep) and
                        nearbyPeaks.ts (haversine, bearings). Name is historical.
   components/          PeakCard, NearbyPeaks, SearchField, FilterChips,
-                       TimeOfDaySlider, ExaggerationSlider, SkinPicker (dock,
-                       desktop) / SkinFab (phones), NavCluster, CompassStrip,
-                       SummitBar, GestureHint, Attribution.
+                       TimeOfDaySlider, ExaggerationSlider, SkinPicker +
+                       ControlsFab (phones: skin + sun + relief behind one
+                       FAB), NavCluster, CompassStrip, SummitBar, GestureHint,
+                       Attribution.
   App.tsx              The shell: wires engine, labels, summit, panels.
-  data/                peaks / water / rivers / forest .geojson (committed, the
-                       app never calls Overpass), masks.png (forest + lake
-                       masks, committed, `npm run generate:masks`), usePeaks.ts.
+  data/                peaks / water / rivers .geojson (committed, the app
+                       never calls Overpass), masks.png (lake masks, `npm run
+                       generate:masks`) + landcover.png (ESA WorldCover
+                       tree/shrub/built-up/open fractions, `npm run
+                       generate:landcover`), usePeaks.ts.
 scripts/               fetch-peaks, fetch-osm-features, fetch-terrain,
-                       build-dem, check-peaks, pack-pmtiles, generate-masks;
-                       lib/tilemath.mjs, lib/texture-core.mjs (the polygon
-                       rasteriser + blur + bbox the masks script reuses; the
-                       rest of that file is dead weight from the old texture
-                       bake — trim it if you touch it).
+                       build-dem, check-peaks, pack-pmtiles, generate-masks,
+                       generate-landcover; lib/tilemath.mjs, lib/texture-core.mjs
+                       (the polygon rasteriser + blur + bbox the masks script
+                       reuses).
 design/                Exported Claude Design source + prototypes/ (the labs).
 docs/plans/            phase-7-threejs.md.
 ```
@@ -91,9 +98,15 @@ the old "never react-map-gl"). React earns its place in the panels.
   past z12 — pure upscaling, 4× the bytes. `remote` mode (production, until the
   new pyramid is hosted) still reads AWS Terrarium (SRTM).
 - **Peaks:** OpenStreetMap via Overpass, ODbL, fetched once into a committed
-  GeoJSON. **Forest / lakes:** OSM, baked into `masks.png`.
+  GeoJSON. **Lakes:** OSM, baked into `masks.png`.
+- **Land cover:** ESA WorldCover 2021 (v200, 10 m, CC BY 4.0) from AWS Open
+  Data (`s3://esa-worldcover`, unsigned), aggregated into z10 tree/shrub/
+  built-up/open fractions by `scripts/generate-landcover.mjs` into
+  `src/data/landcover.png` — the one forest truth (replaced the old OSM
+  `forest.geojson` baked into `masks.png`'s R channel).
 - **No satellite imagery, deliberately** (licensed, huge). Every colour comes
-  from the elevation data + masks + the skin, so the app can run offline.
+  from the elevation data + masks + landcover + the skin, so the app can run
+  offline.
 
 Attribution is required — see `components/Attribution.tsx`.
 
@@ -187,6 +200,23 @@ development**; without it you silently run in remote mode.
 15. **The default sun avoids night.** Time-of-day starts at the real SLST time
     only 06:30–17:30; otherwise 16:00. Colours dim with the sun's altitude
     (`dayFactor`), so a "real" night map is nearly black.
+16. **Never load the 10 m WorldCover raster whole.** A single source COG is
+    3°×3° at 10 m (up to ~1.1 GB decoded); `generate-landcover.mjs` streams
+    windowed reads off S3 (`geotiff.js` + HTTP range requests) in row strips,
+    clipped to the island bbox, and never materialises a full tile.
+17. **`landcover.png`'s alpha channel is real data, not transparency** (A =
+    open-ground fraction, and it legitimately hits 0 for plenty of cells —
+    100% tree, 100% built-up). The HTML Canvas 2D spec explicitly leaves RGB
+    undefined wherever a pixel's alpha is 0, so the usual `new Image()` +
+    `<canvas>` + `getImageData()` load (what `masks.ts` still uses for
+    `masks.png`, which has no alpha channel) can silently corrupt R/G/B at
+    every zero-alpha cell. `masks.ts` decodes `landcover.png` by hand instead
+    (`engine/decodePng.ts`: `fetch` + manual chunk/filter parsing +
+    `DecompressionStream('deflate')`), sidestepping the canvas pixel pipeline
+    entirely. The GPU path (`shading/terrain.ts`'s `uLandcover` sampler, via
+    `THREE.TextureLoader`) isn't affected — WebGL `texImage2D` with
+    `UNPACK_PREMULTIPLY_ALPHA_WEBGL` off (three.js's default) must decode
+    unpremultiplied, so it stays exact.
 
 ## Tests
 
@@ -230,7 +260,8 @@ npm run fetch:terrain   # 54 MB Terrarium pyramid -> src-terrarium/ (bathymetry 
 npm run build:dem       # Copernicus GLO-30 -> terrain/ (fetches ~300 MB, resumable)
 npm run check:peaks     # DEM height vs OSM ele: Terrarium base vs terrain/
 npm run pack:pmtiles    # pack the loose pyramid into terrain.pmtiles
-npm run generate:masks  # forest.geojson + water.geojson -> src/data/masks.png
+npm run generate:masks     # water.geojson -> src/data/masks.png
+npm run generate:landcover # ESA WorldCover -> src/data/landcover.png (streamed off S3)
 ```
 
 After a fresh clone (`public/tiles/` is gitignored): `fetch:terrain` →

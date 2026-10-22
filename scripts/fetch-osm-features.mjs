@@ -8,6 +8,9 @@
 // between MIN_WATER_HA and MAX_WATER_HA (excludes paddy-field tanks and the
 // ocean polygon), and named rivers. Geometry is Douglas-Peucker simplified.
 //
+// Forest used to be fetched here too (forest.geojson); ESA WorldCover
+// (scripts/generate-landcover.mjs) replaced it as the one forest truth.
+//
 //   node scripts/fetch-osm-features.mjs
 
 import { writeFile } from 'node:fs/promises';
@@ -19,10 +22,7 @@ const BBOX = '5.7,79.5,10.0,82.0'; // Overpass order: S,W,N,E
 
 const MIN_WATER_HA = 50; // smaller = village tank, a couple of px at z10
 const MAX_WATER_HA = 60000; // larger = the sea polygon or a mega-lagoon blob
-const MIN_FOREST_HA = 700; // only the big blocks / named reserves
-const MAX_FOREST_HA = 120000; // guard against a country-sized "wood" polygon
 const SIMPLIFY_DEG = 0.0005; // ~55 m — plenty at z13, near the DEM's own limit
-const SIMPLIFY_FOREST_DEG = 0.0006; // ~65 m — enough to stay smooth, not spiky
 
 const OUT_DIR = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../src/data');
 
@@ -142,49 +142,6 @@ async function fetchWater() {
   return polys;
 }
 
-// --- forest blocks -------------------------------------------------------
-async function fetchForest() {
-  console.log('Querying forest blocks...');
-  const data = await overpass(`
-    [out:json][timeout:180];
-    (
-      way[natural=wood](${BBOX});
-      way[landuse=forest](${BBOX});
-      relation[natural=wood](${BBOX});
-      relation[landuse=forest](${BBOX});
-    );
-    out geom;
-  `);
-
-  const polys = [];
-  for (const el of data.elements ?? []) {
-    const members =
-      el.type === 'relation'
-        ? (el.members ?? []).filter((m) => m.type === 'way' && m.geometry)
-        : [el];
-    for (const m of members) {
-      if (!m.geometry || m.geometry.length < 4) continue;
-      let ring = toRing(m.geometry);
-      if (!closed(ring)) ring.push(ring[0]);
-      const ha = ringAreaHa(ring);
-      if (ha < MIN_FOREST_HA || ha > MAX_FOREST_HA) continue;
-      ring = simplify(ring, SIMPLIFY_FOREST_DEG);
-      if (!closed(ring)) ring.push(ring[0]);
-      // Drop anything simplification degraded into a sliver — a big forest
-      // shrunk to a triangle jutting off the terrain is worse than no forest.
-      if (ring.length < 6) continue;
-      if (ringAreaHa(ring) < 0.55 * ha) continue;
-      polys.push({
-        type: 'Feature',
-        geometry: { type: 'Polygon', coordinates: [ring] },
-        properties: { name: el.tags?.name ?? null, ha: Math.round(ha) },
-      });
-    }
-  }
-  polys.sort((a, b) => b.properties.ha - a.properties.ha);
-  return polys;
-}
-
 // --- rivers (named lines) ------------------------------------------------
 async function fetchRivers() {
   console.log('Querying named rivers...');
@@ -224,16 +181,11 @@ function wrap(features, extra) {
 
 async function main() {
   const water = await fetchWater();
-  const forest = await fetchForest();
   const rivers = await fetchRivers();
 
   await writeFile(
     path.join(OUT_DIR, 'water.geojson'),
     JSON.stringify(wrap(water, { minHa: MIN_WATER_HA, maxHa: MAX_WATER_HA })) + '\n',
-  );
-  await writeFile(
-    path.join(OUT_DIR, 'forest.geojson'),
-    JSON.stringify(wrap(forest, { minHa: MIN_FOREST_HA })) + '\n',
   );
   await writeFile(
     path.join(OUT_DIR, 'rivers.geojson'),
@@ -243,8 +195,6 @@ async function main() {
   const kb = (o) => Math.round(JSON.stringify(o).length / 1024);
   console.log(`\nwater.geojson  : ${water.length} bodies, ${kb(wrap(water))} KB`);
   console.log(`  biggest: ${water.slice(0, 5).map((f) => `${f.properties.name ?? '?'} ${f.properties.ha}ha`).join(', ')}`);
-  console.log(`forest.geojson : ${forest.length} blocks, ${kb(wrap(forest))} KB`);
-  console.log(`  biggest: ${forest.slice(0, 5).map((f) => `${f.properties.name ?? '?'} ${f.properties.ha}ha`).join(', ')}`);
   console.log(`rivers.geojson : ${rivers.length} rivers, ${kb(wrap(rivers))} KB`);
 }
 
