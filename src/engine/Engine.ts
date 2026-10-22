@@ -482,6 +482,39 @@ export class Engine {
       { passive: false },
     );
     window.addEventListener('keydown', this.onKey);
+
+    // Orbit view: OrbitControls' two-finger gesture only rotates by dragging the midpoint, which
+    // fights pinch-zoom. Add a twist: rotate the camera around the pivot by the change in the
+    // angle between the two fingers (the map turns with your fingers).
+    const touches = new Map<number, { x: number; y: number }>();
+    let twist: number | null = null;
+    const twistAngle = () => {
+      const [a, b] = [...touches.values()];
+      return Math.atan2(b.y - a.y, b.x - a.x);
+    };
+    c.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType !== 'touch') return;
+      touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      twist = touches.size === 2 ? twistAngle() : null;
+    });
+    c.addEventListener('pointermove', (ev) => {
+      if (this.mode === 'summit' || !touches.has(ev.pointerId)) return;
+      touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (touches.size !== 2 || twist === null) return;
+      const next = twistAngle();
+      let d = next - twist;
+      if (d > Math.PI) d -= 2 * Math.PI;
+      else if (d < -Math.PI) d += 2 * Math.PI;
+      twist = next;
+      const t = this.controls.target;
+      this.camera.position.sub(t).applyAxisAngle(new THREE.Vector3(0, 1, 0), d).add(t);
+    });
+    const endTouch = (ev: PointerEvent) => {
+      touches.delete(ev.pointerId);
+      twist = null;
+    };
+    c.addEventListener('pointerup', endTouch);
+    c.addEventListener('pointercancel', endTouch);
   }
 
   private onKey = (ev: KeyboardEvent) => {
