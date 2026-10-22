@@ -21,6 +21,7 @@
     "fetch:terrain": "node scripts/fetch-terrain.mjs",
     "pack:pmtiles": "node scripts/pack-pmtiles.mjs",
     "generate:masks": "node scripts/generate-masks.mjs",
+    "generate:landcover": "node scripts/generate-landcover.mjs",
     "build:dem": "node scripts/build-dem.mjs",
     "check:peaks": "node scripts/check-peaks.mjs"
   },
