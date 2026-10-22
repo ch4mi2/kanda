@@ -13,7 +13,6 @@ import { KM_PER_MERC, sceneToTileXY, tileFootprint } from '../geo';
 import { TILE_PX, TileSource } from './TileSource';
 
 export const GRID = 128;
-export const CLAY_GRID = 32;
 export const ROOT_Z = 7;
 export const MAX_Z = 12;
 const MAX_ELEV_M = 2600;
@@ -93,20 +92,8 @@ export function sampleHeights(h: Int16Array, u: number, v: number): number {
   );
 }
 
-/** Deterministic 0..1 pair for a global grid vertex: tiles that share an edge agree. */
-function hash2(gx: number, gy: number, z: number): [number, number] {
-  let h = Math.imul(gx | 0, 374761393) + Math.imul(gy | 0, 668265263) + Math.imul(z | 0, 2246822519);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  const a = ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-  h = Math.imul(h ^ (h >>> 15), 2246822519);
-  const b = ((h ^ (h >>> 13)) >>> 0) / 4294967296;
-  return [a, b];
-}
-
 interface GeoOptions {
   n: number;
-  /** Jitter interior vertices (low-poly clay look), keyed by tile coordinates. */
-  jitter: { z: number; x: number; y: number } | null;
 }
 
 function buildGeometry(heights: Int16Array | null, size: number, opt: GeoOptions): THREE.BufferGeometry {
@@ -125,14 +112,8 @@ function buildGeometry(heights: Int16Array | null, size: number, opt: GeoOptions
   const du4 = 4 / (TILE_PX - 1);
   for (let j = 0; j <= n; j++) {
     for (let i = 0; i <= n; i++) {
-      let u = i / n;
-      let v = j / n;
-      if (opt.jitter) {
-        const [a, b] = hash2(opt.jitter.x * n + i, opt.jitter.y * n + j, opt.jitter.z);
-        // Edge vertices only slide along their edge, so neighbouring tiles still meet.
-        if (i > 0 && i < n) u += (a - 0.5) * 0.8 / n;
-        if (j > 0 && j < n) v += (b - 0.5) * 0.8 / n;
-      }
+      const u = i / n;
+      const v = j / n;
       const k = j * V + i;
       pos[k * 3] = u * size;
       pos[k * 3 + 1] = sampleHeights(h, u, v);
@@ -194,11 +175,10 @@ export class TerrainTiles {
   rendered: Entry[] = [];
   /** Effective vertical exaggeration - only used to size culling boxes. */
   exaggeration = 2.6;
-  /** Vertices per tile edge: 128 normally, 32 for the faceted clay skin. */
+  /** Vertices per tile edge. */
   grid = GRID;
   /** Screen-space error (px) a tile may have before it splits; phones use a coarser value. */
   splitPx = SPLIT_PX;
-  private jitter = false;
 
   private entries = new Map<string, Entry>();
   private frame = 0;
@@ -253,10 +233,7 @@ export class TerrainTiles {
     this.builds++;
     const f = tileFootprint(e.z, e.x, e.y);
     const m = new THREE.Mesh(
-      buildGeometry(e.heights, f.size, {
-        n: this.grid,
-        jitter: this.jitter ? { z: e.z, x: e.x, y: e.y } : null,
-      }),
+      buildGeometry(e.heights, f.size, { n: this.grid }),
       this.material,
     );
     m.position.set(f.x0, 0, f.z0);
@@ -419,15 +396,6 @@ export class TerrainTiles {
         .sort((a, b) => a.lastUsed - b.lastUsed);
       for (const e of old.slice(0, meshes - MAX_MESHES)) this.disposeMesh(e);
     }
-  }
-
-  /** Switch mesh style (smooth / faceted clay). Rebuilds every mesh; heights stay cached. */
-  setFaceted(faceted: boolean) {
-    if (this.jitter === faceted) return;
-    this.jitter = faceted;
-    this.grid = faceted ? CLAY_GRID : GRID;
-    for (const e of this.entries.values()) this.disposeMesh(e);
-    this.rendered = [];
   }
 
   private disposeMesh(e: Entry) {

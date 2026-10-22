@@ -223,7 +223,6 @@ export class Engine {
     u.uFogBands.value = skin.fogBands;
     u.uFlat.value = skin.geometry === 'smooth' ? 0 : 1;
     u.uTerrace.value = skin.geometry === 'terrace' ? 1 : 0;
-    this.tiles.setFaceted(skin.geometry === 'clay');
     this.trees.setStyle(skin.trees);
     this.clouds.setStyle(skin.clouds);
     this.post.applySkin(skin, this.dpr);
