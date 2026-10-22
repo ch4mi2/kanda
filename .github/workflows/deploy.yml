@@ -22,12 +22,19 @@ jobs:
 
       - run: npm ci
 
-      # No VITE_TILE_MODE set: the build defaults to remote terrain tiles from
-      # AWS Open Data, so this deploy needs no object storage. Switch to pmtiles
-      # once terrain.pmtiles is hosted somewhere with HTTP range support
-      # (R2 etc.) — see CLAUDE.md "Tiles in production".
+      # Terrain source. With the repo variable TILE_BASE_URL set (the public
+      # origin of the R2 bucket holding terrain.pmtiles, no trailing slash) the
+      # build serves the Copernicus archive from there. Unset, it falls back to
+      # remote tiles from AWS Open Data (SRTM) - see CLAUDE.md "Tiles in
+      # production".
       - name: Build
-        run: npm run build
+        env:
+          TILE_BASE_URL: ${{ vars.TILE_BASE_URL }}
+        run: |
+          if [ -n "$TILE_BASE_URL" ]; then
+            export VITE_TILE_MODE=pmtiles VITE_TILE_BASE_URL="$TILE_BASE_URL"
+          fi
+          npm run build
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3

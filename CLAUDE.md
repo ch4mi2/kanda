@@ -252,12 +252,14 @@ pushes; admins can bypass). Work on `feature/*` / `bugfix/*` / `docs/*`.
   assets on the Cloudflare Worker `kanda`. Repo secrets:
   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 
-**Tiles in production — remote by choice.** To switch to a self-hosted archive
-later: put a card on Cloudflare, enable R2, create a public bucket with CORS
-(allow the site origin; expose `Range`/`Content-Range`), upload
-`terrain.pmtiles`, add a `TILE_BASE_URL` repo secret, and set `VITE_TILE_MODE`
-to `pmtiles` in `deploy.yml`'s build step. `config/tiles.ts` already prepends
-`VITE_TILE_BASE_URL` — no app code changes.
+**Tiles in production.** `deploy.yml` serves the Copernicus archive from R2 when
+the repo variable `TILE_BASE_URL` (Settings > Secrets and variables > Actions >
+Variables) is set, and falls back to AWS `remote` (SRTM, flat z12 sea) when it is
+not. The archive lives in the R2 bucket `kanda-tiles` as `terrain.pmtiles`
+(CORS allows the site origin and localhost; `Range` allowed, `Content-Range`
+exposed). `TILE_BASE_URL` is the bucket's public origin with no trailing slash,
+and the app requests `${TILE_BASE_URL}/tiles/terrain.pmtiles`, so the object key
+is `tiles/terrain.pmtiles`. Re-upload it after every `build:dem` + `pack:pmtiles`.
 
 ## Verifying map work
 
