@@ -93,6 +93,53 @@
   color: var(--river-label-color, #337a90);
 }
 
+/* Waterfall markers: a third DOM layer, point features like peak labels (a
+   name and, below it, a small tick to mark the point) but not clickable. */
+.waterfall-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.waterfall-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  text-align: center;
+  color: var(--waterfall-label-color, #cdeeff);
+  font: 600 12px/1.1 var(--font-ui);
+  letter-spacing: 0.01em;
+  text-shadow:
+    0 0 2px var(--label-halo, rgba(0, 0, 0, 0.9)),
+    0 0 5px var(--label-halo, rgba(0, 0, 0, 0.9));
+  will-change: transform;
+}
+
+.waterfall-label__name {
+  display: block;
+}
+
+.waterfall-label__meta {
+  display: block;
+  font: 600 10px/1.2 var(--font-ui);
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.waterfall-label::after {
+  content: '';
+  display: block;
+  width: 2px;
+  height: 8px;
+  margin: 2px auto 0;
+  border-radius: 1px;
+  background: var(--waterfall-label-color, #cdeeff);
+  box-shadow: 0 0 2px var(--label-halo, rgba(0, 0, 0, 0.9));
+}
+
 /* Bottom-right sits above the Data sources toggle. */
 .nav-cluster {
   position: absolute;

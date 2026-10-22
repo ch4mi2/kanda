@@ -15,4 +15,6 @@ export interface SelectedPeak extends PeakProperties {
    *  otherwise sampled from the loaded terrain at click time. */
   displayEle: number | null;
   eleSource: 'osm' | 'terrain' | 'unknown';
+  /** Name of the national park / protected area this peak falls inside, if any. */
+  parkName: string | null;
 }

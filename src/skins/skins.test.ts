@@ -5,7 +5,7 @@ const HEX = /^#[0-9a-f]{6}$/i;
 const COLOUR_FIELDS = [
   'zenith', 'horizon', 'seaDeep', 'fog', 'sunColor', 'shade', 'grassLow', 'grassHigh', 'forest',
   'rock', 'snow', 'cliffColor', 'water', 'waterHigh', 'waterDeep', 'foam', 'outlineColor', 'labelColor',
-  'river', 'waterLabel',
+  'river', 'waterLabel', 'waterfall', 'park',
 ] as const;
 
 function luma(hex: string): number {
@@ -47,6 +47,10 @@ describe('skins', () => {
 
       it('keeps the water label legible against the grass', () => {
         expect(Math.abs(luma(skin.waterLabel) - luma(skin.grassHigh))).toBeGreaterThan(0.2);
+      });
+
+      it('keeps the waterfall label legible against the grass', () => {
+        expect(Math.abs(luma(skin.waterfall) - luma(skin.grassHigh))).toBeGreaterThan(0.2);
       });
 
       it('has sane numeric ranges', () => {

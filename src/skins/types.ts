@@ -78,6 +78,10 @@ export interface Skin {
   river: string;
   /** Lake / reservoir name-label colour (src/data/water.geojson). */
   waterLabel: string;
+  /** Waterfall marker + label colour (src/data/waterfalls.geojson). */
+  waterfall: string;
+  /** National park / protected area boundary line colour (src/data/parks.geojson). */
+  park: string;
 
   // post
   outline: number;

@@ -5,9 +5,12 @@ export interface LayerState {
   /** River lines + water/river name labels. The lake tint baked into
    *  masks.png stays on regardless — it's part of the terrain surface. */
   water: boolean;
+  /** Waterfall name/height markers (src/data/waterfalls.geojson). Park
+   *  outlines have no toggle - like the lake tint, they stay on regardless. */
+  waterfalls: boolean;
 }
 
-const DEFAULT_LAYERS: LayerState = { water: true };
+const DEFAULT_LAYERS: LayerState = { water: true, waterfalls: true };
 const STORAGE_KEY = 'kanda:layers';
 
 export function loadLayers(): LayerState {

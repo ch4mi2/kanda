@@ -44,6 +44,8 @@ export const EMBER: Skin = {
   waterMode: 0,
   river: '#5fa3ad',
   waterLabel: '#1c3b3e',
+  waterfall: '#dff3ff',
+  park: '#5f7a52',
 
   outline: 0.5,
   outlineColor: '#2a1018',
