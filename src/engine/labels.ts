@@ -5,6 +5,7 @@
 
 import { SUMMIT_LABEL_RADIUS_KM } from '../config/tiles';
 import { compassLabel, haversineKm, initialBearingDeg, type PeakFeature } from '../map/nearbyPeaks';
+import { riverLabelAnchor, waterLabelAnchor, type RiverFeature, type WaterFeature } from '../map/water';
 import type { Engine, Projected } from './Engine';
 
 interface Item {
@@ -66,6 +67,9 @@ export class PeakLabels {
   private proj: Projected = { x: 0, y: 0, visible: false, distanceKm: 0 };
   private frame = 0;
   private zone: LabelZone = 1;
+  /** Screen positions of this frame's shown labels - read by WaterLabels so
+   *  peaks keep priority over water in declutter. */
+  private placed: Array<[number, number]> = [];
 
   constructor(engine: Engine, peaks: PeakFeature[], onPick: (f: PeakFeature) => void) {
     this.engine = engine;
@@ -117,6 +121,12 @@ export class PeakLabels {
   /** Summit view: pass the peak you are standing on; null to return to overview. */
   setOrigin(origin: { lng: number; lat: number; id: number } | null) {
     this.origin = origin;
+  }
+
+  /** Screen positions `[x, y]` of labels shown as of the last frame - water
+   *  labels avoid these so peaks win declutter. */
+  get placedPositions(): ReadonlyArray<[number, number]> {
+    return this.placed;
   }
 
   dispose() {
@@ -224,6 +234,163 @@ export class PeakLabels {
           if (!it.shown) it.el.style.display = 'none';
           it.hideTimer = null;
         }, FADE_MS);
+      }
+    }
+    this.placed = taken;
+  }
+}
+
+/** Lake and river name labels - a second DOM layer, italic and coloured
+ *  differently from peaks. Overview only (no summit distance/bearing model,
+ *  no occlusion): the acceptance test for water is the drawn river lines
+ *  plus "the reservoir chain reads at regional view", not a skyline read-out.
+ *  Peaks keep priority: this layer treats whatever PeakLabels placed this
+ *  frame as exclusion zones before placing its own. */
+const LAKE_MAJOR_HA = 500;
+const LAKE_MINOR_MAX_KM = 40;
+/** Capped separately from lakes - the highland core has dozens of named
+ *  reservoirs, which would otherwise fill the whole budget and leave no room
+ *  for a single river name. */
+const MAX_LAKE_LABELS = 16;
+const MAX_RIVER_LABELS = 6;
+const WATER_OVERLAP_HALF: [number, number] = [86, 16];
+
+interface WaterItem {
+  kind: 'lake' | 'river';
+  name: string;
+  lng: number;
+  lat: number;
+  tangentLng: number | null;
+  tangentLat: number | null;
+  ha: number;
+  ele: number;
+  el: HTMLDivElement;
+  shown: boolean;
+}
+
+export class WaterLabels {
+  private engine: Engine;
+  private peakLabels: PeakLabels;
+  private layer: HTMLDivElement;
+  private items: WaterItem[] = [];
+  private off: () => void;
+  private proj: Projected = { x: 0, y: 0, visible: false, distanceKm: 0 };
+  private tangentProj: Projected = { x: 0, y: 0, visible: false, distanceKm: 0 };
+  private visible = true;
+
+  constructor(engine: Engine, peakLabels: PeakLabels, water: WaterFeature[], rivers: RiverFeature[]) {
+    this.engine = engine;
+    this.peakLabels = peakLabels;
+    this.layer = document.createElement('div');
+    this.layer.className = 'water-labels';
+    engine.host.appendChild(this.layer);
+
+    for (const f of water) {
+      if (!f.properties.name) continue;
+      const [lng, lat] = waterLabelAnchor(f);
+      this.items.push(this.makeItem('lake', f.properties.name, lng, lat, f.properties.ha));
+    }
+    for (const f of rivers) {
+      if (!f.properties.name) continue;
+      const { anchor, tangent } = riverLabelAnchor(f);
+      const it = this.makeItem('river', f.properties.name, anchor[0], anchor[1], 0);
+      it.tangentLng = tangent[0];
+      it.tangentLat = tangent[1];
+      this.items.push(it);
+    }
+    this.off = engine.onFrame(() => this.update());
+  }
+
+  private makeItem(kind: 'lake' | 'river', name: string, lng: number, lat: number, ha: number): WaterItem {
+    const el = document.createElement('div');
+    el.className = `water-label water-label--${kind}`;
+    el.textContent = name;
+    el.style.display = 'none';
+    this.layer.appendChild(el);
+    return { kind, name, lng, lat, ha, ele: 0, tangentLng: null, tangentLat: null, el, shown: false };
+  }
+
+  setVisible(visible: boolean) {
+    this.visible = visible;
+    this.layer.style.display = visible ? '' : 'none';
+  }
+
+  dispose() {
+    this.off();
+    this.layer.remove();
+  }
+
+  private elevation(it: WaterItem): number {
+    if (it.ele > 0) return it.ele;
+    const h = this.engine.heightAt(it.lng, it.lat);
+    if (h != null && h > 0) it.ele = h;
+    return it.ele;
+  }
+
+  private update() {
+    const eng = this.engine;
+    if (!this.visible || eng.currentMode === 'summit') {
+      for (const it of this.items) {
+        if (it.shown) {
+          it.shown = false;
+          it.el.style.display = 'none';
+        }
+      }
+      return;
+    }
+    const distanceKm = eng.orbitDistanceKm;
+    const lakeCands: Array<{ it: WaterItem; p: number; sx: number; sy: number; angle: number }> = [];
+    const riverCands: Array<{ it: WaterItem; p: number; sx: number; sy: number; angle: number }> = [];
+    for (const it of this.items) {
+      if (it.kind === 'lake' && it.ha < LAKE_MAJOR_HA && distanceKm > LAKE_MINOR_MAX_KM) continue;
+      const ele = this.elevation(it);
+      const pr = eng.project(it.lng, it.lat, ele, this.proj);
+      if (!pr.visible) continue;
+      if (it.kind === 'lake') {
+        lakeCands.push({ it, p: -it.ha, sx: pr.x, sy: pr.y, angle: 0 });
+        continue;
+      }
+      let angle = 0;
+      if (it.tangentLng != null && it.tangentLat != null) {
+        const tp = eng.project(it.tangentLng, it.tangentLat, ele, this.tangentProj);
+        angle = (Math.atan2(tp.y - pr.y, tp.x - pr.x) * 180) / Math.PI;
+        if (angle > 90) angle -= 180;
+        else if (angle < -90) angle += 180;
+      }
+      riverCands.push({ it, p: 0, sx: pr.x, sy: pr.y, angle });
+    }
+    lakeCands.sort((a, b) => a.p - b.p);
+
+    // Peaks already placed this frame reserve their screen space first; lakes
+    // are capped on their own so a river always gets a shot at what's left.
+    const taken: Array<[number, number]> = [...this.peakLabels.placedPositions];
+    const shownNow = new Set<WaterItem>();
+    const place = (cands: typeof lakeCands, limit: number) => {
+      let placed = 0;
+      for (const c of cands) {
+        if (placed >= limit) break;
+        if (
+          taken.some(
+            (t) => Math.abs(t[0] - c.sx) < WATER_OVERLAP_HALF[0] && Math.abs(t[1] - c.sy) < WATER_OVERLAP_HALF[1],
+          )
+        )
+          continue;
+        taken.push([c.sx, c.sy]);
+        placed++;
+        shownNow.add(c.it);
+        const it = c.it;
+        it.el.style.display = '';
+        it.el.style.transform = `translate(${c.sx.toFixed(1)}px, ${c.sy.toFixed(1)}px) translate(-50%, -50%) rotate(${c.angle.toFixed(1)}deg)`;
+        it.shown = true;
+      }
+    };
+    place(lakeCands, MAX_LAKE_LABELS);
+    place(riverCands, MAX_RIVER_LABELS);
+
+    for (const it of this.items) {
+      if (it.shown && !shownNow.has(it)) {
+        it.shown = false;
+        it.el.style.display = 'none';
       }
     }
   }

@@ -9,7 +9,9 @@ import { sunDateFromSlstMinutes, sunPosition } from '../map/sunPosition';
 import { bearingOf, lngLatToScene, sceneToLngLat } from './geo';
 import { Masks } from './masks';
 import { CloudLayer } from './props/clouds';
+import { NEAR_KM as RIVER_NEAR_KM, RiverLayer } from './props/rivers';
 import { TreeLayer } from './props/trees';
+import type { RiverFeature } from '../map/water';
 import {
   createOceanMaterial,
   createShadowDepthMaterial,
@@ -85,6 +87,7 @@ export class Engine {
   private ocean: THREE.Mesh;
   private trees: TreeLayer;
   private clouds: CloudLayer;
+  private rivers: RiverLayer;
   private skin: Skin = DEFAULT_SKIN;
   private exaggerationMult = 1;
   private sunMinutes = 12 * 60;
@@ -143,7 +146,8 @@ export class Engine {
     const masks = new Masks();
     this.trees = new TreeLayer(masks, this.u);
     this.clouds = new CloudLayer(this.u);
-    this.scene.add(this.trees.group, this.clouds.group);
+    this.rivers = new RiverLayer(this.u);
+    this.scene.add(this.trees.group, this.clouds.group, this.rivers.group);
 
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), createSkyMaterial(this.u, this.skySky));
     this.sky.frustumCulled = false;
@@ -225,6 +229,7 @@ export class Engine {
     u.uTerrace.value = skin.geometry === 'terrace' ? 1 : 0;
     this.trees.setStyle(skin.trees);
     this.clouds.setStyle(skin.clouds);
+    this.rivers.setColor(skin.river);
     this.post.applySkin(skin, this.dpr);
     this.applyExaggeration();
     this.refreshColors();
@@ -233,10 +238,23 @@ export class Engine {
     s.setProperty('--label-color', skin.labelColor);
     s.setProperty('--label-halo', skin.labelHalo);
     s.setProperty('--label-font', skin.labelFont);
+    s.setProperty('--water-label-color', skin.waterLabel);
+    s.setProperty('--river-label-color', skin.river);
   }
 
   get currentSkin(): Skin {
     return this.skin;
+  }
+
+  /** Loads the river lines once src/data/rivers.geojson has been fetched. */
+  setRivers(features: RiverFeature[]) {
+    this.rivers.setFeatures(features, this.tiles);
+  }
+
+  /** The "Water" layer toggle: rivers + their name labels (the lake tint
+   *  baked into masks.png is unaffected - it's part of the terrain itself). */
+  setWaterVisible(visible: boolean) {
+    this.rivers.group.visible = visible;
   }
 
   /** True once enough terrain has loaded to show something. */
@@ -596,6 +614,7 @@ export class Engine {
     this.resizer.disconnect();
     this.controls.dispose();
     this.tiles.dispose();
+    this.rivers.dispose();
     this.shadow.dispose();
     this.rt.dispose();
     this.renderer.dispose();
@@ -734,6 +753,7 @@ export class Engine {
     this.trees.update(cam.position, this.tiles.rendered);
     this.clouds.group.visible = this.skin.clouds != null && !summit;
     this.clouds.update(this.dt, cam.position, (MAX_ELEVATION_M / 1000) * exag);
+    this.rivers.update(summit ? RIVER_NEAR_KM : this.orbitDistanceKm, now, this.tiles);
     this.renderShadow(exag);
     this.tiles.settle();
 
@@ -781,14 +801,21 @@ export class Engine {
     const was = children.map((m) => m.visible);
     for (const m of children) m.visible = false;
     for (const m of meshes) m.visible = true;
-    const sceneVis = [this.sky.visible, this.ocean.visible, this.trees.group.visible, this.clouds.group.visible];
-    this.sky.visible = this.ocean.visible = this.trees.group.visible = this.clouds.group.visible = false;
+    const sceneVis = [
+      this.sky.visible,
+      this.ocean.visible,
+      this.trees.group.visible,
+      this.clouds.group.visible,
+      this.rivers.group.visible,
+    ];
+    this.sky.visible = this.ocean.visible = this.trees.group.visible = this.clouds.group.visible = this.rivers.group.visible = false;
     this.scene.overrideMaterial = this.shadowMat;
     this.renderer.setRenderTarget(this.shadow.target);
     this.renderer.render(this.scene, this.shadow.camera);
     this.renderer.setRenderTarget(null);
     this.scene.overrideMaterial = null;
-    [this.sky.visible, this.ocean.visible, this.trees.group.visible, this.clouds.group.visible] = sceneVis;
+    [this.sky.visible, this.ocean.visible, this.trees.group.visible, this.clouds.group.visible, this.rivers.group.visible] =
+      sceneVis;
     children.forEach((m, i) => (m.visible = was[i]));
 
     this.u.uShadowMat.value.copy(this.shadow.matrix);
