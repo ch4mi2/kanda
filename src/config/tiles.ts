@@ -67,3 +67,6 @@ export const SUMMIT_LABEL_RADIUS_KM = 65;
 
 export const PEAKS_ATTRIBUTION =
   'Peaks: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)';
+
+export const WATER_ATTRIBUTION =
+  'Water &amp; rivers: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL)';

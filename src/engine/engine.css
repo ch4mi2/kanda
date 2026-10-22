@@ -61,6 +61,38 @@
   text-underline-offset: 3px;
 }
 
+/* Water/river name labels: italic, a water colour from the skin, no pointer
+   target (unlike peak labels they don't open anything on click). */
+.water-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.water-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  font: italic 600 12px/1 var(--font-ui);
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 2px var(--label-halo, rgba(0, 0, 0, 0.9)),
+    0 0 5px var(--label-halo, rgba(0, 0, 0, 0.9));
+  will-change: transform;
+}
+
+.water-label--lake {
+  color: var(--water-label-color, #1f5d6b);
+  font-size: 13px;
+}
+
+.water-label--river {
+  color: var(--river-label-color, #337a90);
+}
+
 /* Bottom-right sits above the Data sources toggle. */
 .nav-cluster {
   position: absolute;

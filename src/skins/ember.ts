@@ -42,6 +42,8 @@ export const EMBER: Skin = {
   foam: '#f4d8b8',
   foamAmount: 0.35,
   waterMode: 0,
+  river: '#5fa3ad',
+  waterLabel: '#1c3b3e',
 
   outline: 0.5,
   outlineColor: '#2a1018',
