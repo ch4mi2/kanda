@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LANDCOVER_ATTRIBUTION, PEAKS_ATTRIBUTION, TERRAIN } from '../config/tiles';
+import { LANDCOVER_ATTRIBUTION, PEAKS_ATTRIBUTION, TERRAIN, WATER_ATTRIBUTION } from '../config/tiles';
 
 export default function Attribution() {
   const [open, setOpen] = useState(false);
@@ -18,6 +18,7 @@ export default function Attribution() {
           <p dangerouslySetInnerHTML={{ __html: TERRAIN.attribution }} />
           <p dangerouslySetInnerHTML={{ __html: LANDCOVER_ATTRIBUTION }} />
           <p dangerouslySetInnerHTML={{ __html: PEAKS_ATTRIBUTION }} />
+          <p dangerouslySetInnerHTML={{ __html: WATER_ATTRIBUTION }} />
           <p>
             Rendered with{' '}
             <a href="https://threejs.org/" target="_blank" rel="noopener noreferrer">

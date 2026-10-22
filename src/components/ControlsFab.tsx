@@ -3,6 +3,7 @@ import type { Skin } from '../skins';
 import SkinPicker from './SkinPicker';
 import TimeOfDaySlider from './TimeOfDaySlider';
 import ExaggerationSlider from './ExaggerationSlider';
+import WaterToggle from './WaterToggle';
 
 interface ControlsFabProps {
   skins: Skin[];
@@ -12,11 +13,13 @@ interface ControlsFabProps {
   onSunChange: (m: number) => void;
   exaggeration: number;
   onExaggerationChange: (v: number) => void;
+  water: boolean;
+  onWaterChange: (v: boolean) => void;
 }
 
 /** Phone-sized stand-in for the relief dock, which is hidden below the
- *  desktop breakpoint: one floating swatch opens skin, sun and relief
- *  together, stacked the same way the dock stacks them on desktop. */
+ *  desktop breakpoint: one floating swatch opens skin, sun, relief and layer
+ *  toggles together, stacked the same way the dock stacks them on desktop. */
 export default function ControlsFab({
   skins,
   skin,
@@ -25,6 +28,8 @@ export default function ControlsFab({
   onSunChange,
   exaggeration,
   onExaggerationChange,
+  water,
+  onWaterChange,
 }: ControlsFabProps) {
   const [open, setOpen] = useState(false);
   return (
@@ -34,6 +39,7 @@ export default function ControlsFab({
           <SkinPicker skins={skins} value={skin} onChange={onSkinChange} />
           <TimeOfDaySlider minutes={sunMinutes} onChange={onSunChange} />
           <ExaggerationSlider value={exaggeration} onChange={onExaggerationChange} />
+          <WaterToggle value={water} onChange={onWaterChange} />
         </div>
       )}
       <button

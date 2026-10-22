@@ -42,7 +42,9 @@ src/
                        DEFAULT_CENTER; lng/lat <-> scene, tile footprints.
     labels.ts          Peak labels: a DOM layer positioned from the camera each
                        frame (elevation priority, declutter, occlusion ghosting;
-                       summit mode adds distance + compass direction).
+                       summit mode adds distance + compass direction). Also
+                       WaterLabels (lake/river names, same declutter pass,
+                       peaks always win).
     masks.ts           CPU copy of masks.png (lake) + landcover.png (tree/
                        shrub/built-up placement).
     tiles/
@@ -54,18 +56,21 @@ src/
       shadow.ts        Sun depth pass fitting + bias maths.
       post.ts          Fullscreen pass: depth outlines, tilt-shift, grade.
     props/             trees.ts (instanced, per z12 tile near the camera),
-                       clouds.ts.
+                       clouds.ts, rivers.ts (draped ribbon mesh from
+                       rivers.geojson).
     ThreeView.tsx      React shell (creates/disposes the Engine, WebGL error).
   skins/               A Skin is pure data (palette, light, fog, outline, water,
-                       geometry mode, trees, clouds, label font). Arena (default),
-                       Ember, Block World. localStorage 'kanda:skin'.
+                       river/waterLabel, geometry mode, trees, clouds, label
+                       font). Arena (default), Ember, Block World. localStorage
+                       'kanda:skin'; the Water layer toggle is 'kanda:layers'.
   config/tiles.ts      Terrain URLs/modes, bbox, camera + relief limits.
   map/                 sunPosition.ts (NOAA solar maths, no dep) and
                        nearbyPeaks.ts (haversine, bearings). Name is historical.
   components/          PeakCard, NearbyPeaks, SearchField, FilterChips,
-                       TimeOfDaySlider, ExaggerationSlider, SkinPicker (dock,
-                       desktop) / SkinFab (phones), NavCluster, CompassStrip,
-                       SummitBar, GestureHint, Attribution.
+                       TimeOfDaySlider, ExaggerationSlider, SkinPicker +
+                       ControlsFab (phones: skin + sun + relief behind one
+                       FAB), NavCluster, CompassStrip, SummitBar, GestureHint,
+                       Attribution.
   App.tsx              The shell: wires engine, labels, summit, panels.
   data/                peaks / water / rivers .geojson (committed, the app
                        never calls Overpass), masks.png (lake masks, `npm run

@@ -42,6 +42,8 @@ export const BLOCK_WORLD: Skin = {
   foam: '#eaf5ff',
   foamAmount: 0.9,
   waterMode: 1,
+  river: '#3f74c9',
+  waterLabel: '#1c3f73',
 
   outline: 0.55,
   outlineColor: '#3a2614',
