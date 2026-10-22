@@ -47,7 +47,7 @@ src/
     tiles/
       TileSource.ts    Terrarium DEM fetch + decode for remote/local/pmtiles.
       TerrainTiles.ts  Tile cache, quadtree LOD (z7 roots -> z12), mesh builder,
-                       CPU heightAt(). Smooth (128 grid) or faceted clay (32).
+                       CPU heightAt(). Smooth (128 grid).
     shading/
       terrain.ts       Terrain/ocean/sky materials + the shared GLSL chunks.
       shadow.ts        Sun depth pass fitting + bias maths.
@@ -57,7 +57,7 @@ src/
     ThreeView.tsx      React shell (creates/disposes the Engine, WebGL error).
   skins/               A Skin is pure data (palette, light, fog, outline, water,
                        geometry mode, trees, clouds, label font). Arena (default),
-                       Ember, Clay, Block World. localStorage 'kanda:skin'.
+                       Ember, Block World. localStorage 'kanda:skin'.
   config/tiles.ts      Terrain URLs/modes, bbox, camera + relief limits.
   map/                 sunPosition.ts (NOAA solar maths, no dep) and
                        nearbyPeaks.ts (haversine, bearings). Name is historical.
@@ -138,11 +138,9 @@ development**; without it you silently run in remote mode.
    derivatives). `shadowAt` uses `step()` masks instead; derivative normals
    (`faceN`) are computed at the top of `main()`, never inside a branch.
 5. **Skins are data; the engine owns no colours.** Geometry mode lives on the
-   skin: `clay` = coarse 32-grid with vertices jittered by a hash of the
-   *global* grid index (so neighbouring tiles agree on shared edges; edge
-   vertices only slide along their edge), `terrace` = quantised in the vertex
-   shader (`terraceH`, also applied to trees), both use triangle normals from
-   screen derivatives. `Engine.applySkin` is the only place uniforms change.
+   skin: `smooth` (default) or `terrace` = quantised in the vertex shader
+   (`terraceH`, also applied to trees; uses triangle normals from screen
+   derivatives). `Engine.applySkin` is the only place uniforms change.
 6. **Summit eye = above the highest DEM ground within ~250 m**, +50 m. The DEM
    high point is rarely at the OSM coordinate; standing at the sampled height
    buries the camera in a ridge (this happened — a violet slab filling the view).
@@ -268,5 +266,4 @@ Screenshots lie less than assumptions here. Always:
   compass strip tracks your heading, Knuckles/Dothalugala/Pettigala etc. appear
   with distance + direction, ridge-hidden ones ghosted, and your own summit
   slope is outlined against the ridges behind it.
-- Check each skin in island view, regional view (~35 km) and summit view; Clay
-  rebuilds all meshes on switch, so give it a moment.
+- Check each skin in island view, regional view (~35 km) and summit view.

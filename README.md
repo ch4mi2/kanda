@@ -64,7 +64,7 @@ terrain engine streams Terrarium elevation tiles (z7–z12) with a quadtree LOD,
 shades them with cel lighting, GPU cast shadows and depth-based outlines, and
 paints everything from the elevation data plus forest/lake masks — one dataset,
 no licensing questions, and a look built for telling mountains apart. Four
-skins (Arena, Ember, Clay, Block World) are plain data. Packed elevation
+skins (Arena, Ember, Block World) are plain data. Packed elevation
 tiles can ship as a [PMTiles](https://protomaps.com/docs/pmtiles) archive
 served over HTTP range requests; the live deploy currently streams terrain
 straight from AWS Open Data instead (see `CLAUDE.md` for why).

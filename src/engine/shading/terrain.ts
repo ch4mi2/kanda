@@ -137,7 +137,7 @@ void main() {
     // km speckle the colour. Far terrain stays clean.
     float near = 1. - smoothstep(.2, 5., length(cameraPosition - vW));
     if (uFlat > .5) {
-      // Faceted skins (clay, terraces): the true triangle normal.
+      // Faceted skins (terraces): the true triangle normal.
       N = faceN;
       if (dot(N, V) < 0.) N = -N;
       near *= .35;

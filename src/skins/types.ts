@@ -2,8 +2,8 @@
 // owns no colours — switching skins only rewrites uniforms (and, for the
 // geometry modes, rebuilds tile meshes).
 
-export type GeometryMode = 'smooth' | 'clay' | 'terrace';
-export type WaterMode = 0 | 1 | 2 | 3; // glints | diamonds | squiggles | clay
+export type GeometryMode = 'smooth' | 'terrace';
+export type WaterMode = 0 | 1 | 2 | 3; // glints | diamonds | squiggles | blocks
 
 export type TreeShape = 'cone' | 'pine' | 'ball' | 'lolly';
 
