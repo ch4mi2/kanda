@@ -47,13 +47,20 @@ export class Masks {
     // Manual decode (see decodePng.ts) — landcover.png's alpha channel is
     // real data (open-ground fraction), not transparency, and canvas decode
     // is free to lose RGB wherever alpha is 0.
-    fetchPng(landcoverUrl).then((png) => {
-      if (!png) return;
-      this.lc = png.data;
-      this.lcW = png.width;
-      this.lcH = png.height;
-      this.landcoverReady = true;
-    });
+    fetchPng(landcoverUrl)
+      .then((png) => {
+        if (!png) return;
+        this.lc = png.data;
+        this.lcW = png.width;
+        this.lcH = png.height;
+        this.landcoverReady = true;
+      })
+      // Without this, a decode failure left landcoverReady false forever
+      // with no visible signal beyond an unhandled-rejection console entry
+      // (that's exactly how the manual-decode bug this file once had went
+      // unnoticed - see git history) - trees.ts gates all placement on
+      // landcoverReady, so a silent failure here means no trees at all.
+      .catch((err) => console.error('landcover.png decode failed - no trees will place:', err));
   }
 
   /** Lake 0..1 at a scene point (zero outside the image). */

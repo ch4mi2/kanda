@@ -69,10 +69,17 @@ export class RiverLayer {
         }`,
       fragmentShader: /* glsl */ `
         uniform vec3 uRiver;
+        uniform float uTime;
         varying vec3 vW;
         ${COMMON_GLSL}
         void main() {
-          gl_FragColor = vec4(fogIt(uRiver, vW), 0.82);
+          // Same idea as the lake/ocean waterPattern() in terrain.ts (a
+          // moving vnoise highlight) so rivers don't read as flat/static
+          // next to lakes - just lighter, since a thin ribbon doesn't need
+          // the full multi-octave version.
+          float shimmer = vnoise(vW.xz * 5. + vec2(uTime * .4, uTime * .27));
+          vec3 c = uRiver * (0.82 + shimmer * 0.36);
+          gl_FragColor = vec4(fogIt(c, vW), 0.82);
         }`,
     });
   }

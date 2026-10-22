@@ -127,7 +127,7 @@ export default function AppThree() {
   useEffect(() => {
     if (!engine || !labelsRef.current || waterfalls.length === 0) return;
     const wfl = new WaterfallLabels(engine, labelsRef.current, waterfalls);
-    wfl.setVisible(layers.waterfalls);
+    wfl.setVisible(layers.water);
     waterfallLabelsRef.current = wfl;
     return () => {
       wfl.dispose();
@@ -138,8 +138,8 @@ export default function AppThree() {
   }, [engine, peaks, waterfalls]);
 
   useEffect(() => {
-    waterfallLabelsRef.current?.setVisible(layers.waterfalls);
-  }, [layers.waterfalls, engine, waterfalls]);
+    waterfallLabelsRef.current?.setVisible(layers.water);
+  }, [layers.water, engine, waterfalls]);
 
   // River lines: fed to the engine once, then shown/hidden by the toggle.
   useEffect(() => {
@@ -161,14 +161,6 @@ export default function AppThree() {
       return next;
     });
   }, []);
-  const toggleWaterfalls = useCallback((on: boolean) => {
-    setLayers((prev) => {
-      const next = { ...prev, waterfalls: on };
-      saveLayers(next);
-      return next;
-    });
-  }, []);
-
   // Compass: only re-render when the heading moves by a visible amount.
   useEffect(() => {
     if (!engine) return;
@@ -274,12 +266,7 @@ export default function AppThree() {
             />
             <TimeOfDaySlider minutes={sunMinutes} onChange={setSunMinutes} />
             <ExaggerationSlider value={exaggeration} onChange={setExaggeration} />
-            <WaterToggle
-              value={layers.water}
-              onChange={toggleWater}
-              waterfalls={layers.waterfalls}
-              onWaterfallsChange={toggleWaterfalls}
-            />
+            <WaterToggle value={layers.water} onChange={toggleWater} />
           </div>
 
           <ControlsFab
@@ -292,8 +279,6 @@ export default function AppThree() {
             onExaggerationChange={setExaggeration}
             water={layers.water}
             onWaterChange={toggleWater}
-            waterfalls={layers.waterfalls}
-            onWaterfallsChange={toggleWaterfalls}
           />
 
           <NavCluster

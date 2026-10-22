@@ -151,7 +151,14 @@ export class Engine {
     this.clouds = new CloudLayer(this.u);
     this.rivers = new RiverLayer(this.u);
     this.parks = new ParkLayer(this.u);
-    this.scene.add(this.trees.group, this.clouds.group, this.rivers.group, this.parks.group);
+    // parks.group is deliberately not added to the scene: the boundary
+    // outline read as unwanted trail-like lines crossing the terrain and
+    // there were enough of them (331 polygons islandwide, OSM's
+    // protected_area tag is broad) to blanket whole regions. setParks()
+    // still runs (below) so the peak card's "in X National Park" text -
+    // a pure CPU point-in-polygon check, nothing to do with this mesh -
+    // keeps working.
+    this.scene.add(this.trees.group, this.clouds.group, this.rivers.group);
 
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), createSkyMaterial(this.u, this.skySky));
     this.sky.frustumCulled = false;
