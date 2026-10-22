@@ -23,18 +23,18 @@ float terraceH(float h, float stepM) {
 
 /** Shared vertex stage: raw-metre Y -> exaggerated km, sea flattened to 0. */
 export const TERRAIN_VERT = /* glsl */ `
-attribute vec2 aGrad;
+attribute vec2 aGrad, aGrad2;
 attribute float aDrop;
 uniform float uExag, uTerrace, uTerraceStep;
 varying vec3 vW;
-varying vec2 vGrad;
+varying vec2 vGrad, vGrad2;
 varying float vH;
 ${TERRACE_GLSL}
 void main() {
   float h = uTerrace > .5 ? terraceH(position.y, uTerraceStep) : position.y;
   float y = (max(h, 0.) - aDrop) * 0.001 * uExag;
   vec4 w = modelMatrix * vec4(position.x, y, position.z, 1.);
-  vW = w.xyz; vGrad = aGrad; vH = position.y;
+  vW = w.xyz; vGrad = aGrad; vGrad2 = aGrad2; vH = position.y;
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 
@@ -63,13 +63,13 @@ export const COMMON_GLSL = NOISE_GLSL + LIGHT_GLSL;
 
 const TERRAIN_FRAG = /* glsl */ `
 uniform float uTime, uRim, uPatch, uRockSlope, uSnowLine, uCliff, uFoamAmt, uWaterMode, uExag, uFlat;
-uniform float uShadowOn, uShadowBias, uShadowTexel;
+uniform float uShadowOn, uShadowBias, uShadowTexel, uShadowNormalOffset;
 uniform vec3 uGrassLo, uGrassHi, uForest, uRock, uSnow, uCliffCol, uWater, uWaterHi, uWaterDeep, uFoam;
 uniform vec4 uMaskBox;      // x0, z0, 1/w, 1/h of the masks image in scene km
 uniform sampler2D uMasks;   // R forest, G lake edge, B lake depth
 uniform sampler2D tShadow;
 uniform mat4 uShadowMat;
-varying vec3 vW; varying vec2 vGrad; varying float vH;
+varying vec3 vW; varying vec2 vGrad, vGrad2; varying float vH;
 ${NOISE_GLSL}
 ${LIGHT_GLSL}
 
@@ -92,11 +92,15 @@ float waterPattern(vec2 p) {
   return v * fade;
 }
 
-float shadowAt(vec3 p, float ndl) {
+float shadowAt(vec3 p, vec3 N, float ndl) {
   // No early returns: texture reads must stay in uniform control flow.
-  vec4 sp = uShadowMat * vec4(p, 1.);
+  vec3 op = p + N * uShadowNormalOffset; // off the surface, so a coarser receiver doesn't self-shadow
+  vec4 sp = uShadowMat * vec4(op, 1.);
   vec3 c = sp.xyz * .5 + .5;
-  float inside = step(.5, uShadowOn) * step(.002, c.x) * step(c.x, .998) * step(.002, c.y) * step(c.y, .998) * step(c.z, 1.);
+  // Fade toward lit over the outer 15% of the box instead of a hard rectangle.
+  float edgeDist = min(min(c.x, 1. - c.x), min(c.y, 1. - c.y));
+  float edgeFade = smoothstep(0., .15, edgeDist);
+  float on = step(.5, uShadowOn) * edgeFade * step(c.z, 1.);
   c.xy = clamp(c.xy, .002, .998);
   float bias = uShadowBias * (1. + 2.5 * (1. - clamp(ndl, 0., 1.)));
   float s = 0.;
@@ -104,7 +108,7 @@ float shadowAt(vec3 p, float ndl) {
     float d = texture2D(tShadow, c.xy + vec2(float(i), float(j)) * uShadowTexel).r;
     s += (c.z - bias <= d) ? 1. : 0.;
   }
-  return mix(1., s / 9., inside);
+  return mix(1., s / 9., on);
 }
 
 void main() {
@@ -130,7 +134,7 @@ void main() {
   } else {
     vec3 N;
     // Near-field detail: the 38 m DEM is a smooth blob at eye level, so within a few
-    // km roughen the normal and speckle the colour. Far terrain stays clean.
+    // km speckle the colour. Far terrain stays clean.
     float near = 1. - smoothstep(.2, 5., length(cameraPosition - vW));
     if (uFlat > .5) {
       // Faceted skins (clay, terraces): the true triangle normal.
@@ -139,16 +143,18 @@ void main() {
       near *= .35;
     } else {
       N = normalize(vec3(-vGrad.x * uExag, 1., -vGrad.y * uExag));
-      vec2 nz = vec2(vnoise(vW.xz * 38.), vnoise(vW.xz * 38. + 31.4)) - .5;
-      N = normalize(N + vec3(nz.x, 0., nz.y) * .45 * near);
     }
-    float n = fbm(vW.xz * .28), n2 = vnoise(vW.xz * 1.4);
+    // A much smoother second gradient for the rock mask, so rock forms coherent
+    // faces instead of per-pixel confetti (CLAUDE.md "jaggedness").
+    vec3 N2 = normalize(vec3(-vGrad2.x * uExag, 1., -vGrad2.y * uExag));
+    float n = fbm(vW.xz * .28);
     float e = smoothstep(250., 1850., vH);
     vec3 base = mix(uGrassLo, uGrassHi, clamp(e + (n - .5) * uPatch * 2., 0., 1.));
     base = mix(base, uForest, smoothstep(.3, .7, mk.r) * .7);
     base *= 1. + (vnoise(vW.xz * 90.) - .5) * .3 * near;
     float slope = 1. - N.y;
-    base = mix(base, uRock, smoothstep(uRockSlope, uRockSlope + .12, slope + (n2 - .5) * .08));
+    float slope2 = 1. - N2.y;
+    base = mix(base, uRock, smoothstep(uRockSlope, uRockSlope + .12, slope2 + (n - .5) * .12));
     float snow = smoothstep(uSnowLine - 50., uSnowLine + 50., vH + (n - .5) * 260.) * (1. - smoothstep(.5, .7, slope));
     base = mix(base, uSnow, snow);
     if (uCliff > .5) {
@@ -156,7 +162,7 @@ void main() {
       base = mix(base, uCliffCol * (.86 + .14 * step(.5, fract(vW.y * 7.))), c);
     }
     float ndl = dot(N, uSun);
-    float sh = shadowAt(vW, ndl);
+    float sh = shadowAt(vW, N, ndl);
     col = shadeCol(base, lightTerm(ndl, sh));
     col += uSunCol * pow(1. - max(dot(N, V), 0.), 4.) * uRim * .3 * sh;
     if (lake > 0.) {
@@ -211,6 +217,7 @@ export function createTerrainUniforms(): TerrainUniforms {
     uShadowOn: { value: 0 },
     uShadowBias: { value: 0.0005 },
     uShadowTexel: { value: 1 / 2048 },
+    uShadowNormalOffset: { value: 0 },
   };
 }
 
@@ -260,7 +267,12 @@ export function createSkyMaterial(u: TerrainUniforms, sky: { uZen: THREE.IUnifor
       void main(){ vec3 d = normalize(vD); float y = d.y;
         vec3 c = mix(uHor, uZen, pow(smoothstep(0.,.55,y),.8));
         c = mix(uLow, c, smoothstep(-.03,.04,y));
-        float g = max(dot(d,uSun),0.); c += uSunCol*(pow(g,14.)*.25 + smoothstep(.9992,.9995,g)*.9);
+        float g = max(dot(d,uSun),0.);
+        // A real disc (~2.5 deg across) plus a wide warm halo - the old disc
+        // was only a couple of screen pixels wide (CLAUDE.md "no visible sun").
+        float halo = pow(g, 9.) * .4;
+        float disc = smoothstep(.99962, .9998, g);
+        c += uSunCol * (halo + disc);
         gl_FragColor = vec4(c,1.); }`,
   });
 }
